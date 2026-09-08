@@ -4,8 +4,9 @@ import { APP_VERSION, exportData } from '../storage'
 import ClassesView from './ClassesView'
 import LessonsView from './LessonsView'
 import EventsView from './EventsView'
+import HelpView from './HelpView'
 
-const subTabs = ['학급·시간표', '수업 목록', '학사일정', '학기·백업'] as const
+const subTabs = ['학급·시간표', '수업 목록', '학사일정', '학기·백업', '도움말'] as const
 type SubTab = (typeof subTabs)[number]
 
 type Props = {
@@ -33,6 +34,7 @@ export default function SettingsHub({ data, update, onFiles, onImport, onReset }
       {sub === '학급·시간표' && <ClassesView data={data} update={update} onFiles={onFiles} />}
       {sub === '수업 목록' && <LessonsView data={data} update={update} />}
       {sub === '학사일정' && <EventsView data={data} update={update} />}
+      {sub === '도움말' && <HelpView />}
 
       {sub === '학기·백업' && (
         <section className="panel">
@@ -78,7 +80,7 @@ export default function SettingsHub({ data, update, onFiles, onImport, onReset }
             <p className="hint">
               수업시수 플래너 {APP_VERSION}<br />
               © 2026 율쌤. 무단 배포 및 수정 금지<br />
-              이 페이지를 저장(Ctrl+S)하면 인터넷 없이도 같은 파일로 쓸 수 있습니다.
+              쓰는 방법은 위 <b>도움말</b> 탭에 정리돼 있습니다.
             </p>
           </div>
         </section>

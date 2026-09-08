@@ -380,3 +380,19 @@ thead th small { display: block; font-weight: 400; }
 }
 .calendar-lesson.cancelled span { text-decoration: line-through; }
 .calendar-lesson.cancelled b { color: #9aa1ad; }
+
+/* ---------- 도움말 ---------- */
+
+.help-nav { display: flex; gap: 0.25rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.help-body { max-width: 46rem; }
+.help-body .lead { font-size: 0.95rem; margin-top: 0; }
+.help-body h3 { font-size: 1rem; margin: 1.2rem 0 0.4rem; padding-bottom: 0.25rem; border-bottom: 1px solid var(--line); }
+.help-body h4 { font-size: 0.9rem; margin: 0.8rem 0 0.3rem; color: var(--accent); }
+.help-body p { font-size: 0.9rem; margin: 0.4rem 0; }
+.help-body ul, .help-body ol { font-size: 0.9rem; margin: 0.4rem 0; padding-left: 1.2rem; }
+.help-body li { margin-bottom: 0.25rem; }
+.help-body table { margin: 0.5rem 0; }
+.help-body code { background: #eef1f6; padding: 0.05rem 0.25rem; border-radius: 0.2rem; font-size: 0.85em; }
+.callout { background: var(--accent-soft); border-left: 3px solid var(--accent); padding: 0.5rem 0.7rem; border-radius: 0.25rem; }
+.callout.warn { background: #fdecec; border-left-color: var(--danger); }
+.help-foot { margin-top: 1.5rem; padding-top: 0.6rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.78rem; }
