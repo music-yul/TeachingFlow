@@ -1,5 +1,6 @@
 import type { AppData } from '../types'
 import { DAYS } from '../types'
+import { readableOn } from '../theme'
 
 export default function MiniTimetable({ data }: { data: AppData }) {
   const active = data.classes.filter(item => !item.archived)
@@ -30,7 +31,10 @@ export default function MiniTimetable({ data }: { data: AppData }) {
                           <div
                             className="mini-entry"
                             key={classroom.id}
-                            style={{ background: subject?.color || '#4f7db8' }}
+                            style={{
+                              background: subject?.color || '#4f7db8',
+                              color: subject?.textColor || readableOn(subject?.color || '#4f7db8'),
+                            }}
                             title={`${subject?.name || ''} ${classroom.name}`}
                           >
                             {subject?.name && <span className="mini-subject">{subject.name}</span>}

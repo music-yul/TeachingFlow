@@ -2,7 +2,6 @@ import type { AppData, LessonType, Subject } from './types'
 
 export const APP_VERSION = 'v2.0'
 export const STORAGE_KEY = 'class-schedule-planner-data'
-export const FONT_KEY = 'class-schedule-planner-font'
 
 export const defaultTypes: LessonType[] = [
   { id: 'sing', name: '가창', color: '#2d8c7b' },
@@ -27,6 +26,7 @@ export function emptyData(): AppData {
   return {
     version: 2,
     settings: {
+      appearance: { themeId: 'default', accent: '#3b6ea8', fontId: 'default', fontSize: 'normal' },
       schoolName: '',
       teacherName: '',
       year: thisYear(),
@@ -51,7 +51,11 @@ function normalize(saved: Partial<AppData>): AppData {
   const base = emptyData()
   return {
     version: 2,
-    settings: { ...base.settings, ...(saved.settings || {}) },
+    settings: {
+      ...base.settings,
+      ...(saved.settings || {}),
+      appearance: { ...base.settings.appearance, ...(saved.settings?.appearance || {}) },
+    },
     subjects: (saved.subjects || []).map(item => ({ ...item, usesProgress: item.usesProgress !== false })),
     classes: (saved.classes || []).map(item => ({ ...item, slots: item.slots || [], students: item.students || [] })),
     lessons: (saved.lessons || []).map(item => ({ ...item, note: item.note || '' })),

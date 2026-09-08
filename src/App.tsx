@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { AppData, Classroom } from './types'
-import { APP_VERSION, FONT_KEY, emptyData, exportData, importData, makeId, nextSubjectColor, readData, writeData } from './storage'
+import { APP_VERSION, emptyData, exportData, importData, makeId, nextSubjectColor, readData, writeData } from './storage'
+import { fonts, fontSizes, themes } from './theme'
 import { buildSessions } from './schedule'
 import { parseWorkbooks, type ImportedClass } from './naesAttendanceParser'
 import CalendarView from './components/CalendarView'
@@ -15,11 +16,8 @@ import './App.css'
 const tabs = ['달력', '진도표', '반별 출석부', '설정'] as const
 type Tab = (typeof tabs)[number]
 
-const fontSizes: Record<string, string> = { small: '14px', normal: '16px', large: '18px', xlarge: '21px' }
-
 export default function App() {
   const [data, setData] = useState<AppData>(readData)
-  const [font, setFont] = useState(() => localStorage.getItem(FONT_KEY) || 'normal')
   const [tab, setTab] = useState<Tab>('달력')
   const [month, setMonth] = useState(() => new Date())
   const [selected, setSelected] = useState<string | null>(null)
@@ -33,10 +31,17 @@ export default function App() {
     setSaveError(!writeData(data))
   }, [data])
 
+  const appearance = data.settings.appearance
+
   useEffect(() => {
-    localStorage.setItem(FONT_KEY, font)
-    document.documentElement.style.fontSize = fontSizes[font] || fontSizes.normal
-  }, [font])
+    const root = document.documentElement
+    const theme = themes.find(item => item.id === appearance.themeId) || themes[0]
+    Object.entries(theme.vars).forEach(([key, value]) => root.style.setProperty(key, value))
+    root.style.setProperty('--accent', appearance.accent)
+    root.style.fontSize = fontSizes[appearance.fontSize] || fontSizes.normal
+    const font = fonts.find(item => item.id === appearance.fontId) || fonts[0]
+    document.body.style.fontFamily = font.stack
+  }, [appearance])
 
   const update = (change: Partial<AppData>) => setData(current => ({ ...current, ...change }))
 
@@ -129,7 +134,10 @@ export default function App() {
           <button className="ghost-button" onClick={() => exportData(data)}>백업 내보내기</button>
           <label className="font-control">
             글씨
-            <select value={font} onChange={event => setFont(event.target.value)}>
+            <select
+              value={appearance.fontSize}
+              onChange={event => update({ settings: { ...data.settings, appearance: { ...appearance, fontSize: event.target.value } } })}
+            >
               <option value="small">작게</option>
               <option value="normal">기본</option>
               <option value="large">크게</option>

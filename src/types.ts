@@ -9,6 +9,8 @@ export type Subject = {
   id: string
   name: string
   color: string
+  /** 비워두면 배경색에 맞춰 검정·흰색 중 자동으로 고른다. */
+  textColor?: string
   /** false 면 진도표를 쓰지 않는 과목(CA·HR 등). 달력과 출석부에는 그대로 나온다. */
   usesProgress: boolean
 }
@@ -32,6 +34,8 @@ export type LessonType = {
   id: string
   name: string
   color: string
+  /** 비워두면 배경색에 맞춰 자동으로 고른다. */
+  textColor?: string
 }
 
 /** 진도표의 한 행. 과목별로 순서를 가진다. */
@@ -84,7 +88,15 @@ export type SessionOverride = {
 
 export type AttendanceStatus = '출석' | '지각' | '조퇴' | '결석' | '기타'
 
+export type Appearance = {
+  themeId: string
+  accent: string
+  fontId: string
+  fontSize: string
+}
+
 export type Settings = {
+  appearance: Appearance
   schoolName: string
   teacherName: string
   year: string

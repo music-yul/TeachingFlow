@@ -5,8 +5,9 @@ import ClassesView from './ClassesView'
 import LessonsView from './LessonsView'
 import EventsView from './EventsView'
 import HelpView from './HelpView'
+import AppearanceView from './AppearanceView'
 
-const subTabs = ['학급·시간표', '수업 목록', '학사일정', '학기·백업', '도움말'] as const
+const subTabs = ['학급·시간표', '수업 목록', '학사일정', '화면', '학기·백업', '도움말'] as const
 type SubTab = (typeof subTabs)[number]
 
 type Props = {
@@ -34,6 +35,7 @@ export default function SettingsHub({ data, update, onFiles, onImport, onReset }
       {sub === '학급·시간표' && <ClassesView data={data} update={update} onFiles={onFiles} />}
       {sub === '수업 목록' && <LessonsView data={data} update={update} />}
       {sub === '학사일정' && <EventsView data={data} update={update} />}
+      {sub === '화면' && <AppearanceView data={data} update={update} />}
       {sub === '도움말' && <HelpView />}
 
       {sub === '학기·백업' && (
