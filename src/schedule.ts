@@ -47,9 +47,16 @@ export function progressKey(classId: string, lessonId: string) {
   return `${classId}:${lessonId}`
 }
 
+/** 하루짜리 일정과 기간 일정을 함께 판정한다. */
+export function coversDate(event: { date: string; endDate?: string }, date: string) {
+  if (!event.endDate) return event.date === date
+  const [from, to] = event.date <= event.endDate ? [event.date, event.endDate] : [event.endDate, event.date]
+  return date >= from && date <= to
+}
+
 function blockedBy(data: AppData, date: string, classroom: Classroom, period: number) {
   return data.events.some(event => {
-    if (event.date !== date) return false
+    if (!coversDate(event, date)) return false
     if (event.type === 'note' || event.type === 'swap') return false
     if (event.classIds.length && !event.classIds.includes(classroom.id)) return false
     if (event.type === 'closed') return true
@@ -61,7 +68,7 @@ function blockedBy(data: AppData, date: string, classroom: Classroom, period: nu
 function effectiveDay(data: AppData, date: string, weekday: number, classroom: Classroom): { day: Day | null; swappedFrom?: Day } {
   const swap = data.events.find(event =>
     event.type === 'swap'
-    && event.date === date
+    && coversDate(event, date)
     && event.sourceDay
     && (!event.classIds.length || event.classIds.includes(classroom.id)),
   )

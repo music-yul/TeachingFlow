@@ -396,3 +396,9 @@ thead th small { display: block; font-weight: 400; }
 .callout { background: var(--accent-soft); border-left: 3px solid var(--accent); padding: 0.5rem 0.7rem; border-radius: 0.25rem; }
 .callout.warn { background: #fdecec; border-left-color: var(--danger); }
 .help-foot { margin-top: 1.5rem; padding-top: 0.6rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.78rem; }
+
+/* ---------- 기간 일정 ---------- */
+
+.range-toggle { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.82rem; color: var(--muted); }
+.tilde { color: var(--muted); }
+.span-tag { font-size: 0.75rem; color: var(--muted); background: #f0f2f6; padding: 0.1rem 0.35rem; border-radius: 0.2rem; white-space: nowrap; }

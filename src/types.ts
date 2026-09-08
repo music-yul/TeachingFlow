@@ -48,6 +48,8 @@ export type EventType = 'closed' | 'blocked' | 'swap' | 'note'
 export type SchoolEvent = {
   id: string
   date: string
+  /** 기간 일정이면 마지막 날. 비어 있으면 하루짜리. */
+  endDate?: string
   title: string
   type: EventType
   /** blocked 일 때만 사용. 비어 있으면 그날 전 교시. */

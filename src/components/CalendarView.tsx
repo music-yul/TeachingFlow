@@ -1,5 +1,5 @@
 import type { AppData, Session } from '../types'
-import { dateKey, sessionLabel, todayKey } from '../schedule'
+import { coversDate, dateKey, sessionLabel, todayKey } from '../schedule'
 
 type Props = {
   data: AppData
@@ -43,7 +43,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
           const classNames = ['calendar-day']
           if (outside) classNames.push('outside')
           if (key === today) classNames.push('today')
-          const dayEvents = data.events.filter(event => event.date === key)
+          const dayEvents = data.events.filter(event => coversDate(event, key))
           const daySessions = sessions
             .filter(item => item.date === key)
             .sort((left, right) => left.period - right.period)
