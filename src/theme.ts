@@ -86,12 +86,73 @@ export const themes: Theme[] = [
   },
 ]
 
-export const fonts = [
-  { id: 'default', name: '기본 고딕', stack: "'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif" },
-  { id: 'system', name: '시스템 기본', stack: "system-ui, -apple-system, 'Segoe UI', sans-serif" },
-  { id: 'serif', name: '명조', stack: "'Apple SD Gothic Neo', 'Nanum Myeongjo', 'Batang', serif" },
-  { id: 'round', name: '둥근 고딕', stack: "'Apple SD Gothic Neo', 'Nanum Gothic', 'Malgun Gothic', sans-serif" },
+export type FontOption = {
+  id: string
+  name: string
+  note: string
+  stack: string
+  /** 웹폰트 CSS 주소. 없으면 기기에 설치된 글꼴을 쓴다. */
+  href?: string
+}
+
+const systemStack = "'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif"
+
+export const fonts: FontOption[] = [
+  {
+    id: 'pretendard',
+    name: '프리텐다드',
+    note: '숫자와 표가 또렷한 현대적 고딕',
+    stack: `'Pretendard', ${systemStack}`,
+    href: 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css',
+  },
+  {
+    id: 'noto',
+    name: '본고딕',
+    note: '가장 널리 쓰이는 무난한 고딕',
+    stack: `'Noto Sans KR', ${systemStack}`,
+    href: 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap',
+  },
+  {
+    id: 'plex',
+    name: '플렉스 산스',
+    note: '단정하고 각진 느낌',
+    stack: `'IBM Plex Sans KR', ${systemStack}`,
+    href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap',
+  },
+  {
+    id: 'nanum',
+    name: '나눔고딕',
+    note: '문서에 익숙한 고전적인 고딕',
+    stack: `'Nanum Gothic', ${systemStack}`,
+    href: 'https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap',
+  },
+  {
+    id: 'gowun',
+    name: '고운바탕',
+    note: '부드러운 명조. 읽는 글이 많을 때',
+    stack: `'Gowun Batang', 'Nanum Myeongjo', serif`,
+    href: 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap',
+  },
+  {
+    id: 'system',
+    name: '기기 기본',
+    note: '내려받지 않음. 인터넷 없이도 동일',
+    stack: systemStack,
+  },
 ]
+
+/** 고른 글꼴의 웹폰트 CSS를 그때그때 붙인다. 한 번 붙인 것은 다시 붙이지 않는다. */
+export function ensureFontLoaded(font: FontOption) {
+  if (!font.href) return
+  const id = `webfont-${font.id}`
+  if (document.getElementById(id)) return
+  const link = document.createElement('link')
+  link.id = id
+  link.rel = 'stylesheet'
+  link.crossOrigin = 'anonymous'
+  link.href = font.href
+  document.head.appendChild(link)
+}
 
 export const fontSizes: Record<string, string> = { small: '14px', normal: '16px', large: '18px', xlarge: '21px' }
 

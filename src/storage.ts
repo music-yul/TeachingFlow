@@ -26,7 +26,7 @@ export function emptyData(): AppData {
   return {
     version: 2,
     settings: {
-      appearance: { themeId: 'default', accent: '#3b6ea8', fontId: 'default', fontSize: 'normal' },
+      appearance: { themeId: 'default', accent: '#3b6ea8', fontId: 'pretendard', fontSize: 'normal' },
       schoolName: '',
       teacherName: '',
       year: thisYear(),

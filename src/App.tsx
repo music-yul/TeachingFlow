@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { AppData, Classroom } from './types'
 import { APP_VERSION, emptyData, exportData, importData, makeId, nextSubjectColor, readData, writeData } from './storage'
-import { fonts, fontSizes, themes } from './theme'
+import { ensureFontLoaded, fonts, fontSizes, themes } from './theme'
 import { buildSessions } from './schedule'
 import { parseWorkbooks, type ImportedClass } from './naesAttendanceParser'
 import CalendarView from './components/CalendarView'
@@ -40,6 +40,7 @@ export default function App() {
     root.style.setProperty('--accent', appearance.accent)
     root.style.fontSize = fontSizes[appearance.fontSize] || fontSizes.normal
     const font = fonts.find(item => item.id === appearance.fontId) || fonts[0]
+    ensureFontLoaded(font)
     document.body.style.fontFamily = font.stack
   }, [appearance])
 

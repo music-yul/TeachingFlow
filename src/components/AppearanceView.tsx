@@ -1,5 +1,5 @@
 import type { AppData, Appearance } from '../types'
-import { fonts, fontSizes, themes } from '../theme'
+import { ensureFontLoaded, fonts, fontSizes, themes } from '../theme'
 
 type Props = {
   data: AppData
@@ -58,17 +58,23 @@ export default function AppearanceView({ data, update }: Props) {
 
       <div className="block">
         <h2>글꼴</h2>
-        <p className="hint">기기에 설치된 글꼴을 씁니다. 기기에 따라 다르게 보일 수 있습니다.</p>
+        <p className="hint">
+          고른 글꼴만 인터넷에서 내려받습니다. 처음 한 번은 잠깐 기본 글꼴로 보였다가 바뀝니다.
+          인터넷이 없을 때는 기기 글꼴로 대체됩니다.
+        </p>
         <div className="theme-row">
           {fonts.map(font => (
             <button
               className={current.fontId === font.id ? 'font-card on' : 'font-card'}
               key={font.id}
               style={{ fontFamily: font.stack }}
-              onClick={() => edit({ fontId: font.id })}
+              onMouseEnter={() => ensureFontLoaded(font)}
+              onFocus={() => ensureFontLoaded(font)}
+              onClick={() => { ensureFontLoaded(font); edit({ fontId: font.id }) }}
             >
               <b>{font.name}</b>
-              <small>음악 수업 진도표 2026</small>
+              <span className="font-sample">음악 수업 진도표 2026</span>
+              <small>{font.note}</small>
             </button>
           ))}
         </div>
