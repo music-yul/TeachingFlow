@@ -1,71 +1,193 @@
 import { useEffect, useMemo, useState } from 'react'
-import { parseAttendanceWorkbook, type ImportClass } from './naesAttendanceParser'
+import type { AppData, Classroom } from './types'
+import { APP_VERSION, FONT_KEY, emptyData, exportData, importData, makeId, nextSubjectColor, readData, writeData } from './storage'
+import { buildSessions } from './schedule'
+import { parseWorkbooks, type ImportedClass } from './naesAttendanceParser'
+import CalendarView from './components/CalendarView'
+import ProgressView from './components/ProgressView'
+import TimetableView from './components/TimetableView'
+import ClassesView from './components/ClassesView'
+import LessonsView from './components/LessonsView'
+import EventsView from './components/EventsView'
+import SettingsView from './components/SettingsView'
+import SessionModal from './components/SessionModal'
+import ImportModal from './components/ImportModal'
 import './App.css'
 
-type Day = '월' | '화' | '수' | '목' | '금'
-type LessonType = { id: string; name: string; color: string; icon: string }
-type Student = { id: string; number: number; name: string }
-type Classroom = { id: string; name: string; slots: string[]; students: Student[]; archived?: boolean }
-type Lesson = { id: string; title: string; typeId: string }
-type SchoolEvent = { id: string; date: string; title: string; type: 'normal' | 'closed' | 'blocked'; period?: string }
-type Material = { id: string; lessonId: string; name: string; description: string; url: string }
-type ScheduleItem = { id: string; date: string; classId: string; period: number; lessonId: string }
-type ScheduleOverride = { lessonId?: string; deleted?: boolean }
-type AttendanceStatus = '출석' | '지각' | '조퇴' | '결석' | '기타'
-type AppData = { classes: Classroom[]; lessons: Lesson[]; events: SchoolEvent[]; types: LessonType[]; attendance: Record<string, AttendanceStatus>; activities: Record<string, string>; materials: Material[]; scheduleOverrides: Record<string, ScheduleOverride> }
-type ImportPreview = { fileName: string; classes: ImportClass[]; counts: { newClasses: number; newStudents: number; changedStudents: number; newSlots: number; changedSlots: number; unchangedClasses: number } }
+const tabs = ['달력', '진도표', '시간표', '학급 관리', '수업 목록', '학사일정', '설정'] as const
+type Tab = (typeof tabs)[number]
 
-const days: Day[] = ['월', '화', '수', '목', '금']
-const dayNumbers: Record<Day, number> = { 월: 1, 화: 2, 수: 3, 목: 4, 금: 5 }
-const defaultTypes: LessonType[] = [{ id: 'sing', name: '가창', color: '#2d8c7b', icon: '♪' }, { id: 'play', name: '연주', color: '#4f7db8', icon: '♫' }, { id: 'listen', name: '감상', color: '#9a72b0', icon: '◉' }, { id: 'create', name: '창작', color: '#d08043', icon: '✦' }, { id: 'korean', name: '국악', color: '#b36a50', icon: '♬' }, { id: 'assessment', name: '수행평가', color: '#d04f5d', icon: '★' }]
-const seed: AppData = { classes: [{ id: 'c1', name: '1반', slots: ['월 3교시', '수 2교시', '금 4교시'], students: [{ id: 's1', number: 1, name: '김민준' }, { id: 's2', number: 2, name: '이서연' }, { id: 's3', number: 3, name: '박지훈' }] }, { id: 'c2', name: '2반', slots: ['화 1교시', '목 3교시'], students: [{ id: 'c2-s1', number: 1, name: '최하은' }, { id: 'c2-s2', number: 2, name: '정도윤' }, { id: 'c2-s3', number: 3, name: '한지민' }] }, { id: 'c3', name: '3반', slots: ['월 2교시', '목 2교시', '금 1교시'], students: [] }], lessons: [{ id: 'l1', title: 'OT', typeId: 'sing' }, { id: 'l2', title: '교가', typeId: 'sing' }, { id: 'l3', title: '교가 이어 부르기 / 이론 1', typeId: 'listen' }, { id: 'l4', title: '이론 2 / 리듬게임', typeId: 'create' }, { id: 'l5', title: '교가 수행평가', typeId: 'assessment' }], events: [{ id: 'e1', date: '2026-03-18', title: '학교 행사', type: 'blocked', period: '3교시' }, { id: 'e2', date: '2026-04-10', title: '재량휴업일', type: 'closed' }], types: defaultTypes, attendance: {}, activities: {}, materials: [], scheduleOverrides: {} }
+const fontSizes: Record<string, string> = { small: '14px', normal: '16px', large: '18px', xlarge: '21px' }
 
-function readData(): AppData { try { const saved = JSON.parse(localStorage.getItem('class-schedule-planner-data') || '') as Partial<AppData>; return { ...seed, ...saved, classes: saved.classes || seed.classes, lessons: saved.lessons || seed.lessons, events: saved.events || seed.events, types: saved.types || seed.types, attendance: saved.attendance || {}, activities: saved.activities || {}, materials: saved.materials || [], scheduleOverrides: saved.scheduleOverrides || {} } } catch { return seed } }
-const dateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-const monthLabel = (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월`
-
-function createSchedule(data: AppData) { const result: ScheduleItem[] = []; const lessonIndex: Record<string, number> = {}; data.classes.forEach(item => { lessonIndex[item.id] = 0 }); const cursor = new Date('2026-03-02T00:00:00'); const end = new Date('2026-07-31T00:00:00'); while (cursor <= end) { data.classes.forEach(classroom => classroom.slots.forEach(slot => { const [day, periodText] = slot.split(' '); const period = Number(periodText?.replace('교시', '')); if (cursor.getDay() !== dayNumbers[day as Day] || !data.lessons.length) return; const blocked = data.events.some(event => event.date === dateKey(cursor) && (event.type === 'closed' || (event.type === 'blocked' && event.period === `${period}교시`))); const id = `${dateKey(cursor)}-${classroom.id}-${period}`; const override = data.scheduleOverrides[id]; if (blocked || override?.deleted) return; const lesson = data.lessons.find(value => value.id === override?.lessonId) || data.lessons[lessonIndex[classroom.id] % data.lessons.length]; result.push({ id, date: dateKey(cursor), classId: classroom.id, period, lessonId: lesson.id }); lessonIndex[classroom.id]++ })) ; cursor.setDate(cursor.getDate() + 1) } return result }
-function getPreview(data: AppData, imported: ImportClass[], fileName: string): ImportPreview { let newClasses = 0; let newStudents = 0; let changedStudents = 0; let newSlots = 0; let changedSlots = 0; let unchangedClasses = 0; imported.forEach(incoming => { const current = data.classes.find(item => item.name === incoming.name); if (!current) { newClasses++; newStudents += incoming.students.length; newSlots += incoming.slots.length; return } let changed = false; incoming.students.forEach(student => { const existing = current.students.find(value => value.number === student.number); if (!existing) newStudents++; else if (existing.name !== student.name) { changedStudents++; changed = true } }); incoming.slots.forEach(slot => { if (!current.slots.includes(slot)) { newSlots++; changed = true } }); if (current.slots.some(slot => !incoming.slots.includes(slot))) { changedSlots++; changed = true }; if (!changed) unchangedClasses++ }); return { fileName, classes: imported, counts: { newClasses, newStudents, changedStudents, newSlots, changedSlots, unchangedClasses } } }
-
-function App() {
+export default function App() {
   const [data, setData] = useState<AppData>(readData)
-  const [fontSize, setFontSize] = useState(() => localStorage.getItem('class-schedule-planner-font-size') || 'normal')
-  const [activeTab, setActiveTab] = useState('달력')
-  const [month, setMonth] = useState(new Date('2026-03-01T00:00:00'))
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [preview, setPreview] = useState<ImportPreview | null>(null)
-  const [newClass, setNewClass] = useState('')
-  const [newLesson, setNewLesson] = useState({ title: '', typeId: 'sing' })
-  const [newType, setNewType] = useState({ name: '', color: '#4f7db8' })
-  const [newEvent, setNewEvent] = useState({ date: '', title: '', type: 'normal' as SchoolEvent['type'], period: '3교시' })
-  const [materialForm, setMaterialForm] = useState({ name: '', description: '', url: '' })
-  const schedule = useMemo(() => createSchedule(data), [data])
-  const selected = schedule.find(item => item.id === selectedId)
-  const selectedClass = selected && data.classes.find(item => item.id === selected.classId)
-  const selectedLesson = selected && data.lessons.find(item => item.id === selected.lessonId)
+  const [font, setFont] = useState(() => localStorage.getItem(FONT_KEY) || 'normal')
+  const [tab, setTab] = useState<Tab>('달력')
+  const [month, setMonth] = useState(() => new Date())
+  const [selected, setSelected] = useState<string | null>(null)
+  const [pending, setPending] = useState<{ classes: ImportedClass[]; failed: string[] } | null>(null)
+  const [saveError, setSaveError] = useState(false)
+
+  const sessions = useMemo(() => buildSessions(data), [data])
+  const session = sessions.find(item => item.id === selected)
+
+  useEffect(() => {
+    setSaveError(!writeData(data))
+  }, [data])
+
+  useEffect(() => {
+    localStorage.setItem(FONT_KEY, font)
+    document.documentElement.style.fontSize = fontSizes[font] || fontSizes.normal
+  }, [font])
+
   const update = (change: Partial<AppData>) => setData(current => ({ ...current, ...change }))
-  useEffect(() => { localStorage.setItem('class-schedule-planner-data', JSON.stringify(data)) }, [data])
-  useEffect(() => { localStorage.setItem('class-schedule-planner-font-size', fontSize) }, [fontSize])
-  const editClass = (id: string, change: Partial<Classroom>) => update({ classes: data.classes.map(item => item.id === id ? { ...item, ...change } : item) })
-  const toggleSlot = (id: string, day: Day, period: number) => { const classroom = data.classes.find(item => item.id === id); if (!classroom) return; const slot = `${day} ${period}교시`; editClass(id, { slots: classroom.slots.includes(slot) ? classroom.slots.filter(value => value !== slot) : [...classroom.slots, slot] }) }
-  const addStudent = (id: string, number: string, name: string) => { const value = Number(number); const classroom = data.classes.find(item => item.id === id); if (!classroom || !value || !name.trim() || classroom.students.some(student => student.number === value)) return; editClass(id, { students: [...classroom.students, { id: `student-${Date.now()}`, number: value, name: name.trim() }].sort((a, b) => a.number - b.number) }) }
-  const addClass = () => { if (newClass.trim()) { update({ classes: [...data.classes, { id: `class-${Date.now()}`, name: newClass.trim(), slots: [], students: [] }] }); setNewClass('') } }
-  const addLesson = () => { if (newLesson.title.trim()) { update({ lessons: [...data.lessons, { id: `lesson-${Date.now()}`, title: newLesson.title.trim(), typeId: newLesson.typeId }] }); setNewLesson({ title: '', typeId: data.types[0]?.id || 'sing' }) } }
-  const addType = () => { if (newType.name.trim()) { update({ types: [...data.types, { id: `type-${Date.now()}`, name: newType.name.trim(), color: newType.color, icon: '●' }] }); setNewType({ name: '', color: '#4f7db8' }) } }
-  const addEvent = () => { if (newEvent.date && newEvent.title.trim()) { update({ events: [...data.events, { ...newEvent, id: `event-${Date.now()}` }] }); setNewEvent({ date: '', title: '', type: 'normal', period: '3교시' }) } }
-  const updateSchedule = (id: string, change: ScheduleOverride) => update({ scheduleOverrides: { ...data.scheduleOverrides, [id]: { ...data.scheduleOverrides[id], ...change } } })
-  const importFile = async (file: File) => { try { setPreview(getPreview(data, await parseAttendanceWorkbook(file), file.name)) } catch { window.alert('Excel 파일을 읽지 못했습니다.') } }
-  const mergeImport = () => { if (!preview) return; const classes = data.classes.map(item => ({ ...item, slots: [...item.slots], students: item.students.map(student => ({ ...student })) })); preview.classes.forEach(incoming => { const current = classes.find(item => item.name === incoming.name); if (!current) classes.push({ id: `class-${incoming.name}`, name: incoming.name, slots: [...new Set(incoming.slots)], students: incoming.students.map(student => ({ id: `student-${incoming.name}-${student.number}`, ...student })) }); else { current.archived = false; current.slots = [...new Set([...current.slots, ...incoming.slots])]; incoming.students.forEach(student => { const old = current.students.find(value => value.number === student.number); if (old) old.name = student.name; else current.students.push({ id: `student-${current.id}-${student.number}`, ...student }) }); current.students.sort((a, b) => a.number - b.number) } }); update({ classes }); setPreview(null) }
-  return <div className={`app-shell font-${fontSize}`}><header className="topbar"><div className="brand-mark">시수</div><div><strong>수업시수 플래너</strong><span>학급별 수업 일정 관리</span></div><label>글씨 <select value={fontSize} onChange={event => setFontSize(event.target.value)}><option value="normal">기본</option><option value="large">크게</option><option value="xlarge">아주 크게</option></select></label></header><main className="workspace"><aside className="sidebar"><p className="eyebrow">PLANNER MENU</p>{['달력', '전체 진도표', '학급 관리', '수업 목록', '학사일정'].map((tab, index) => <button className={activeTab === tab ? 'nav-item active' : 'nav-item'} key={tab} onClick={() => setActiveTab(tab)}>{String(index + 1).padStart(2, '0')} {tab}<span className="nav-arrow">›</span></button>)}</aside><section className="content"><div className="page-heading"><div><p className="eyebrow">2026학년도 · 음악</p><h1>{activeTab}</h1></div></div>{activeTab === '달력' && <Calendar data={data} schedule={schedule} month={month} setMonth={setMonth} onSelect={setSelectedId} />}{activeTab === '전체 진도표' && <Progress data={data} schedule={schedule} onSelect={setSelectedId} />}{activeTab === '학급 관리' && <Classes data={data} newClass={newClass} setNewClass={setNewClass} addClass={addClass} editClass={editClass} toggleSlot={toggleSlot} addStudent={addStudent} importFile={importFile} />}{activeTab === '수업 목록' && <Lessons data={data} newLesson={newLesson} setNewLesson={setNewLesson} addLesson={addLesson} newType={newType} setNewType={setNewType} addType={addType} update={update} />}{activeTab === '학사일정' && <Events data={data} newEvent={newEvent} setNewEvent={setNewEvent} addEvent={addEvent} update={update} />}</section></main>{selected && selectedClass && selectedLesson && <Detail dataState={data} item={selected} classroom={selectedClass} lesson={selectedLesson} update={update} updateSchedule={updateSchedule} materialForm={materialForm} setMaterialForm={setMaterialForm} onClose={() => setSelectedId(null)} />}{preview && <ImportModal preview={preview} onCancel={() => setPreview(null)} onConfirm={mergeImport} />}</div>
+
+  const openFiles = async (files: File[]) => {
+    const result = await parseWorkbooks(files)
+    if (!result.classes.length) {
+      window.alert('출석부 내용을 읽지 못했습니다. 나이스 교과시간별출석부 원본 파일인지 확인해 주세요.')
+      return
+    }
+    setPending(result)
+  }
+
+  const mergeImport = () => {
+    if (!pending) return
+    const subjects = [...data.subjects]
+    const classes: Classroom[] = data.classes.map(item => ({
+      ...item,
+      slots: [...item.slots],
+      students: item.students.map(student => ({ ...student })),
+    }))
+    const settings = { ...data.settings }
+
+    pending.classes.forEach(incoming => {
+      if (!settings.schoolName && incoming.school) settings.schoolName = incoming.school
+      if (!settings.teacherName && incoming.teacher) settings.teacherName = incoming.teacher
+
+      let subject = subjects.find(item => item.name === incoming.subject)
+      if (!subject) {
+        subject = { id: makeId('subject'), name: incoming.subject, color: nextSubjectColor(subjects) }
+        subjects.push(subject)
+      }
+
+      const existing = classes.find(item => item.subjectId === subject.id && item.name === incoming.className)
+      if (!existing) {
+        classes.push({
+          id: makeId('class'),
+          subjectId: subject.id,
+          name: incoming.className,
+          slots: incoming.slots,
+          students: incoming.students.map(student => ({ id: makeId('student'), ...student })),
+        })
+        return
+      }
+      existing.archived = false
+      incoming.slots.forEach(slot => {
+        if (!existing.slots.some(item => item.day === slot.day && item.period === slot.period)) existing.slots.push(slot)
+      })
+      incoming.students.forEach(student => {
+        const old = existing.students.find(item => item.number === student.number)
+        if (old) old.name = student.name
+        else existing.students.push({ id: makeId('student'), ...student })
+      })
+      existing.students.sort((left, right) => left.number - right.number)
+    })
+
+    update({ subjects, classes, settings })
+    setPending(null)
+  }
+
+  const loadBackup = async (file: File) => {
+    try {
+      const next = await importData(file)
+      if (!window.confirm('현재 내용을 불러온 파일로 모두 바꿉니다. 계속할까요?')) return
+      setData(next)
+      window.alert('불러왔습니다.')
+    } catch {
+      window.alert('불러오지 못했습니다. 이 프로그램에서 내보낸 .json 파일인지 확인해 주세요.')
+    }
+  }
+
+  const reset = () => {
+    if (!window.confirm('모든 내용을 지웁니다. 먼저 내보내기를 하셨나요?')) return
+    setData(emptyData())
+  }
+
+  const started = data.subjects.length > 0 || data.classes.length > 0
+
+  return (
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="brand">
+          <span className="brand-mark">시수</span>
+          <div className="brand-text">
+            <strong>수업시수 플래너</strong>
+            <small>{APP_VERSION} · © {data.settings.year} {data.settings.teacherName || '음악과'}</small>
+          </div>
+        </div>
+        <div className="topbar-right">
+          <button className="ghost-button" onClick={() => exportData(data)}>백업 내보내기</button>
+          <label className="font-control">
+            글씨
+            <select value={font} onChange={event => setFont(event.target.value)}>
+              <option value="small">작게</option>
+              <option value="normal">기본</option>
+              <option value="large">크게</option>
+              <option value="xlarge">아주 크게</option>
+            </select>
+          </label>
+        </div>
+      </header>
+
+      {saveError && <p className="banner warn">저장 공간이 가득 찼습니다. 백업을 내보낸 뒤 기록을 정리해 주세요.</p>}
+
+      <main className="workspace">
+        <aside className="sidebar">
+          {tabs.map((item, index) => (
+            <button className={tab === item ? 'nav-item active' : 'nav-item'} key={item} onClick={() => setTab(item)}>
+              <span className="nav-index">{String(index + 1).padStart(2, '0')}</span>{item}
+            </button>
+          ))}
+        </aside>
+
+        <section className="content">
+          <div className="page-heading">
+            <p className="eyebrow">
+              {data.settings.year}학년도 {data.settings.termName}
+              {data.settings.schoolName ? ` · ${data.settings.schoolName}` : ''}
+            </p>
+            <h1>{tab}</h1>
+          </div>
+
+          {!started && tab !== '설정' && tab !== '학급 관리' && (
+            <p className="banner">
+              먼저 <b>학급 관리</b>에서 나이스 출석부를 올리거나 과목·학급을 등록해 주세요.
+              그다음 <b>설정</b>에서 학기 기간을 맞추면 진도표가 만들어집니다.
+            </p>
+          )}
+
+          {tab === '달력' && (
+            <CalendarView data={data} sessions={sessions} month={month} setMonth={setMonth} onSelect={setSelected} />
+          )}
+          {tab === '진도표' && <ProgressView data={data} sessions={sessions} update={update} onSelect={setSelected} />}
+          {tab === '시간표' && <TimetableView data={data} sessions={sessions} onSelect={setSelected} />}
+          {tab === '학급 관리' && <ClassesView data={data} update={update} onFiles={openFiles} />}
+          {tab === '수업 목록' && <LessonsView data={data} update={update} />}
+          {tab === '학사일정' && <EventsView data={data} update={update} />}
+          {tab === '설정' && <SettingsView data={data} update={update} onImport={loadBackup} onReset={reset} />}
+        </section>
+      </main>
+
+      {session && <SessionModal data={data} session={session} update={update} onClose={() => setSelected(null)} />}
+      {pending && (
+        <ImportModal
+          classes={pending.classes}
+          failed={pending.failed}
+          onCancel={() => setPending(null)}
+          onConfirm={mergeImport}
+        />
+      )}
+    </div>
+  )
 }
-
-function Calendar({ data, schedule, month, setMonth, onSelect }: { data: AppData; schedule: ScheduleItem[]; month: Date; setMonth: (value: Date) => void; onSelect: (id: string) => void }) { const first = new Date(month.getFullYear(), month.getMonth(), 1); const start = new Date(first); start.setDate(1 - first.getDay()); const cells = Array.from({ length: 42 }, (_, index) => { const date = new Date(start); date.setDate(start.getDate() + index); return date }); const monthKey = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`; return <section className="panel calendar-panel"><div className="calendar-toolbar"><button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>‹ 이전 달</button><h2>{monthLabel(month)}</h2><button onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>다음 달 ›</button></div><div className="calendar-grid weekday-row">{['일', ...days].map(day => <b key={day}>{day}</b>)}</div><div className="calendar-grid">{cells.map(date => { const key = dateKey(date); return <div className={key.startsWith(monthKey) ? 'calendar-day' : 'calendar-day outside'} key={key}><strong>{date.getDate()}</strong>{data.events.filter(event => event.date === key).map(event => <div className={`calendar-event ${event.type}`} key={event.id}>● {event.title}</div>)}{schedule.filter(item => item.date === key).map(item => { const lesson = data.lessons.find(value => value.id === item.lessonId); const classroom = data.classes.find(value => value.id === item.classId); return <button className="calendar-lesson" key={item.id} onClick={() => onSelect(item.id)}><b>{classroom?.name} · {item.period}교시</b><span>{lesson?.title}</span></button> })}</div> })}</div></section> }
-function Progress({ data, schedule, onSelect }: { data: AppData; schedule: ScheduleItem[]; onSelect: (id: string) => void }) { return <section className="panel"><div className="panel-heading"><h2>전체 진도표</h2></div><div className="table-wrap"><table><thead><tr><th>수업 내용</th>{data.classes.filter(item => !item.archived).map(item => <th key={item.id}>{item.name}</th>)}</tr></thead><tbody>{data.lessons.map(lesson => <tr key={lesson.id}><td>{lesson.title}</td>{data.classes.filter(item => !item.archived).map(classroom => { const item = schedule.find(value => value.classId === classroom.id && value.lessonId === lesson.id); return <td key={classroom.id}>{item ? <button className="progress-cell" onClick={() => onSelect(item.id)}>{item.date.slice(5)} · {item.period}교시</button> : '-'}</td> })}</tr>)}</tbody></table></div></section> }
-function Classes({ data, newClass, setNewClass, addClass, editClass, toggleSlot, addStudent, importFile }: { data: AppData; newClass: string; setNewClass: (value: string) => void; addClass: () => void; editClass: (id: string, change: Partial<Classroom>) => void; toggleSlot: (id: string, day: Day, period: number) => void; addStudent: (id: string, number: string, name: string) => void; importFile: (file: File) => void }) { return <section className="panel"><div className="panel-heading"><h2>학급 관리</h2><div className="inline-form"><input value={newClass} onChange={event => setNewClass(event.target.value)} placeholder="예: 4반" /><button className="primary-button compact" onClick={addClass}>+ 학급 추가</button><label className="secondary-button file-button">Excel 가져오기<input type="file" accept=".xlsx,.xls" onChange={event => { const file = event.target.files?.[0]; if (file) importFile(file); event.currentTarget.value = '' }} /></label></div></div>{data.classes.filter(item => !item.archived).map(classroom => <ClassBlock key={classroom.id} classroom={classroom} editClass={editClass} toggleSlot={toggleSlot} addStudent={addStudent} />)}</section> }
-function ClassBlock({ classroom, editClass, toggleSlot, addStudent }: { classroom: Classroom; editClass: (id: string, change: Partial<Classroom>) => void; toggleSlot: (id: string, day: Day, period: number) => void; addStudent: (id: string, number: string, name: string) => void }) { const [number, setNumber] = useState(''); const [name, setName] = useState(''); return <div className="class-block"><div className="class-row"><div className="class-title"><input value={classroom.name} onChange={event => editClass(classroom.id, { name: event.target.value })} /><button onClick={() => editClass(classroom.id, { archived: true })}>삭제</button><small>{classroom.slots.length}개 수업 시간</small></div><div className="slot-grid">{days.map(day => <div className="day-column" key={day}><b>{day}</b>{[1, 2, 3, 4, 5, 6, 7].map(period => <button className={classroom.slots.includes(`${day} ${period}교시`) ? 'slot selected' : 'slot'} key={period} onClick={() => toggleSlot(classroom.id, day, period)}>{period}</button>)}</div>)}</div></div><div className="students"><div className="subheading"><strong>학생 명단</strong><span>{classroom.students.length}명</span></div><div className="student-form"><input type="number" placeholder="번호" value={number} onChange={event => setNumber(event.target.value)} /><input placeholder="학생 이름" value={name} onChange={event => setName(event.target.value)} /><button className="secondary-button" onClick={() => { addStudent(classroom.id, number, name); setNumber(''); setName('') }}>+ 학생 추가</button></div>{classroom.students.map(student => <div className="student-row" key={student.id}><input type="number" value={student.number} onChange={event => editClass(classroom.id, { students: classroom.students.map(value => value.id === student.id ? { ...value, number: Number(event.target.value) } : value).sort((a, b) => a.number - b.number) })} /><input value={student.name} onChange={event => editClass(classroom.id, { students: classroom.students.map(value => value.id === student.id ? { ...value, name: event.target.value } : value) })} /><button onClick={() => editClass(classroom.id, { students: classroom.students.filter(value => value.id !== student.id) })}>삭제</button></div>)}</div></div> }
-function Lessons({ data, newLesson, setNewLesson, addLesson, newType, setNewType, addType, update }: { data: AppData; newLesson: { title: string; typeId: string }; setNewLesson: (value: { title: string; typeId: string }) => void; addLesson: () => void; newType: { name: string; color: string }; setNewType: (value: { name: string; color: string }) => void; addType: () => void; update: (change: Partial<AppData>) => void }) { const deleteType = (id: string) => { const replacement = data.types.find(item => item.id !== id); if (!replacement) return; update({ types: data.types.filter(item => item.id !== id), lessons: data.lessons.map(lesson => lesson.typeId === id ? { ...lesson, typeId: replacement.id } : lesson) }) }; return <section className="panel"><div className="panel-heading"><h2>수업 목록</h2></div><div className="lesson-create"><input value={newLesson.title} onChange={event => setNewLesson({ ...newLesson, title: event.target.value })} placeholder="새 수업 내용" /><select value={newLesson.typeId} onChange={event => setNewLesson({ ...newLesson, typeId: event.target.value })}>{data.types.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}</select><button className="primary-button compact" onClick={addLesson}>+ 수업 추가</button></div>{data.lessons.map(lesson => <div className="lesson-row" key={lesson.id}><input value={lesson.title} onChange={event => update({ lessons: data.lessons.map(value => value.id === lesson.id ? { ...value, title: event.target.value } : value) })} /><select value={lesson.typeId} onChange={event => update({ lessons: data.lessons.map(value => value.id === lesson.id ? { ...value, typeId: event.target.value } : value) })}>{data.types.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}</select><button onClick={() => update({ lessons: data.lessons.filter(value => value.id !== lesson.id) })}>삭제</button></div>)}<div className="type-create"><strong>수업 유형 추가</strong><input value={newType.name} onChange={event => setNewType({ ...newType, name: event.target.value })} placeholder="예: 음악사" /><input type="color" value={newType.color} onChange={event => setNewType({ ...newType, color: event.target.value })} /><button onClick={addType}>+ 유형 추가</button></div>{data.types.map(type => <div className="lesson-row" key={type.id}><input value={type.name} onChange={event => update({ types: data.types.map(value => value.id === type.id ? { ...value, name: event.target.value } : value) })} /><input type="color" value={type.color} onChange={event => update({ types: data.types.map(value => value.id === type.id ? { ...value, color: event.target.value } : value) })} /><button onClick={() => deleteType(type.id)}>삭제</button></div>)}</section> }
-function Events({ data, newEvent, setNewEvent, addEvent, update }: { data: AppData; newEvent: { date: string; title: string; type: SchoolEvent['type']; period: string }; setNewEvent: (value: { date: string; title: string; type: SchoolEvent['type']; period: string }) => void; addEvent: () => void; update: (change: Partial<AppData>) => void }) { const periods = [1, 2, 3, 4, 5, 6, 7]; return <section className="panel"><div className="panel-heading"><h2>학사일정</h2></div><div className="event-form"><input type="date" value={newEvent.date} onChange={event => setNewEvent({ ...newEvent, date: event.target.value })} /><input value={newEvent.title} onChange={event => setNewEvent({ ...newEvent, title: event.target.value })} placeholder="일정 이름" /><select value={newEvent.type} onChange={event => setNewEvent({ ...newEvent, type: event.target.value as SchoolEvent['type'] })}><option value="normal">정상 수업</option><option value="closed">전체 휴업</option><option value="blocked">특정 교시 수업 불가</option></select>{newEvent.type === 'blocked' && <select value={newEvent.period} onChange={event => setNewEvent({ ...newEvent, period: event.target.value })}>{periods.map(period => <option key={period}>{period}교시</option>)}</select>}<button className="primary-button compact" onClick={addEvent}>+ 일정 등록</button></div>{data.events.map(event => <div className="event-row" key={event.id}><input type="date" value={event.date} onChange={input => update({ events: data.events.map(value => value.id === event.id ? { ...value, date: input.target.value } : value) })} /><input value={event.title} onChange={input => update({ events: data.events.map(value => value.id === event.id ? { ...value, title: input.target.value } : value) })} /><select value={event.type} onChange={input => update({ events: data.events.map(value => value.id === event.id ? { ...value, type: input.target.value as SchoolEvent['type'] } : value) })}><option value="normal">정상 수업</option><option value="closed">전체 휴업</option><option value="blocked">수업 불가</option></select>{event.type === 'blocked' && <select value={event.period} onChange={input => update({ events: data.events.map(value => value.id === event.id ? { ...value, period: input.target.value } : value) })}>{periods.map(period => <option key={period}>{period}교시</option>)}</select>}<button onClick={() => update({ events: data.events.filter(value => value.id !== event.id) })}>삭제</button></div>)}</section> }
-function Detail({ dataState, item, classroom, lesson, update, updateSchedule, materialForm, setMaterialForm, onClose }: { dataState: AppData; item: ScheduleItem; classroom: Classroom; lesson: Lesson; update: (change: Partial<AppData>) => void; updateSchedule: (id: string, change: ScheduleOverride) => void; materialForm: { name: string; description: string; url: string }; setMaterialForm: (value: { name: string; description: string; url: string }) => void; onClose: () => void }) { const materials = dataState.materials.filter(value => value.lessonId === lesson.id); const addMaterial = () => { if (!materialForm.name.trim()) return; update({ materials: [...dataState.materials, { ...materialForm, id: `material-${Date.now()}`, lessonId: lesson.id }] }); setMaterialForm({ name: '', description: '', url: '' }) }; return <div className="modal-backdrop" onClick={onClose}><section className="detail-modal" onClick={event => event.stopPropagation()}><div className="detail-header"><div><p className="eyebrow">수업 상세</p><h2>{item.date}</h2><strong>{classroom.name} · {item.period}교시</strong></div><button className="close-button" onClick={onClose}>×</button></div><div className="detail-content"><h3>{lesson.title}</h3><select value={item.lessonId} onChange={event => updateSchedule(item.id, { lessonId: event.target.value })}>{dataState.lessons.map(value => <option key={value.id} value={value.id}>{value.title}</option>)}</select><button onClick={() => { updateSchedule(item.id, { deleted: true }); onClose() }}>이 수업 일정 삭제</button><h3>수업 자료</h3><div className="material-form"><input placeholder="자료 이름" value={materialForm.name} onChange={event => setMaterialForm({ ...materialForm, name: event.target.value })} /><input placeholder="자료 설명" value={materialForm.description} onChange={event => setMaterialForm({ ...materialForm, description: event.target.value })} /><input placeholder="웹 링크" value={materialForm.url} onChange={event => setMaterialForm({ ...materialForm, url: event.target.value })} /><button onClick={addMaterial}>+ 자료 연결</button></div>{materials.map(material => <div className="material-row" key={material.id}><input value={material.name} onChange={event => update({ materials: dataState.materials.map(value => value.id === material.id ? { ...value, name: event.target.value } : value) })} /><input value={material.description} onChange={event => update({ materials: dataState.materials.map(value => value.id === material.id ? { ...value, description: event.target.value } : value) })} /><input value={material.url} onChange={event => update({ materials: dataState.materials.map(value => value.id === material.id ? { ...value, url: event.target.value } : value) })} /><button onClick={() => update({ materials: dataState.materials.filter(value => value.id !== material.id) })}>삭제</button></div>)}<h3>출석부</h3>{classroom.students.map(student => <div className="attendance-row" key={student.id}><span>{student.number}. {student.name}</span>{(['출석', '지각', '조퇴', '결석', '기타'] as AttendanceStatus[]).map(status => <button className={dataState.attendance[`${item.id}:${student.id}`] === status ? 'selected' : ''} key={status} onClick={() => update({ attendance: { ...dataState.attendance, [`${item.id}:${student.id}`]: status } })}>{status}</button>)}<button onClick={() => { const attendance = { ...dataState.attendance }; delete attendance[`${item.id}:${student.id}`]; update({ attendance }) }}>기록 삭제</button></div>)}<h3>학생 활동·수업태도 기록</h3>{classroom.students.map(student => <label className="activity-row" key={student.id}><span>{student.number}. {student.name}</span><textarea value={dataState.activities[`${item.id}:${student.id}`] || ''} onChange={event => update({ activities: { ...dataState.activities, [`${item.id}:${student.id}`]: event.target.value } })} /></label>)}</div></section></div> }
-function ImportModal({ preview, onCancel, onConfirm }: { preview: ImportPreview; onCancel: () => void; onConfirm: () => void }) { const count = preview.counts; return <div className="modal-backdrop" onClick={onCancel}><section className="import-modal" onClick={event => event.stopPropagation()}><div className="detail-header"><h2>변경 내용을 확인해 주세요</h2><button className="close-button" onClick={onCancel}>×</button></div><div className="import-summary"><div><strong>{count.newClasses}</strong><span>신규 학급</span></div><div><strong>{count.newStudents}</strong><span>신규 학생</span></div><div><strong>{count.changedStudents}</strong><span>학생 정보 변경</span></div><div><strong>{count.newSlots}</strong><span>추가 수업 시간</span></div><div><strong>{count.changedSlots}</strong><span>변경 수업 시간</span></div><div><strong>{count.unchangedClasses}</strong><span>변경 없음</span></div></div><p className="import-warning">기존 출석, 활동, 자료, 수업 기록은 삭제하지 않습니다.</p><div className="detail-nav"><button onClick={onCancel}>취소</button><button className="primary-button compact" onClick={onConfirm}>확인 후 병합</button></div></section></div> }
-
-export default App

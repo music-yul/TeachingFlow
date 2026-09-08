@@ -1,0 +1,221 @@
+import { useState } from 'react'
+import type { AppData, Classroom, Day } from '../types'
+import { DAYS, PERIODS } from '../types'
+import { makeId, nextSubjectColor } from '../storage'
+
+type Props = {
+  data: AppData
+  update: (change: Partial<AppData>) => void
+  onFiles: (files: File[]) => void
+}
+
+export default function ClassesView({ data, update, onFiles }: Props) {
+  const [subjectName, setSubjectName] = useState('')
+  const [className, setClassName] = useState('')
+  const [targetSubject, setTargetSubject] = useState('')
+
+  const addSubject = () => {
+    if (!subjectName.trim()) return
+    update({
+      subjects: [...data.subjects, { id: makeId('subject'), name: subjectName.trim(), color: nextSubjectColor(data.subjects) }],
+    })
+    setSubjectName('')
+  }
+
+  const removeSubject = (id: string) => {
+    if (!window.confirm('과목과 함께 그 과목의 학급·수업 목록이 모두 삭제됩니다. 계속할까요?')) return
+    update({
+      subjects: data.subjects.filter(item => item.id !== id),
+      classes: data.classes.filter(item => item.subjectId !== id),
+      lessons: data.lessons.filter(item => item.subjectId !== id),
+    })
+  }
+
+  const addClass = () => {
+    const subjectId = targetSubject || data.subjects[0]?.id
+    if (!className.trim() || !subjectId) return
+    update({
+      classes: [...data.classes, { id: makeId('class'), subjectId, name: className.trim(), slots: [], students: [] }],
+    })
+    setClassName('')
+  }
+
+  const editClass = (id: string, change: Partial<Classroom>) => {
+    update({ classes: data.classes.map(item => (item.id === id ? { ...item, ...change } : item)) })
+  }
+
+  const removeClass = (id: string) => {
+    if (!window.confirm('이 학급을 삭제합니다. 출석·메모 기록도 함께 지워집니다.')) return
+    update({ classes: data.classes.filter(item => item.id !== id) })
+  }
+
+  return (
+    <section className="panel">
+      <div className="block">
+        <h2>과목</h2>
+        <div className="inline-form">
+          <input value={subjectName} placeholder="예: 음악연주" onChange={event => setSubjectName(event.target.value)} />
+          <button className="primary-button" onClick={addSubject}>+ 과목 추가</button>
+        </div>
+        <div className="chip-row">
+          {data.subjects.map(subject => (
+            <span className="subject-chip" key={subject.id} style={{ borderColor: subject.color }}>
+              <input
+                value={subject.name}
+                onChange={event => update({ subjects: data.subjects.map(item => (item.id === subject.id ? { ...item, name: event.target.value } : item)) })}
+              />
+              <input
+                type="color"
+                value={subject.color}
+                onChange={event => update({ subjects: data.subjects.map(item => (item.id === subject.id ? { ...item, color: event.target.value } : item)) })}
+              />
+              <button onClick={() => removeSubject(subject.id)}>×</button>
+            </span>
+          ))}
+          {!data.subjects.length && <p className="hint">출석부를 올리면 과목이 자동으로 등록됩니다.</p>}
+        </div>
+      </div>
+
+      <div className="block">
+        <h2>나이스 출석부 가져오기</h2>
+        <p className="hint">
+          나이스 &gt; 교과시간별출석부에서 내려받은 파일을 <b>여러 개 한꺼번에</b> 선택할 수 있습니다.
+          과목명·학급·수업 요일과 교시·학생 명단을 자동으로 읽어옵니다.
+        </p>
+        <label className="file-button">
+          파일 선택 (여러 개 가능)
+          <input
+            type="file"
+            multiple
+            accept=".xlsx,.xls"
+            onChange={event => {
+              const files = Array.from(event.target.files || [])
+              if (files.length) onFiles(files)
+              event.currentTarget.value = ''
+            }}
+          />
+        </label>
+      </div>
+
+      <div className="block">
+        <h2>학급</h2>
+        <div className="inline-form">
+          <select value={targetSubject || data.subjects[0]?.id || ''} onChange={event => setTargetSubject(event.target.value)}>
+            {data.subjects.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+          <input value={className} placeholder="예: 1-3" onChange={event => setClassName(event.target.value)} />
+          <button className="primary-button" onClick={addClass} disabled={!data.subjects.length}>+ 학급 추가</button>
+        </div>
+
+        {data.classes.filter(item => !item.archived).map(classroom => (
+          <ClassBlock
+            key={classroom.id}
+            data={data}
+            classroom={classroom}
+            editClass={editClass}
+            removeClass={removeClass}
+          />
+        ))}
+        {!data.classes.length && <p className="hint">등록된 학급이 없습니다.</p>}
+      </div>
+    </section>
+  )
+}
+
+type BlockProps = {
+  data: AppData
+  classroom: Classroom
+  editClass: (id: string, change: Partial<Classroom>) => void
+  removeClass: (id: string) => void
+}
+
+function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
+  const [open, setOpen] = useState(false)
+  const [number, setNumber] = useState('')
+  const [name, setName] = useState('')
+
+  const toggleSlot = (day: Day, period: number) => {
+    const has = classroom.slots.some(slot => slot.day === day && slot.period === period)
+    editClass(classroom.id, {
+      slots: has
+        ? classroom.slots.filter(slot => !(slot.day === day && slot.period === period))
+        : [...classroom.slots, { day, period }],
+    })
+  }
+
+  const addStudent = () => {
+    const value = Number(number)
+    if (!value || !name.trim() || classroom.students.some(item => item.number === value)) return
+    editClass(classroom.id, {
+      students: [...classroom.students, { id: makeId('student'), number: value, name: name.trim() }]
+        .sort((left, right) => left.number - right.number),
+    })
+    setNumber('')
+    setName('')
+  }
+
+  return (
+    <div className="class-block">
+      <div className="class-head">
+        <select
+          value={classroom.subjectId}
+          onChange={event => editClass(classroom.id, { subjectId: event.target.value })}
+        >
+          {data.subjects.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select>
+        <input value={classroom.name} onChange={event => editClass(classroom.id, { name: event.target.value })} />
+        <small>{classroom.slots.length}시간 · 학생 {classroom.students.length}명</small>
+        <button className="ghost-button" onClick={() => setOpen(!open)}>{open ? '접기' : '명단 열기'}</button>
+        <button className="danger-button" onClick={() => removeClass(classroom.id)}>삭제</button>
+      </div>
+
+      <div className="slot-grid">
+        {DAYS.map(day => (
+          <div className="day-column" key={day}>
+            <b>{day}</b>
+            {PERIODS.map(period => (
+              <button
+                className={classroom.slots.some(slot => slot.day === day && slot.period === period) ? 'slot on' : 'slot'}
+                key={period}
+                onClick={() => toggleSlot(day, period)}
+              >
+                {period}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {open && (
+        <div className="students">
+          <div className="inline-form">
+            <input type="number" placeholder="번호" value={number} onChange={event => setNumber(event.target.value)} />
+            <input placeholder="이름" value={name} onChange={event => setName(event.target.value)} />
+            <button className="ghost-button" onClick={addStudent}>+ 학생 추가</button>
+          </div>
+          {classroom.students.map(student => (
+            <div className="student-row" key={student.id}>
+              <input
+                type="number"
+                value={student.number}
+                onChange={event => editClass(classroom.id, {
+                  students: classroom.students
+                    .map(item => (item.id === student.id ? { ...item, number: Number(event.target.value) } : item))
+                    .sort((left, right) => left.number - right.number),
+                })}
+              />
+              <input
+                value={student.name}
+                onChange={event => editClass(classroom.id, {
+                  students: classroom.students.map(item => (item.id === student.id ? { ...item, name: event.target.value } : item)),
+                })}
+              />
+              <button className="ghost-button" onClick={() => editClass(classroom.id, { students: classroom.students.filter(item => item.id !== student.id) })}>삭제</button>
+            </div>
+          ))}
+          {!classroom.students.length && <p className="hint">학생 명단이 비어 있습니다.</p>}
+        </div>
+      )}
+    </div>
+  )
+}

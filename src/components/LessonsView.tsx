@@ -1,0 +1,140 @@
+import { useState } from 'react'
+import type { AppData, Lesson } from '../types'
+import { makeId } from '../storage'
+
+type Props = {
+  data: AppData
+  update: (change: Partial<AppData>) => void
+}
+
+export default function LessonsView({ data, update }: Props) {
+  const [subjectId, setSubjectId] = useState(data.subjects[0]?.id || '')
+  const [title, setTitle] = useState('')
+  const [typeId, setTypeId] = useState(data.types[0]?.id || '')
+  const [typeName, setTypeName] = useState('')
+  const [typeColor, setTypeColor] = useState('#4f7db8')
+
+  const subject = data.subjects.find(item => item.id === subjectId) || data.subjects[0]
+  if (!subject) {
+    return <section className="panel empty-panel">과목을 먼저 등록해 주세요.</section>
+  }
+
+  const lessons = data.lessons.filter(item => item.subjectId === subject.id)
+
+  const setLessons = (next: Lesson[]) => {
+    update({ lessons: [...data.lessons.filter(item => item.subjectId !== subject.id), ...next] })
+  }
+
+  const addLesson = () => {
+    if (!title.trim()) return
+    setLessons([...lessons, { id: makeId('lesson'), subjectId: subject.id, title: title.trim(), typeId, note: '' }])
+    setTitle('')
+  }
+
+  const editLesson = (id: string, change: Partial<Lesson>) => {
+    update({ lessons: data.lessons.map(item => (item.id === id ? { ...item, ...change } : item)) })
+  }
+
+  const move = (index: number, step: number) => {
+    const next = [...lessons]
+    const target = index + step
+    if (target < 0 || target >= next.length) return
+    const [item] = next.splice(index, 1)
+    next.splice(target, 0, item)
+    setLessons(next)
+  }
+
+  const removeLesson = (id: string) => {
+    const progress = { ...data.progress }
+    Object.keys(progress).filter(key => key.endsWith(`:${id}`)).forEach(key => delete progress[key])
+    update({ lessons: data.lessons.filter(item => item.id !== id), progress })
+  }
+
+  const addType = () => {
+    if (!typeName.trim()) return
+    update({ types: [...data.types, { id: makeId('type'), name: typeName.trim(), color: typeColor }] })
+    setTypeName('')
+  }
+
+  const removeType = (id: string) => {
+    const fallback = data.types.find(item => item.id !== id)
+    if (!fallback) return
+    update({
+      types: data.types.filter(item => item.id !== id),
+      lessons: data.lessons.map(item => (item.typeId === id ? { ...item, typeId: fallback.id } : item)),
+    })
+  }
+
+  return (
+    <section className="panel">
+      <div className="toolbar">
+        <label>
+          과목{' '}
+          <select value={subject.id} onChange={event => setSubjectId(event.target.value)}>
+            {data.subjects.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+        </label>
+        <span className="hint">위에서부터 차례대로 배정됩니다. 순서를 바꾸면 진도표에 바로 반영됩니다.</span>
+      </div>
+
+      <div className="inline-form">
+        <input value={title} placeholder="새 수업 내용" onChange={event => setTitle(event.target.value)} />
+        <select value={typeId} onChange={event => setTypeId(event.target.value)}>
+          {data.types.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select>
+        <button className="primary-button" onClick={addLesson}>+ 차시 추가</button>
+      </div>
+
+      {lessons.map((lesson, index) => (
+        <div className="lesson-row" key={lesson.id}>
+          <span className="order">{index + 1}</span>
+          <div className="lesson-fields">
+            <div className="lesson-line">
+              <input value={lesson.title} onChange={event => editLesson(lesson.id, { title: event.target.value })} />
+              <select value={lesson.typeId} onChange={event => editLesson(lesson.id, { typeId: event.target.value })}>
+                {data.types.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+              </select>
+            </div>
+            <input
+              className="note-input"
+              value={lesson.note}
+              placeholder="이 차시 공통 메모 (모든 학급에 함께 표시)"
+              onChange={event => editLesson(lesson.id, { note: event.target.value })}
+            />
+          </div>
+          <div className="row-actions">
+            <button className="ghost-button" onClick={() => move(index, -1)}>▲</button>
+            <button className="ghost-button" onClick={() => move(index, 1)}>▼</button>
+            <button className="danger-button" onClick={() => removeLesson(lesson.id)}>삭제</button>
+          </div>
+        </div>
+      ))}
+      {!lessons.length && <p className="hint">등록된 차시가 없습니다.</p>}
+
+      <div className="block">
+        <h2>수업 유형</h2>
+        <div className="inline-form">
+          <input value={typeName} placeholder="예: 음악사" onChange={event => setTypeName(event.target.value)} />
+          <input type="color" value={typeColor} onChange={event => setTypeColor(event.target.value)} />
+          <button className="ghost-button" onClick={addType}>+ 유형 추가</button>
+        </div>
+        <div className="chip-row">
+          {data.types.map(type => (
+            <span className="subject-chip" key={type.id} style={{ borderColor: type.color }}>
+              <input
+                value={type.name}
+                onChange={event => update({ types: data.types.map(item => (item.id === type.id ? { ...item, name: event.target.value } : item)) })}
+              />
+              <input
+                type="color"
+                value={type.color}
+                onChange={event => update({ types: data.types.map(item => (item.id === type.id ? { ...item, color: event.target.value } : item)) })}
+              />
+              <button onClick={() => removeType(type.id)}>×</button>
+            </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}

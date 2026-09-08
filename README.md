@@ -1,32 +1,24 @@
-# React + TypeScript + Vite
+# 수업시수 플래너
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+학급별 시간표와 학사일정을 반영해 진도표·달력·주간 시간표를 자동으로 만들어 주는 교사용 도구입니다.
 
-Currently, two official plugins are available:
+## 쓰는 법
+1. **학급 관리** — 나이스 `교과시간별출석부` 엑셀을 여러 개 한꺼번에 올립니다. 과목·학급·수업 요일과 교시·학생 명단을 자동으로 읽습니다.
+2. **설정** — 학기 시작일과 종료일을 입력합니다.
+3. **수업 목록** — 과목별로 진도를 차례대로 등록합니다.
+4. **학사일정** — 휴업일·행사를 넣으면 그 시간이 빠지고 뒤 차시가 자동으로 밀립니다.
+5. **진도표 / 달력 / 시간표** — 어느 반이 몇 월 며칠 몇 교시에 무엇을 하는지 확인하고, 완료 표시와 메모를 남깁니다.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 저장과 백업
+기록은 브라우저 안(localStorage)에만 저장됩니다. **설정 > 백업 내보내기**로 `.json` 파일을 주기적으로 저장해 두세요.
+내보낸 파일을 다른 선생님께 전달하면 같은 진도표를 열 수 있습니다.
 
-## React Compiler
+## 오프라인 사용
+빌드 결과물은 단일 HTML 파일입니다. 사이트에서 페이지를 저장하거나 `dist/index.html` 을 내려받아 두면 인터넷 없이도 그대로 동작합니다.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## 개발
+```bash
+npm install
+npm run dev     # 개발 서버
+npm run build   # dist/index.html 하나로 빌드
 ```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
