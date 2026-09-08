@@ -219,11 +219,34 @@ thead th small { display: block; font-weight: 400; }
 
 /* ---------- classes / lessons / events ---------- */
 
-.chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
-.subject-chip { display: inline-flex; align-items: center; gap: 0.25rem; border: 2px solid var(--line); border-radius: 0.4rem; padding: 0.15rem 0.3rem; background: #fff; }
-.subject-chip input:not([type='color']) { border: none; flex: 1 1 5rem; width: 5rem; min-width: 0; padding: 0.1rem; }
-.subject-chip input[type='color'] { width: 1.6rem; height: 1.6rem; padding: 0; border: none; background: none; }
-.subject-chip button { background: none; border: none; color: var(--muted); }
+.subject-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr));
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+.subject-card {
+  display: flex; align-items: center; gap: 0.5rem;
+  border: 1px solid var(--line); border-radius: 0.4rem;
+  padding: 0.35rem 0.45rem; background: #fff; min-width: 0;
+}
+.subject-color {
+  flex: 0 0 1.5rem; width: 1.5rem; height: 1.5rem;
+  padding: 0; border: 1px solid var(--line); border-radius: 0.25rem;
+  background: none; cursor: pointer;
+}
+.subject-name { flex: 1 1 auto; min-width: 0; border-color: transparent; background: #fafbfd; font-weight: 500; }
+.subject-name:focus { border-color: var(--accent); background: #fff; }
+.subject-toggle {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 0.3rem;
+  white-space: nowrap; font-size: 0.78rem; color: var(--muted);
+  border: 1px solid var(--line); border-radius: 999px; padding: 0.15rem 0.5rem 0.15rem 0.35rem;
+  cursor: pointer;
+}
+.subject-toggle input { margin: 0; }
+.subject-toggle.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.subject-remove { flex: 0 0 auto; background: none; border: none; color: var(--muted); font-size: 1.05rem; line-height: 1; padding: 0 0.15rem; }
+.subject-remove:hover { color: var(--danger); }
 
 .class-block { border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.6rem; margin-top: 0.5rem; }
 .class-head { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
@@ -329,8 +352,7 @@ thead th small { display: block; font-weight: 400; }
   .lesson-line select { flex: 1 1 auto; }
   .row-actions { margin-left: auto; }
 
-  .chip-row { flex-direction: column; align-items: stretch; }
-  .subject-chip { width: 100%; }
+  .subject-list { grid-template-columns: 1fr; }
 
   .student-row { flex-wrap: wrap; }
   .student-row input:not([type='number']) { flex: 1 1 6rem; width: auto; min-width: 0; }

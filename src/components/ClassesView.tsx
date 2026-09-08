@@ -61,28 +61,32 @@ export default function ClassesView({ data, update, onFiles }: Props) {
           <input value={subjectName} placeholder="예: 음악연주" onChange={event => setSubjectName(event.target.value)} />
           <button className="primary-button" onClick={addSubject}>+ 과목 추가</button>
         </div>
-        <div className="chip-row">
+        <div className="subject-list">
           {data.subjects.map(subject => (
-            <span className="subject-chip" key={subject.id} style={{ borderColor: subject.color }}>
+            <div className="subject-card" key={subject.id}>
               <input
-                value={subject.name}
-                onChange={event => update({ subjects: data.subjects.map(item => (item.id === subject.id ? { ...item, name: event.target.value } : item)) })}
-              />
-              <input
+                className="subject-color"
                 type="color"
+                title="과목 색"
                 value={subject.color}
                 onChange={event => update({ subjects: data.subjects.map(item => (item.id === subject.id ? { ...item, color: event.target.value } : item)) })}
               />
-              <label className="chip-toggle" title="끄면 진도표에서 빠지고 달력·출석부에만 나옵니다">
+              <input
+                className="subject-name"
+                value={subject.name}
+                placeholder="과목명"
+                onChange={event => update({ subjects: data.subjects.map(item => (item.id === subject.id ? { ...item, name: event.target.value } : item)) })}
+              />
+              <label className={subject.usesProgress !== false ? 'subject-toggle on' : 'subject-toggle'}>
                 <input
                   type="checkbox"
                   checked={subject.usesProgress !== false}
                   onChange={event => update({ subjects: data.subjects.map(item => (item.id === subject.id ? { ...item, usesProgress: event.target.checked } : item)) })}
                 />
-                진도표
+                <span>진도표 사용</span>
               </label>
-              <button onClick={() => removeSubject(subject.id)}>×</button>
-            </span>
+              <button className="subject-remove" title="과목 삭제" onClick={() => removeSubject(subject.id)}>×</button>
+            </div>
           ))}
           {!data.subjects.length && <p className="hint">출석부를 올리거나 위에서 직접 추가하면 됩니다.</p>}
         </div>

@@ -119,20 +119,24 @@ export default function LessonsView({ data, update }: Props) {
           <input type="color" value={typeColor} onChange={event => setTypeColor(event.target.value)} />
           <button className="ghost-button" onClick={addType}>+ 유형 추가</button>
         </div>
-        <div className="chip-row">
+        <div className="subject-list">
           {data.types.map(type => (
-            <span className="subject-chip" key={type.id} style={{ borderColor: type.color }}>
+            <div className="subject-card" key={type.id}>
               <input
-                value={type.name}
-                onChange={event => update({ types: data.types.map(item => (item.id === type.id ? { ...item, name: event.target.value } : item)) })}
-              />
-              <input
+                className="subject-color"
                 type="color"
+                title="유형 색"
                 value={type.color}
                 onChange={event => update({ types: data.types.map(item => (item.id === type.id ? { ...item, color: event.target.value } : item)) })}
               />
-              <button onClick={() => removeType(type.id)}>×</button>
-            </span>
+              <input
+                className="subject-name"
+                value={type.name}
+                placeholder="유형 이름"
+                onChange={event => update({ types: data.types.map(item => (item.id === type.id ? { ...item, name: event.target.value } : item)) })}
+              />
+              <button className="subject-remove" title="유형 삭제" onClick={() => removeType(type.id)}>×</button>
+            </div>
           ))}
         </div>
       </div>
