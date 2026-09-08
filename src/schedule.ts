@@ -107,6 +107,27 @@ export function buildSessions(data: AppData): Session[] {
     active.forEach(classroom => {
       const { day: runDay, swappedFrom } = effectiveDay(data, key, weekday, classroom)
       if (!runDay) return
+
+      // 요일이 바뀐 날에는, 원래 그 요일에 있던 수업 자리를 취소 표시로 남긴다.
+      if (swappedFrom && swappedFrom !== runDay) {
+        classroom.slots
+          .filter(slot => slot.day === swappedFrom)
+          .sort((left, right) => left.period - right.period)
+          .forEach(slot => {
+            sessions.push({
+              id: `${sessionId(key, classroom.id, slot.period)}-cancelled`,
+              date: key,
+              classId: classroom.id,
+              subjectId: classroom.subjectId,
+              period: slot.period,
+              lessonIds: [],
+              mode: 'none',
+              swappedFrom,
+              cancelled: true,
+            })
+          })
+      }
+
       classroom.slots
         .filter(slot => slot.day === runDay)
         .sort((left, right) => left.period - right.period)

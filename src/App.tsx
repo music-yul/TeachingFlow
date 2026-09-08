@@ -27,7 +27,7 @@ export default function App() {
   const [saveError, setSaveError] = useState(false)
 
   const sessions = useMemo(() => buildSessions(data), [data])
-  const session = sessions.find(item => item.id === selected)
+  const session = sessions.find(item => item.id === selected && !item.cancelled)
 
   useEffect(() => {
     setSaveError(!writeData(data))

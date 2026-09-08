@@ -51,7 +51,9 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
             <div className={classNames.join(' ')} key={key}>
               <strong>{date.getDate()}</strong>
               {dayEvents.map(event => (
-                <div className={`calendar-event ${event.type}`} key={event.id}>{event.title}</div>
+                <div className={`calendar-event ${event.type}`} key={event.id}>
+                  {event.type === 'swap' && event.sourceDay ? `${event.sourceDay}요일 시간표` : event.title}
+                </div>
               ))}
               {daySessions.map(item => {
                 const classroom = data.classes.find(value => value.id === item.classId)
@@ -61,6 +63,14 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                 const type = data.types.find(value => value.id === lessons[0]?.typeId)
                 const done = lessons.length > 0
                   && lessons.every(lesson => data.progress[`${item.classId}:${lesson!.id}`]?.done)
+                if (item.cancelled) {
+                  return (
+                    <div className="calendar-lesson cancelled" key={item.id}>
+                      <b>{item.period}교시 {classroom?.name}</b>
+                      <span>요일 변경으로 없음</span>
+                    </div>
+                  )
+                }
                 return (
                   <button
                     className={done ? 'calendar-lesson done' : 'calendar-lesson'}
@@ -70,7 +80,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                   >
                     <b>
                       {item.period}교시 {classroom?.name}
-                      {item.swappedFrom && <em className="swap-tag">요일변경</em>}
+                      {item.swappedFrom && <em className="swap-tag">대체</em>}
                     </b>
                     <span>{sessionLabel(data, item)}</span>
                   </button>

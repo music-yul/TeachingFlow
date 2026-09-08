@@ -118,6 +118,8 @@ export type Session = {
   /** 이어서 하는 시간이면 이어받은 앞 차시 */
   continuedFrom?: string
   label?: string
-  /** 요일 변경으로 들어온 시간이면 원래 요일 */
+  /** 요일 변경으로 들어온 시간이면 원래 그날의 요일 */
   swappedFrom?: Day
+  /** 요일 변경으로 사라진 자리. 표시만 하고 진도·출석에는 넣지 않는다. */
+  cancelled?: boolean
 }

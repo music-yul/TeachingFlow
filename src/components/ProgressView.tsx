@@ -100,6 +100,7 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
                                   />
                                   <button className="link-button" onClick={() => onSelect(session.id)}>
                                     {formatShort(session.date)} · {session.period}교시
+                                    {session.swappedFrom && <em className="swap-tag">대체</em>}
                                   </button>
                                 </label>
                               </div>

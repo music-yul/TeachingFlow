@@ -62,7 +62,7 @@ export default function AttendanceView({ data, sessions, update }: Props) {
             onClick={() => setSessionId(item.id)}
           >
             {formatShort(item.date)}
-            <small>{item.period}교시</small>
+            <small>{item.period}교시{item.swappedFrom ? ' 대체' : ''}</small>
           </button>
         ))}
         {!own.length && <p className="hint">수업 시간이 없습니다. 학기 기간과 시간표를 확인해 주세요.</p>}
@@ -71,7 +71,8 @@ export default function AttendanceView({ data, sessions, update }: Props) {
       {current && (
         <>
           <h3 className="session-title">
-            {current.date} · {current.period}교시 — {title}
+            {current.date} · {current.period}교시
+            {current.swappedFrom && ` (${current.swappedFrom}요일 시간표로 대체 운영)`} — {title}
           </h3>
 
           {!classroom.students.length && <p className="hint">학생 명단이 비어 있습니다.</p>}
