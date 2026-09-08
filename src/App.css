@@ -11,7 +11,10 @@
   --accent: #3b6ea8;
   --accent-soft: #e8effa;
   --danger: #c0433f;
-  --done: #e9f5ec;
+  --done: #eceef1;
+  --done-ink: #96a0ae;
+  --mark: #fdeef0;
+  --mark-line: #e6a3ac;
   --week: #fff6e0;
 }
 
@@ -115,8 +118,6 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .nav-item.active .nav-index { color: var(--accent); }
 
 .content { flex: 1; min-width: 0; }
-.page-heading { margin-bottom: 0.75rem; }
-.page-heading h1 { margin: 0.1rem 0 0; font-size: 1.4rem; }
 .eyebrow { margin: 0; color: var(--muted); font-size: 0.8rem; letter-spacing: 0.02em; }
 
 .panel { background: var(--card); border: 1px solid var(--line); border-radius: 0.6rem; padding: 1rem; max-width: 100%; min-width: 0; }
@@ -175,7 +176,9 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 .calendar-lesson b { font-size: 0.72rem; color: var(--muted); font-weight: 600; }
 .calendar-lesson span { font-size: 0.78rem; }
-.calendar-lesson.done { background: var(--done); }
+.calendar-lesson.done { background: var(--done); border-color: var(--done); color: var(--done-ink); }
+.calendar-lesson.done b, .calendar-lesson.done span { color: var(--done-ink); }
+.calendar-lesson.done { border-left-color: var(--done-ink) !important; }
 
 /* ---------- tables ---------- */
 
@@ -193,7 +196,7 @@ thead th small { display: block; font-weight: 400; }
 
 .progress-cell { min-width: 8rem; }
 .progress-cell.week { background: var(--week); }
-.progress-cell.done { background: var(--done); }
+.progress-cell.done { background: var(--done); color: var(--done-ink); }
 .progress-cell.today { box-shadow: inset 0 0 0 2px var(--accent); }
 .cell-empty { color: var(--muted); font-size: 0.8rem; }
 .cell-top { display: flex; align-items: center; gap: 0.3rem; }
@@ -220,7 +223,8 @@ thead th small { display: block; font-weight: 400; }
 .week-item { display: flex; flex-direction: column; text-align: left; width: 100%; background: var(--subtle); border: 1px solid var(--line); padding: 0.2rem 0.35rem; margin-bottom: 0.2rem; line-height: 1.25; }
 .week-item b { font-size: 0.72rem; color: var(--muted); }
 .week-item span { font-size: 0.8rem; }
-.week-item.done { background: var(--done); }
+.week-item.done { background: var(--done); color: var(--done-ink); }
+.week-item.done b { color: var(--done-ink); }
 
 /* ---------- classes / lessons / events ---------- */
 
@@ -328,7 +332,6 @@ thead th small { display: block; font-weight: 400; }
   .brand-text small { font-size: 0.68rem; }
   .topbar-right { margin-left: 0; width: 100%; justify-content: flex-end; }
 
-  .page-heading h1 { font-size: 1.15rem; }
   .panel { padding: 0.7rem; border-radius: 0.5rem; }
 
   .field-grid { grid-template-columns: 1fr; }
@@ -395,7 +398,18 @@ thead th small { display: block; font-weight: 400; }
 /* ---------- mini timetable ---------- */
 
 .mini-timetable { margin-top: 0.9rem; background: var(--card); border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.5rem; }
-.mini-title { margin: 0 0 0.35rem; font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.mini-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.76rem;
+  color: var(--muted);
+  font-weight: 600;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+  line-height: 1.3;
+}
+.mini-teacher { flex: 0 0 auto; font-weight: 700; color: var(--ink); }
 .mini-timetable table { font-size: 0.66rem; table-layout: fixed; }
 .mini-timetable th, .mini-timetable td { padding: 0.1rem; text-align: center; vertical-align: top; }
 .mini-timetable thead th { font-size: 0.68rem; }
@@ -433,13 +447,6 @@ thead th small { display: block; font-weight: 400; }
 .paste-box textarea { min-height: 6rem; font-family: ui-monospace, monospace; font-size: 0.82rem; }
 
 /* ---------- attendance ---------- */
-
-.date-strip { display: flex; gap: 0.25rem; overflow-x: auto; padding-bottom: 0.4rem; margin-bottom: 0.5rem; }
-.date-chip { flex: 0 0 auto; background: var(--card); border: 1px solid var(--line); padding: 0.2rem 0.45rem; display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
-.date-chip small { color: var(--muted); font-size: 0.68rem; }
-.date-chip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.date-chip.on small { color: #dbe7f6; }
-.date-chip.today { box-shadow: 0 0 0 2px var(--week); }
 
 .session-title { margin: 0.3rem 0 0.6rem; font-size: 1.02rem; }
 .attendance-table .status-cell { white-space: nowrap; }
@@ -551,3 +558,23 @@ thead th small { display: block; font-weight: 400; }
 .font-card { min-width: 11rem; }
 
 .subject-name-static { flex: 1 1 auto; min-width: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+
+/* ---------- 수행평가 등 강조 ---------- */
+
+.calendar-lesson.marked { background: var(--mark); border-color: var(--mark-line); font-weight: 700; }
+.calendar-lesson.marked span { font-weight: 700; }
+.calendar-lesson.marked.done { background: var(--done); font-weight: 400; }
+.calendar-lesson.marked.done span { font-weight: 400; }
+.progress-table tr.marked-row .sticky-col { background: var(--mark); }
+.progress-table tr.marked-row .sticky-col b { font-weight: 700; }
+
+/* ---------- 출석부 날짜 이동 ---------- */
+
+.date-nav { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.date-nav .weekday { color: var(--muted); font-size: 0.85rem; }
+.session-block { border-top: 1px solid var(--line); padding-top: 0.6rem; margin-top: 0.6rem; }
+.session-block:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+
+/* ---------- 사이드바 시간표 제목 ---------- */
+

@@ -69,7 +69,7 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
               {lessons.map((lesson, index) => {
                 const type = data.types.find(item => item.id === lesson.typeId)
                 return (
-                  <tr key={lesson.id}>
+                  <tr className={type?.emphasis ? 'marked-row' : ''} key={lesson.id}>
                     <th className="sticky-col">
                       <span className="type-chip" style={{ background: type?.color || '#8b93a2' }}>{type?.name || '기타'}</span>
                       <b>{index + 1}. {lesson.title}</b>

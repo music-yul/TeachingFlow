@@ -45,7 +45,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
           if (key === today) classNames.push('today')
           const dayEvents = data.events.filter(event => coversDate(event, key))
           const daySessions = sessions
-            .filter(item => item.date === key)
+            .filter(item => item.date === key && !item.cancelled)
             .sort((left, right) => left.period - right.period)
           return (
             <div className={classNames.join(' ')} key={key}>
@@ -61,19 +61,12 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                   .map(id => data.lessons.find(value => value.id === id))
                   .filter(Boolean)
                 const type = data.types.find(value => value.id === lessons[0]?.typeId)
+                const marked = lessons.some(lesson => data.types.find(value => value.id === lesson!.typeId)?.emphasis)
                 const done = lessons.length > 0
                   && lessons.every(lesson => data.progress[`${item.classId}:${lesson!.id}`]?.done)
-                if (item.cancelled) {
-                  return (
-                    <div className="calendar-lesson cancelled" key={item.id}>
-                      <b>{item.period}교시 {classroom?.name}</b>
-                      <span>요일 변경으로 없음</span>
-                    </div>
-                  )
-                }
                 return (
                   <button
-                    className={done ? 'calendar-lesson done' : 'calendar-lesson'}
+                    className={['calendar-lesson', done ? 'done' : '', marked ? 'marked' : ''].filter(Boolean).join(' ')}
                     key={item.id}
                     style={{ borderLeftColor: type?.color || '#c7ccd6' }}
                     onClick={() => onSelect(item.id)}

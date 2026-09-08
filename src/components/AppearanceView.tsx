@@ -17,14 +17,22 @@ export default function AppearanceView({ data, update }: Props) {
 
   const pickTheme = (id: string) => {
     const theme = themes.find(item => item.id === id)
-    edit({ themeId: id, accent: theme ? theme.swatch : current.accent })
+    if (!theme) return
+    update({
+      settings: { ...data.settings, appearance: { ...current, themeId: id, accent: theme.swatch } },
+      // 과목 색도 그 테마에 어울리는 조합으로 다시 칠한다.
+      subjects: data.subjects.map((item, index) => ({ ...item, color: theme.palette[index % theme.palette.length] })),
+    })
   }
 
   return (
     <section className="panel">
       <div className="block">
         <h2>색 테마</h2>
-        <p className="hint">화면 전체의 배경과 글자색이 함께 바뀝니다.</p>
+        <p className="hint">
+          화면 전체의 배경과 글자색이 바뀌고, <b>과목 색도 그 테마에 어울리는 조합으로 다시 칠해집니다.</b>
+          바꾼 뒤에 아래에서 과목별로 다시 고르실 수 있습니다.
+        </p>
         <div className="theme-row">
           {themes.map(theme => (
             <button

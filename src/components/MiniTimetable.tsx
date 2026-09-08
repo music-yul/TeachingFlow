@@ -10,7 +10,18 @@ export default function MiniTimetable({ data }: { data: AppData }) {
 
   return (
     <div className="mini-timetable">
-      <p className="mini-title">주간 시간표</p>
+      <p className="mini-title">
+        <span>
+          {[
+            data.settings.year && `${data.settings.year}학년도`,
+            data.settings.termName,
+            data.settings.schoolShort || data.settings.schoolName,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        </span>
+        {data.settings.teacherName && <span className="mini-teacher">{data.settings.teacherName}</span>}
+      </p>
       {!active.length && <p className="hint">학급을 등록하면 표시됩니다.</p>}
       {active.length > 0 && (
         <table>

@@ -1,6 +1,6 @@
 import type { AppData, LessonType, Subject } from './types'
 
-export const APP_VERSION = 'v2.0'
+export const APP_VERSION = 'v3.0'
 export const STORAGE_KEY = 'class-schedule-planner-data'
 
 export const defaultTypes: LessonType[] = [
@@ -9,7 +9,7 @@ export const defaultTypes: LessonType[] = [
   { id: 'listen', name: '감상', color: '#9a72b0' },
   { id: 'create', name: '창작', color: '#d08043' },
   { id: 'korean', name: '국악', color: '#b36a50' },
-  { id: 'assessment', name: '수행평가', color: '#d04f5d' },
+  { id: 'assessment', name: '수행평가', color: '#d04f5d', emphasis: true },
 ]
 
 export const subjectColors = ['#4f7db8', '#2d8c7b', '#d08043', '#9a72b0', '#b36a50', '#d04f5d']
@@ -28,6 +28,7 @@ export function emptyData(): AppData {
     settings: {
       appearance: { themeId: 'default', accent: '#3b6ea8', fontId: 'pretendard', fontSize: 'normal' },
       schoolName: '',
+      schoolShort: '',
       teacherName: '',
       year: thisYear(),
       termName: '1학기',

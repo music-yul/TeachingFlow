@@ -5,6 +5,8 @@ export type Theme = {
   name: string
   swatch: string
   vars: ThemeVars
+  /** 이 테마에 어울리는 과목 색 조합. 테마를 바꾸면 과목 색이 이 순서로 다시 칠해진다. */
+  palette: string[]
 }
 
 export const themes: Theme[] = [
@@ -12,6 +14,7 @@ export const themes: Theme[] = [
     id: 'default',
     name: '기본',
     swatch: '#3b6ea8',
+    palette: ['#4f7db8', '#2d8c7b', '#c47b3e', '#8a6ea8', '#a9654f', '#c1505d'],
     vars: {
       '--ink': '#1f2733',
       '--muted': '#6b7484',
@@ -23,7 +26,10 @@ export const themes: Theme[] = [
       '--ghost': '#f4f5f8',
       '--on-accent': '#ffffff',
       '--accent-soft': '#e8effa',
-      '--done': '#e9f5ec',
+      '--done': '#eceef1',
+      '--done-ink': '#96a0ae',
+      '--mark': '#fdeef0',
+      '--mark-line': '#e6a3ac',
       '--week': '#fff6e0',
     },
   },
@@ -31,6 +37,7 @@ export const themes: Theme[] = [
     id: 'paper',
     name: '종이',
     swatch: '#a2764a',
+    palette: ['#a2764a', '#77854f', '#b06a4b', '#87688f', '#8f5f4c', '#b06248'],
     vars: {
       '--ink': '#33291f',
       '--muted': '#7d6f5e',
@@ -42,7 +49,10 @@ export const themes: Theme[] = [
       '--ghost': '#f3ede3',
       '--on-accent': '#ffffff',
       '--accent-soft': '#f3e7d6',
-      '--done': '#e8f0e2',
+      '--done': '#efe9e0',
+      '--done-ink': '#a8968a',
+      '--mark': '#f8e6df',
+      '--mark-line': '#d0a08c',
       '--week': '#fbeed2',
     },
   },
@@ -50,6 +60,7 @@ export const themes: Theme[] = [
     id: 'mint',
     name: '민트',
     swatch: '#2d8c7b',
+    palette: ['#2d8c7b', '#4a90ab', '#7d9c55', '#8b70a4', '#b57f45', '#b85d68'],
     vars: {
       '--ink': '#1c2f2c',
       '--muted': '#5f7b76',
@@ -61,7 +72,10 @@ export const themes: Theme[] = [
       '--ghost': '#eef5f3',
       '--on-accent': '#ffffff',
       '--accent-soft': '#dcefe9',
-      '--done': '#e2f2e6',
+      '--done': '#e9eded',
+      '--done-ink': '#8fa3a0',
+      '--mark': '#fbe8ec',
+      '--mark-line': '#dfa2ad',
       '--week': '#fdf1d8',
     },
   },
@@ -69,6 +83,7 @@ export const themes: Theme[] = [
     id: 'night',
     name: '어두운',
     swatch: '#6f9bd1',
+    palette: ['#6f9bd1', '#4fb0a0', '#d3a05f', '#ad8ac9', '#c48a72', '#d17b86'],
     vars: {
       '--ink': '#e7ebf2',
       '--muted': '#9aa5b5',
@@ -80,7 +95,10 @@ export const themes: Theme[] = [
       '--ghost': '#2e3641',
       '--on-accent': '#0f141b',
       '--accent-soft': '#2c3d52',
-      '--done': '#263a2f',
+      '--done': '#2b313a',
+      '--done-ink': '#707c8c',
+      '--mark': '#3a2b31',
+      '--mark-line': '#8c5b66',
       '--week': '#3d3524',
     },
   },
@@ -130,7 +148,7 @@ export const fonts: FontOption[] = [
     id: 'gowun',
     name: '고운바탕',
     note: '부드러운 명조. 읽는 글이 많을 때',
-    stack: `'Gowun Batang', 'Nanum Myeongjo', serif`,
+    stack: "'Gowun Batang', 'Nanum Myeongjo', serif",
     href: 'https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap',
   },
   {

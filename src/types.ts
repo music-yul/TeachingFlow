@@ -36,6 +36,8 @@ export type LessonType = {
   color: string
   /** 비워두면 배경색에 맞춰 자동으로 고른다. */
   textColor?: string
+  /** true 면 달력·진도표에서 굵게, 다른 배경으로 강조한다(수행평가 등). */
+  emphasis?: boolean
 }
 
 /** 진도표의 한 행. 과목별로 순서를 가진다. */
@@ -98,6 +100,8 @@ export type Appearance = {
 export type Settings = {
   appearance: Appearance
   schoolName: string
+  /** 시간표 제목처럼 좁은 자리에 쓰는 줄임말. 비어 있으면 schoolName 을 쓴다. */
+  schoolShort: string
   teacherName: string
   year: string
   termName: string

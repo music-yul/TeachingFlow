@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { AppData, Classroom } from './types'
-import { APP_VERSION, emptyData, exportData, importData, makeId, nextSubjectColor, readData, writeData } from './storage'
+import { APP_VERSION, emptyData, importData, makeId, nextSubjectColor, readData, writeData } from './storage'
 import { ensureFontLoaded, fonts, fontSizes, themes } from './theme'
 import { buildSessions } from './schedule'
 import { parseWorkbooks, type ImportedClass } from './naesAttendanceParser'
@@ -67,7 +67,13 @@ export default function App() {
     const settings = { ...data.settings }
 
     incomingList.forEach(incoming => {
-      if (!settings.schoolName && incoming.school) settings.schoolName = incoming.school
+      if (!settings.schoolName && incoming.school) {
+        settings.schoolName = incoming.school
+        if (!settings.schoolShort) {
+          // 대연고등학교 → 대연고, 부산중학교 → 부산중
+          settings.schoolShort = incoming.school.replace(/등학교$/, '').replace(/학교$/, '')
+        }
+      }
       if (!settings.teacherName && incoming.teacher) settings.teacherName = incoming.teacher
 
       let subject = subjects.find(item => item.name === incoming.subject)
@@ -128,13 +134,12 @@ export default function App() {
           <span className="brand-mark">시수</span>
           <div className="brand-text">
             <strong>수업시수 플래너</strong>
-            <small>{APP_VERSION} · © 2026 율쌤. 무단 배포 및 수정 금지</small>
+            <small>{APP_VERSION} · © 2026 율쌤 ｜ 무단 배포 및 수정 금지</small>
           </div>
         </div>
         <div className="topbar-right">
-          <button className="ghost-button" onClick={() => exportData(data)}>백업 내보내기</button>
           <label className="font-control">
-            글씨
+            폰트 크기
             <select
               value={appearance.fontSize}
               onChange={event => update({ settings: { ...data.settings, appearance: { ...appearance, fontSize: event.target.value } } })}
@@ -163,16 +168,6 @@ export default function App() {
         </aside>
 
         <section className="content">
-          {tab !== '달력' && (
-            <div className="page-heading">
-              <p className="eyebrow">
-                {data.settings.year}학년도 {data.settings.termName}
-                {data.settings.schoolName ? ` · ${data.settings.schoolName}` : ''}
-              </p>
-              <h1>{tab}</h1>
-            </div>
-          )}
-
           {!started && tab !== '설정' && (
             <p className="banner">
               먼저 <b>설정 &gt; 학급·시간표</b>에서 출석부를 올리거나 과목·학급을 등록해 주세요.
