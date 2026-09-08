@@ -22,15 +22,22 @@ export default function MiniTimetable({ data }: { data: AppData }) {
                 <th>{period}</th>
                 {DAYS.map(day => {
                   const here = active.filter(item => item.slots.some(slot => slot.day === day && slot.period === period))
-                  const subject = here[0] && data.subjects.find(item => item.id === here[0].subjectId)
                   return (
-                    <td
-                      className={here.length > 1 ? 'conflict' : ''}
-                      key={day}
-                      style={here.length ? { background: subject?.color || '#4f7db8', color: '#fff' } : undefined}
-                      title={here.map(item => item.name).join(', ')}
-                    >
-                      {here.map(item => item.name).join('/')}
+                    <td className={here.length > 1 ? 'conflict' : ''} key={day}>
+                      {here.map(classroom => {
+                        const subject = data.subjects.find(item => item.id === classroom.subjectId)
+                        return (
+                          <div
+                            className="mini-entry"
+                            key={classroom.id}
+                            style={{ background: subject?.color || '#4f7db8' }}
+                            title={`${subject?.name || ''} ${classroom.name}`}
+                          >
+                            {subject?.name && <span className="mini-subject">{subject.name}</span>}
+                            <span className="mini-class">{classroom.name}</span>
+                          </div>
+                        )
+                      })}
                     </td>
                   )
                 })}

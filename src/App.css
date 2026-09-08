@@ -93,7 +93,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .workspace { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 1.25rem 3rem; }
 
 .sidebar {
-  flex: 0 0 15rem;
+  flex: 0 0 17rem;
   display: flex; flex-direction: column; gap: 0.25rem;
   position: sticky; top: 1rem;
 }
@@ -390,11 +390,27 @@ thead th small { display: block; font-weight: 400; }
 
 .mini-timetable { margin-top: 0.9rem; background: #fff; border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.5rem; }
 .mini-title { margin: 0 0 0.35rem; font-size: 0.8rem; color: var(--muted); font-weight: 600; }
-.mini-timetable table { font-size: 0.68rem; table-layout: fixed; }
-.mini-timetable th, .mini-timetable td { padding: 0.15rem 0.1rem; text-align: center; overflow: hidden; white-space: nowrap; }
+.mini-timetable table { font-size: 0.66rem; table-layout: fixed; }
+.mini-timetable th, .mini-timetable td { padding: 0.1rem; text-align: center; vertical-align: top; }
 .mini-timetable thead th { font-size: 0.68rem; }
-.mini-timetable tbody th { color: var(--muted); font-weight: 400; width: 1.2rem; }
+.mini-timetable tbody th { color: var(--muted); font-weight: 400; width: 1.1rem; padding-top: 0.35rem; }
 .mini-timetable td.conflict { outline: 2px solid var(--danger); outline-offset: -2px; }
+
+.mini-entry {
+  color: #fff;
+  border-radius: 0.2rem;
+  padding: 0.1rem 0.1rem 0.15rem;
+  margin-bottom: 0.1rem;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  /* 한국어는 어절 단위로 끊고, 한 어절이 칸보다 길면 강제로 접는다 */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.mini-entry:last-child { margin-bottom: 0; }
+.mini-subject { font-size: 0.58rem; opacity: 0.9; }
+.mini-class { font-size: 0.68rem; font-weight: 700; }
 
 /* ---------- import ---------- */
 
