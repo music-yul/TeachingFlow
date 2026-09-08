@@ -1,5 +1,5 @@
 import type { AppData, Session } from '../types'
-import { dateKey, todayKey } from '../schedule'
+import { dateKey, sessionLabel, todayKey } from '../schedule'
 
 type Props = {
   data: AppData
@@ -55,9 +55,12 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
               ))}
               {daySessions.map(item => {
                 const classroom = data.classes.find(value => value.id === item.classId)
-                const lesson = data.lessons.find(value => value.id === item.lessonId)
-                const type = data.types.find(value => value.id === lesson?.typeId)
-                const done = lesson && data.progress[`${item.classId}:${lesson.id}`]?.done
+                const lessons = item.lessonIds
+                  .map(id => data.lessons.find(value => value.id === id))
+                  .filter(Boolean)
+                const type = data.types.find(value => value.id === lessons[0]?.typeId)
+                const done = lessons.length > 0
+                  && lessons.every(lesson => data.progress[`${item.classId}:${lesson!.id}`]?.done)
                 return (
                   <button
                     className={done ? 'calendar-lesson done' : 'calendar-lesson'}
@@ -65,8 +68,11 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                     style={{ borderLeftColor: type?.color || '#c7ccd6' }}
                     onClick={() => onSelect(item.id)}
                   >
-                    <b>{item.period}교시 {classroom?.name}</b>
-                    <span>{item.skipped ? (item.label || '수업 없음') : lesson?.title || '미배정'}</span>
+                    <b>
+                      {item.period}교시 {classroom?.name}
+                      {item.swappedFrom && <em className="swap-tag">요일변경</em>}
+                    </b>
+                    <span>{sessionLabel(data, item)}</span>
                   </button>
                 )
               })}

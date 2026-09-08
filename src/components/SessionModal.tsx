@@ -1,5 +1,5 @@
-import type { AppData, AttendanceStatus, Session } from '../types'
-import { progressKey } from '../schedule'
+import type { AppData, AttendanceStatus, Session, SessionMode } from '../types'
+import { progressKey, sessionLabel } from '../schedule'
 
 type Props = {
   data: AppData
@@ -10,22 +10,27 @@ type Props = {
 
 const statuses: AttendanceStatus[] = ['출석', '지각', '조퇴', '결석', '기타']
 
+const modeInfo: { id: SessionMode; label: string; help: string }[] = [
+  { id: 'normal', label: '정상 수업', help: '계획대로 다음 차시를 나갑니다.' },
+  { id: 'extend', label: '앞 차시 이어서', help: '한 시간 더 씁니다. 이 반만 뒤 차시가 한 칸 밀립니다.' },
+  { id: 'merge', label: '두 차시 한 번에', help: '진도를 두 개 나갑니다. 이 반만 뒤 차시가 한 칸 당겨집니다.' },
+  { id: 'none', label: '수업 없음', help: '행사·자습 등. 진도를 쓰지 않아 뒤 차시가 한 칸 밀립니다.' },
+]
+
 export default function SessionModal({ data, session, update, onClose }: Props) {
   const classroom = data.classes.find(item => item.id === session.classId)
-  const lesson = data.lessons.find(item => item.id === session.lessonId)
   if (!classroom) return null
 
-  const key = lesson ? progressKey(classroom.id, lesson.id) : ''
-  const record = key ? data.progress[key] || {} : {}
   const override = data.overrides[session.id] || {}
+  const lessons = session.lessonIds.map(id => data.lessons.find(item => item.id === id)).filter(Boolean)
 
-  const setProgress = (change: Partial<typeof record>) => {
-    if (!key) return
-    update({ progress: { ...data.progress, [key]: { ...record, ...change } } })
+  const setOverride = (change: { mode?: SessionMode; label?: string }) => {
+    update({ overrides: { ...data.overrides, [session.id]: { ...override, ...change } } })
   }
 
-  const setOverride = (change: Partial<typeof override>) => {
-    update({ overrides: { ...data.overrides, [session.id]: { ...override, ...change } } })
+  const setProgress = (lessonId: string, change: { done?: boolean; memo?: string }) => {
+    const key = progressKey(classroom.id, lessonId)
+    update({ progress: { ...data.progress, [key]: { ...data.progress[key], ...change } } })
   }
 
   return (
@@ -33,7 +38,10 @@ export default function SessionModal({ data, session, update, onClose }: Props) 
       <section className="modal" onClick={event => event.stopPropagation()}>
         <header className="modal-head">
           <div>
-            <p className="eyebrow">{session.date} · {session.period}교시</p>
+            <p className="eyebrow">
+              {session.date} · {session.period}교시
+              {session.swappedFrom && ` · ${session.swappedFrom}요일 시간표로 변경 운영`}
+            </p>
             <h2>{classroom.name}</h2>
           </div>
           <button className="ghost-button" onClick={onClose}>닫기</button>
@@ -41,36 +49,59 @@ export default function SessionModal({ data, session, update, onClose }: Props) 
 
         <div className="modal-body">
           <div className="block">
-            <h3>{session.skipped ? (override.label || '수업 없음으로 표시됨') : lesson?.title || '배정된 진도 없음'}</h3>
-            {lesson?.note && <p className="hint">공통 메모: {lesson.note}</p>}
+            <h3>{sessionLabel(data, session)}</h3>
 
-            {lesson && !session.skipped && (
-              <>
-                <label className="check big">
-                  <input type="checkbox" checked={Boolean(record.done)} onChange={event => setProgress({ done: event.target.checked })} />
-                  이 수업 완료로 표시
-                </label>
-                <textarea
-                  value={record.memo || ''}
-                  placeholder="이 학급 이 차시에 대한 메모"
-                  onChange={event => setProgress({ memo: event.target.value })}
-                />
-              </>
-            )}
-
-            <div className="inline-form">
-              <button className="ghost-button" onClick={() => setOverride({ skip: !override.skip })}>
-                {override.skip ? '← 수업일로 되돌리기' : '이 시간 수업 없음으로 처리 (뒤 차시가 밀림)'}
-              </button>
-              {override.skip && (
-                <input
-                  placeholder="사유 (예: 학교 행사)"
-                  value={override.label || ''}
-                  onChange={event => setOverride({ label: event.target.value })}
-                />
-              )}
+            <p className="hint">이 반의 이 시간만 조정합니다. 다른 반은 영향을 받지 않습니다.</p>
+            <div className="mode-picker">
+              {modeInfo.map(item => (
+                <button
+                  className={(override.mode || (override.skip ? 'none' : 'normal')) === item.id ? 'mode on' : 'mode'}
+                  key={item.id}
+                  onClick={() => setOverride({ mode: item.id })}
+                >
+                  <b>{item.label}</b>
+                  <small>{item.help}</small>
+                </button>
+              ))}
             </div>
+
+            {(override.mode === 'none' || override.mode === 'extend') && (
+              <input
+                className="reason-input"
+                placeholder="사유 (예: 학교 행사, 모둠 발표가 길어짐)"
+                value={override.label || ''}
+                onChange={event => setOverride({ label: event.target.value })}
+              />
+            )}
           </div>
+
+          {lessons.length > 0 && (
+            <div className="block">
+              <h3>진도 기록</h3>
+              {lessons.map(lesson => {
+                const key = progressKey(classroom.id, lesson!.id)
+                const record = data.progress[key] || {}
+                return (
+                  <div className="progress-edit" key={lesson!.id}>
+                    <label className="check big">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(record.done)}
+                        onChange={event => setProgress(lesson!.id, { done: event.target.checked })}
+                      />
+                      {lesson!.title} 완료
+                    </label>
+                    {lesson!.note && <p className="hint">공통 메모: {lesson!.note}</p>}
+                    <textarea
+                      value={record.memo || ''}
+                      placeholder="이 학급 이 차시에 대한 메모"
+                      onChange={event => setProgress(lesson!.id, { memo: event.target.value })}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
           {classroom.students.length > 0 && (
             <div className="block">

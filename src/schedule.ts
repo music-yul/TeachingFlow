@@ -1,5 +1,5 @@
-import type { AppData, Classroom, Day, Session } from './types'
-import { DAY_NUMBER } from './types'
+import type { AppData, Classroom, Day, Session, SessionMode } from './types'
+import { DAYS, DAY_NUMBER } from './types'
 
 /** 로컬 시간 기준 YYYY-MM-DD. toISOString() 은 UTC 라서 하루 밀린다. */
 export function dateKey(date: Date) {
@@ -50,11 +50,30 @@ export function progressKey(classId: string, lessonId: string) {
 function blockedBy(data: AppData, date: string, classroom: Classroom, period: number) {
   return data.events.some(event => {
     if (event.date !== date) return false
-    if (event.type === 'note') return false
+    if (event.type === 'note' || event.type === 'swap') return false
     if (event.classIds.length && !event.classIds.includes(classroom.id)) return false
     if (event.type === 'closed') return true
     return event.periods.length === 0 || event.periods.includes(period)
   })
+}
+
+/** 그날 실제로 어느 요일 시간표로 운영하는지. 요일 변경 일정이 있으면 그쪽을 따른다. */
+function effectiveDay(data: AppData, date: string, weekday: number, classroom: Classroom): { day: Day | null; swappedFrom?: Day } {
+  const swap = data.events.find(event =>
+    event.type === 'swap'
+    && event.date === date
+    && event.sourceDay
+    && (!event.classIds.length || event.classIds.includes(classroom.id)),
+  )
+  const natural = DAYS.find(day => DAY_NUMBER[day] === weekday) || null
+  if (swap?.sourceDay) return { day: swap.sourceDay, swappedFrom: natural || undefined }
+  return { day: natural }
+}
+
+function readMode(override?: { mode?: SessionMode; skip?: boolean }): SessionMode {
+  if (!override) return 'normal'
+  if (override.mode) return override.mode
+  return override.skip ? 'none' : 'normal'
 }
 
 /**
@@ -68,11 +87,10 @@ export function buildSessions(data: AppData): Session[] {
 
   const active = data.classes.filter(item => !item.archived)
   const queue: Record<string, string[]> = {}
+  const cursorIndex: Record<string, number> = {}
+  const lastLesson: Record<string, string | undefined> = {}
   active.forEach(classroom => {
     queue[classroom.id] = data.lessons.filter(lesson => lesson.subjectId === classroom.subjectId).map(lesson => lesson.id)
-  })
-  const cursorIndex: Record<string, number> = {}
-  active.forEach(classroom => {
     cursorIndex[classroom.id] = 0
   })
 
@@ -84,39 +102,42 @@ export function buildSessions(data: AppData): Session[] {
     const key = dateKey(day)
     const weekday = day.getDay()
     active.forEach(classroom => {
+      const { day: runDay, swappedFrom } = effectiveDay(data, key, weekday, classroom)
+      if (!runDay) return
       classroom.slots
-        .filter(slot => DAY_NUMBER[slot.day as Day] === weekday)
+        .filter(slot => slot.day === runDay)
         .sort((left, right) => left.period - right.period)
         .forEach(slot => {
           if (blockedBy(data, key, classroom, slot.period)) return
           const id = sessionId(key, classroom.id, slot.period)
           const override = data.overrides[id]
-          if (override?.skip) {
-            sessions.push({
-              id,
-              date: key,
-              classId: classroom.id,
-              subjectId: classroom.subjectId,
-              period: slot.period,
-              lessonId: null,
-              skipped: true,
-              label: override.label,
-            })
-            return
-          }
+          const mode = readMode(override)
           const list = queue[classroom.id]
-          const index = cursorIndex[classroom.id]
-          const lessonId = index < list.length ? list[index] : null
-          if (lessonId) cursorIndex[classroom.id] = index + 1
+          const lessonIds: string[] = []
+
+          if (mode === 'normal' || mode === 'merge') {
+            const take = mode === 'merge' ? 2 : 1
+            for (let step = 0; step < take; step += 1) {
+              const index = cursorIndex[classroom.id]
+              if (index < list.length) {
+                lessonIds.push(list[index])
+                cursorIndex[classroom.id] = index + 1
+              }
+            }
+            if (lessonIds.length) lastLesson[classroom.id] = lessonIds[lessonIds.length - 1]
+          }
+
           sessions.push({
             id,
             date: key,
             classId: classroom.id,
             subjectId: classroom.subjectId,
             period: slot.period,
-            lessonId,
-            skipped: false,
+            lessonIds,
+            mode,
+            continuedFrom: mode === 'extend' ? lastLesson[classroom.id] : undefined,
             label: override?.label,
+            swappedFrom,
           })
         })
     })
@@ -138,9 +159,23 @@ export function coverage(data: AppData, sessions: Session[]): ClassCoverage[] {
   return data.classes
     .filter(item => !item.archived)
     .map(classroom => {
-      const own = sessions.filter(item => item.classId === classroom.id && !item.skipped)
+      const own = sessions.filter(item => item.classId === classroom.id && item.mode !== 'none')
       const lessonCount = data.lessons.filter(lesson => lesson.subjectId === classroom.subjectId).length
-      const assigned = own.filter(item => item.lessonId).length
+      const assigned = own.reduce((sum, item) => sum + item.lessonIds.length, 0)
       return { classId: classroom.id, total: own.length, assigned, lessonCount, spare: own.length - lessonCount }
     })
+}
+
+/** 달력·출석부에 보여줄 그 시간의 표시 문구 */
+export function sessionLabel(data: AppData, session: Session) {
+  if (session.mode === 'none') return session.label || '수업 없음'
+  const titles = session.lessonIds
+    .map(id => data.lessons.find(item => item.id === id)?.title)
+    .filter(Boolean)
+  if (session.mode === 'extend') {
+    const previous = data.lessons.find(item => item.id === session.continuedFrom)
+    return previous ? `${previous.title} (이어서)` : (session.label || '이어서 진행')
+  }
+  if (!titles.length) return '미배정'
+  return titles.join(' + ')
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import type { AppData, EventType, SchoolEvent } from '../types'
-import { PERIODS } from '../types'
+import type { AppData, Day, EventType, SchoolEvent } from '../types'
+import { DAYS, PERIODS } from '../types'
 import { makeId } from '../storage'
 
 type Props = {
@@ -11,6 +11,7 @@ type Props = {
 const typeLabel: Record<EventType, string> = {
   closed: '휴업 (그날 전체 수업 없음)',
   blocked: '수업 불가 (특정 교시)',
+  swap: '요일 변경 (다른 요일 시간표로 운영)',
   note: '표시만 (수업은 그대로)',
 }
 
@@ -21,12 +22,13 @@ export default function EventsView({ data, update }: Props) {
     type: 'closed',
     periods: [],
     classIds: [],
+    sourceDay: '금',
   })
 
   const addEvent = () => {
     if (!draft.date || !draft.title.trim()) return
     update({ events: [...data.events, { ...draft, id: makeId('event'), title: draft.title.trim() }] })
-    setDraft({ date: '', title: '', type: 'closed', periods: [], classIds: [] })
+    setDraft({ date: '', title: '', type: 'closed', periods: [], classIds: [], sourceDay: '금' })
   }
 
   const editEvent = (id: string, change: Partial<SchoolEvent>) => {
@@ -40,7 +42,9 @@ export default function EventsView({ data, update }: Props) {
     <section className="panel">
       <h2>학사일정</h2>
       <p className="hint">
-        휴업일과 행사를 등록하면 그 시간은 진도 배정에서 빠지고, 뒤 차시가 자동으로 밀립니다.
+        휴업일과 행사를 등록하면 그 시간은 진도 배정에서 빠지고, 뒤 차시가 자동으로 밀립니다.<br />
+        <b>요일 변경</b>은 학교 전체 일정용입니다. 예를 들어 화요일에 금요일 시간표로 운영하면 그날 금요일 수업이 대신 들어갑니다.
+        특정 반만 조정할 때는 달력에서 그 시간을 눌러 처리하세요.
       </p>
 
       <div className="event-form">
@@ -49,6 +53,15 @@ export default function EventsView({ data, update }: Props) {
         <select value={draft.type} onChange={event => setDraft({ ...draft, type: event.target.value as EventType, periods: [] })}>
           {(Object.keys(typeLabel) as EventType[]).map(key => <option key={key} value={key}>{typeLabel[key]}</option>)}
         </select>
+        {draft.type === 'swap' && (
+          <label className="swap-pick">
+            이 날은
+            <select value={draft.sourceDay || '금'} onChange={event => setDraft({ ...draft, sourceDay: event.target.value as Day })}>
+              {DAYS.map(day => <option key={day} value={day}>{day}</option>)}
+            </select>
+            요일 시간표로
+          </label>
+        )}
         <button className="primary-button" onClick={addEvent}>+ 등록</button>
       </div>
 
@@ -79,6 +92,14 @@ export default function EventsView({ data, update }: Props) {
           <select value={event.type} onChange={input => editEvent(event.id, { type: input.target.value as EventType })}>
             {(Object.keys(typeLabel) as EventType[]).map(key => <option key={key} value={key}>{typeLabel[key]}</option>)}
           </select>
+          {event.type === 'swap' && (
+            <label className="swap-pick">
+              <select value={event.sourceDay || '금'} onChange={input => editEvent(event.id, { sourceDay: input.target.value as Day })}>
+                {DAYS.map(day => <option key={day} value={day}>{day}</option>)}
+              </select>
+              요일 시간표
+            </label>
+          )}
           {event.type === 'blocked' && (
             <div className="period-picker compact">
               {PERIODS.map(period => (

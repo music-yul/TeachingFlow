@@ -332,3 +332,20 @@ thead th small { display: block; font-weight: 400; }
 .digest-row { display: flex; gap: 0.5rem; align-items: baseline; padding: 0.25rem 0; border-bottom: 1px solid #f0f2f6; font-size: 0.85rem; }
 .digest-row b { flex: 0 0 3rem; color: var(--muted); font-weight: 600; }
 .digest-lesson { flex: 0 0 9rem; color: var(--muted); }
+
+/* ---------- session modes ---------- */
+
+.mode-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.4rem; margin: 0.5rem 0; }
+.mode { text-align: left; background: #fff; border: 1px solid var(--line); padding: 0.4rem 0.55rem; display: flex; flex-direction: column; gap: 0.1rem; }
+.mode b { font-size: 0.9rem; }
+.mode small { color: var(--muted); font-size: 0.75rem; line-height: 1.3; }
+.mode.on { border-color: var(--accent); background: var(--accent-soft); }
+.mode.on small { color: #46617f; }
+.reason-input { width: 100%; }
+
+.progress-edit { border-top: 1px dashed var(--line); padding-top: 0.5rem; margin-top: 0.5rem; }
+.progress-edit:first-of-type { border-top: none; margin-top: 0; }
+
+.swap-tag { font-style: normal; font-size: 0.62rem; background: #efe3fa; color: #6b4a8c; padding: 0 0.2rem; border-radius: 0.15rem; margin-left: 0.2rem; }
+.calendar-event.swap { background: #efe3fa; color: #6b4a8c; }
+.swap-pick { display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: var(--muted); }

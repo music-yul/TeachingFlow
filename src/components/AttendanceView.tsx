@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { AppData, AttendanceStatus, Session } from '../types'
-import { formatShort, todayKey } from '../schedule'
+import { formatShort, sessionLabel, todayKey } from '../schedule'
 
 type Props = {
   data: AppData
@@ -17,7 +17,7 @@ export default function AttendanceView({ data, sessions, update }: Props) {
 
   const own = classroom
     ? sessions
-        .filter(item => item.classId === classroom.id && !item.skipped)
+        .filter(item => item.classId === classroom.id && item.mode !== 'none')
         .sort((left, right) => (left.date + left.period).localeCompare(right.date + right.period))
     : []
 
@@ -30,7 +30,7 @@ export default function AttendanceView({ data, sessions, update }: Props) {
     return <section className="panel empty-panel">등록된 학급이 없습니다. <b>설정 &gt; 학급·시간표</b>에서 먼저 학급을 추가해 주세요.</section>
   }
 
-  const lesson = current && data.lessons.find(item => item.id === current.lessonId)
+  const title = current ? sessionLabel(data, current) : ''
 
   const countFor = (studentId: string, status: AttendanceStatus) =>
     own.filter(item => data.attendance[`${item.id}:${studentId}`] === status).length
@@ -71,7 +71,7 @@ export default function AttendanceView({ data, sessions, update }: Props) {
       {current && (
         <>
           <h3 className="session-title">
-            {current.date} · {current.period}교시 — {lesson?.title || '배정된 진도 없음'}
+            {current.date} · {current.period}교시 — {title}
           </h3>
 
           {!classroom.students.length && <p className="hint">학생 명단이 비어 있습니다.</p>}
@@ -165,11 +165,11 @@ function StudentDigest({ data, sessions, classId }: { data: AppData; sessions: S
       </select>
       {student && !notes.length && <p className="hint">쌓인 기록이 없습니다.</p>}
       {notes.map(item => {
-        const lesson = data.lessons.find(value => value.id === item.session.lessonId)
+        const label = sessionLabel(data, item.session)
         return (
           <div className="digest-row" key={item.session.id}>
             <b>{formatShort(item.session.date)}</b>
-            <span className="digest-lesson">{lesson?.title || '-'}</span>
+            <span className="digest-lesson">{label}</span>
             {item.status && item.status !== '출석' && <span className="warn">{item.status}</span>}
             <span>{item.note}</span>
           </div>

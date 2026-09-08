@@ -72,7 +72,7 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
                     </th>
                     {classes.map(classroom => {
                       const session = sessions.find(
-                        item => item.classId === classroom.id && item.lessonId === lesson.id,
+                        item => item.classId === classroom.id && item.lessonIds.includes(lesson.id),
                       )
                       const key = progressKey(classroom.id, lesson.id)
                       const record = data.progress[key] || {}
