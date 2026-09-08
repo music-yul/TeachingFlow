@@ -5,16 +5,14 @@ import { buildSessions } from './schedule'
 import { parseWorkbooks, type ImportedClass } from './naesAttendanceParser'
 import CalendarView from './components/CalendarView'
 import ProgressView from './components/ProgressView'
-import TimetableView from './components/TimetableView'
-import ClassesView from './components/ClassesView'
-import LessonsView from './components/LessonsView'
-import EventsView from './components/EventsView'
-import SettingsView from './components/SettingsView'
+import AttendanceView from './components/AttendanceView'
+import SettingsHub from './components/SettingsHub'
 import SessionModal from './components/SessionModal'
 import ImportModal from './components/ImportModal'
+import MiniTimetable from './components/MiniTimetable'
 import './App.css'
 
-const tabs = ['달력', '진도표', '시간표', '학급 관리', '수업 목록', '학사일정', '설정'] as const
+const tabs = ['달력', '진도표', '반별 출석부', '설정'] as const
 type Tab = (typeof tabs)[number]
 
 const fontSizes: Record<string, string> = { small: '14px', normal: '16px', large: '18px', xlarge: '21px' }
@@ -45,14 +43,15 @@ export default function App() {
   const openFiles = async (files: File[]) => {
     const result = await parseWorkbooks(files)
     if (!result.classes.length) {
-      window.alert('출석부 내용을 읽지 못했습니다. 나이스 교과시간별출석부 원본 파일인지 확인해 주세요.')
+      window.alert(
+        '파일에서 명단을 찾지 못했습니다.\n설정 > 학급·시간표에서 학급을 만든 뒤 "명단 붙여넣기"로 넣으실 수 있습니다.',
+      )
       return
     }
     setPending(result)
   }
 
-  const mergeImport = () => {
-    if (!pending) return
+  const mergeImport = (incomingList: ImportedClass[]) => {
     const subjects = [...data.subjects]
     const classes: Classroom[] = data.classes.map(item => ({
       ...item,
@@ -61,7 +60,7 @@ export default function App() {
     }))
     const settings = { ...data.settings }
 
-    pending.classes.forEach(incoming => {
+    incomingList.forEach(incoming => {
       if (!settings.schoolName && incoming.school) settings.schoolName = incoming.school
       if (!settings.teacherName && incoming.teacher) settings.teacherName = incoming.teacher
 
@@ -123,7 +122,7 @@ export default function App() {
           <span className="brand-mark">시수</span>
           <div className="brand-text">
             <strong>수업시수 플래너</strong>
-            <small>{APP_VERSION} · © {data.settings.year} {data.settings.teacherName || '음악과'}</small>
+            <small>{APP_VERSION} · © 2026 율쌤. 무단 배포 및 수정 금지</small>
           </div>
         </div>
         <div className="topbar-right">
@@ -144,26 +143,31 @@ export default function App() {
 
       <main className="workspace">
         <aside className="sidebar">
-          {tabs.map((item, index) => (
-            <button className={tab === item ? 'nav-item active' : 'nav-item'} key={item} onClick={() => setTab(item)}>
-              <span className="nav-index">{String(index + 1).padStart(2, '0')}</span>{item}
-            </button>
-          ))}
+          <nav>
+            {tabs.map((item, index) => (
+              <button className={tab === item ? 'nav-item active' : 'nav-item'} key={item} onClick={() => setTab(item)}>
+                <span className="nav-index">{String(index + 1).padStart(2, '0')}</span>{item}
+              </button>
+            ))}
+          </nav>
+          <MiniTimetable data={data} />
         </aside>
 
         <section className="content">
-          <div className="page-heading">
-            <p className="eyebrow">
-              {data.settings.year}학년도 {data.settings.termName}
-              {data.settings.schoolName ? ` · ${data.settings.schoolName}` : ''}
-            </p>
-            <h1>{tab}</h1>
-          </div>
+          {tab !== '달력' && (
+            <div className="page-heading">
+              <p className="eyebrow">
+                {data.settings.year}학년도 {data.settings.termName}
+                {data.settings.schoolName ? ` · ${data.settings.schoolName}` : ''}
+              </p>
+              <h1>{tab}</h1>
+            </div>
+          )}
 
-          {!started && tab !== '설정' && tab !== '학급 관리' && (
+          {!started && tab !== '설정' && (
             <p className="banner">
-              먼저 <b>학급 관리</b>에서 나이스 출석부를 올리거나 과목·학급을 등록해 주세요.
-              그다음 <b>설정</b>에서 학기 기간을 맞추면 진도표가 만들어집니다.
+              먼저 <b>설정 &gt; 학급·시간표</b>에서 출석부를 올리거나 과목·학급을 등록해 주세요.
+              그다음 <b>설정 &gt; 학기·백업</b>에서 학기 기간을 맞추면 진도표가 만들어집니다.
             </p>
           )}
 
@@ -171,18 +175,17 @@ export default function App() {
             <CalendarView data={data} sessions={sessions} month={month} setMonth={setMonth} onSelect={setSelected} />
           )}
           {tab === '진도표' && <ProgressView data={data} sessions={sessions} update={update} onSelect={setSelected} />}
-          {tab === '시간표' && <TimetableView data={data} sessions={sessions} onSelect={setSelected} />}
-          {tab === '학급 관리' && <ClassesView data={data} update={update} onFiles={openFiles} />}
-          {tab === '수업 목록' && <LessonsView data={data} update={update} />}
-          {tab === '학사일정' && <EventsView data={data} update={update} />}
-          {tab === '설정' && <SettingsView data={data} update={update} onImport={loadBackup} onReset={reset} />}
+          {tab === '반별 출석부' && <AttendanceView data={data} sessions={sessions} update={update} />}
+          {tab === '설정' && (
+            <SettingsHub data={data} update={update} onFiles={openFiles} onImport={loadBackup} onReset={reset} />
+          )}
         </section>
       </main>
 
       {session && <SessionModal data={data} session={session} update={update} onClose={() => setSelected(null)} />}
       {pending && (
         <ImportModal
-          classes={pending.classes}
+          initial={pending.classes}
           failed={pending.failed}
           onCancel={() => setPending(null)}
           onConfirm={mergeImport}

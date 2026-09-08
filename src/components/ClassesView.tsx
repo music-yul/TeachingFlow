@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { AppData, Classroom, Day } from '../types'
 import { DAYS, PERIODS } from '../types'
 import { makeId, nextSubjectColor } from '../storage'
+import { formatSlots, parsePastedRoster, parseSlotText } from '../naesAttendanceParser'
 
 type Props = {
   data: AppData
@@ -72,22 +73,22 @@ export default function ClassesView({ data, update, onFiles }: Props) {
               <button onClick={() => removeSubject(subject.id)}>×</button>
             </span>
           ))}
-          {!data.subjects.length && <p className="hint">출석부를 올리면 과목이 자동으로 등록됩니다.</p>}
+          {!data.subjects.length && <p className="hint">출석부를 올리거나 위에서 직접 추가하면 됩니다.</p>}
         </div>
       </div>
 
       <div className="block">
-        <h2>나이스 출석부 가져오기</h2>
+        <h2>출석부 파일로 가져오기</h2>
         <p className="hint">
-          나이스 &gt; 교과시간별출석부에서 내려받은 파일을 <b>여러 개 한꺼번에</b> 선택할 수 있습니다.
-          과목명·학급·수업 요일과 교시·학생 명단을 자동으로 읽어옵니다.
+          나이스 <b>교과시간별출석부</b>가 가장 잘 읽힙니다. 다른 학교 양식이나 직접 만든 표도 시도해 보세요.
+          자동으로 못 읽은 항목은 다음 화면에서 직접 채울 수 있습니다.
         </p>
         <label className="file-button">
           파일 선택 (여러 개 가능)
           <input
             type="file"
             multiple
-            accept=".xlsx,.xls"
+            accept=".xlsx,.xls,.csv"
             onChange={event => {
               const files = Array.from(event.target.files || [])
               if (files.length) onFiles(files)
@@ -99,6 +100,7 @@ export default function ClassesView({ data, update, onFiles }: Props) {
 
       <div className="block">
         <h2>학급</h2>
+        <p className="hint">파일 없이 직접 만들 수도 있습니다. 학급을 만든 뒤 시간표와 명단을 넣으면 됩니다.</p>
         <div className="inline-form">
           <select value={targetSubject || data.subjects[0]?.id || ''} onChange={event => setTargetSubject(event.target.value)}>
             {data.subjects.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
@@ -108,13 +110,7 @@ export default function ClassesView({ data, update, onFiles }: Props) {
         </div>
 
         {data.classes.filter(item => !item.archived).map(classroom => (
-          <ClassBlock
-            key={classroom.id}
-            data={data}
-            classroom={classroom}
-            editClass={editClass}
-            removeClass={removeClass}
-          />
+          <ClassBlock key={classroom.id} data={data} classroom={classroom} editClass={editClass} removeClass={removeClass} />
         ))}
         {!data.classes.length && <p className="hint">등록된 학급이 없습니다.</p>}
       </div>
@@ -133,14 +129,23 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
   const [open, setOpen] = useState(false)
   const [number, setNumber] = useState('')
   const [name, setName] = useState('')
+  const [paste, setPaste] = useState('')
+  const [showPaste, setShowPaste] = useState(false)
+  const [slotText, setSlotText] = useState(formatSlots(classroom.slots))
 
   const toggleSlot = (day: Day, period: number) => {
     const has = classroom.slots.some(slot => slot.day === day && slot.period === period)
-    editClass(classroom.id, {
-      slots: has
-        ? classroom.slots.filter(slot => !(slot.day === day && slot.period === period))
-        : [...classroom.slots, { day, period }],
-    })
+    const slots = has
+      ? classroom.slots.filter(slot => !(slot.day === day && slot.period === period))
+      : [...classroom.slots, { day, period }]
+    editClass(classroom.id, { slots })
+    setSlotText(formatSlots(slots))
+  }
+
+  const applySlotText = () => {
+    const slots = parseSlotText(slotText)
+    editClass(classroom.id, { slots })
+    setSlotText(formatSlots(slots))
   }
 
   const addStudent = () => {
@@ -154,13 +159,22 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
     setName('')
   }
 
+  const applyPaste = () => {
+    const parsed = parsePastedRoster(paste)
+    if (!parsed.length) {
+      window.alert('명단을 읽지 못했습니다. 한 줄에 한 명씩, 번호와 이름 순으로 넣어 주세요.')
+      return
+    }
+    if (!window.confirm(`${parsed.length}명을 읽었습니다. 기존 명단을 이 내용으로 바꿀까요?`)) return
+    editClass(classroom.id, { students: parsed.map(item => ({ id: makeId('student'), ...item })) })
+    setPaste('')
+    setShowPaste(false)
+  }
+
   return (
     <div className="class-block">
       <div className="class-head">
-        <select
-          value={classroom.subjectId}
-          onChange={event => editClass(classroom.id, { subjectId: event.target.value })}
-        >
+        <select value={classroom.subjectId} onChange={event => editClass(classroom.id, { subjectId: event.target.value })}>
           {data.subjects.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
         </select>
         <input value={classroom.name} onChange={event => editClass(classroom.id, { name: event.target.value })} />
@@ -169,21 +183,32 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
         <button className="danger-button" onClick={() => removeClass(classroom.id)}>삭제</button>
       </div>
 
-      <div className="slot-grid">
-        {DAYS.map(day => (
-          <div className="day-column" key={day}>
-            <b>{day}</b>
-            {PERIODS.map(period => (
-              <button
-                className={classroom.slots.some(slot => slot.day === day && slot.period === period) ? 'slot on' : 'slot'}
-                key={period}
-                onClick={() => toggleSlot(day, period)}
-              >
-                {period}
-              </button>
-            ))}
-          </div>
-        ))}
+      <div className="slot-row">
+        <div className="slot-grid">
+          {DAYS.map(day => (
+            <div className="day-column" key={day}>
+              <b>{day}</b>
+              {PERIODS.map(period => (
+                <button
+                  className={classroom.slots.some(slot => slot.day === day && slot.period === period) ? 'slot on' : 'slot'}
+                  key={period}
+                  onClick={() => toggleSlot(day, period)}
+                >
+                  {period}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="slot-text">
+          <label>글자로 입력</label>
+          <input
+            value={slotText}
+            placeholder="예: 월4, 화6"
+            onChange={event => setSlotText(event.target.value)}
+            onBlur={applySlotText}
+          />
+        </div>
       </div>
 
       {open && (
@@ -192,7 +217,25 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
             <input type="number" placeholder="번호" value={number} onChange={event => setNumber(event.target.value)} />
             <input placeholder="이름" value={name} onChange={event => setName(event.target.value)} />
             <button className="ghost-button" onClick={addStudent}>+ 학생 추가</button>
+            <button className="ghost-button" onClick={() => setShowPaste(!showPaste)}>
+              {showPaste ? '붙여넣기 닫기' : '명단 붙여넣기'}
+            </button>
           </div>
+
+          {showPaste && (
+            <div className="paste-box">
+              <p className="hint">
+                엑셀에서 번호와 이름 두 열을 복사해 그대로 붙여넣으세요. 번호 없이 이름만 붙여넣어도 위에서부터 번호가 매겨집니다.
+              </p>
+              <textarea
+                value={paste}
+                placeholder={'1\t홍길동\n2\t김철수'}
+                onChange={event => setPaste(event.target.value)}
+              />
+              <button className="primary-button" onClick={applyPaste}>명단으로 넣기</button>
+            </div>
+          )}
+
           {classroom.students.map(student => (
             <div className="student-row" key={student.id}>
               <input

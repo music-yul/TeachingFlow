@@ -93,7 +93,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .workspace { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 1.25rem 3rem; }
 
 .sidebar {
-  flex: 0 0 11rem;
+  flex: 0 0 15rem;
   display: flex; flex-direction: column; gap: 0.25rem;
   position: sticky; top: 1rem;
 }
@@ -273,8 +273,62 @@ thead th small { display: block; font-weight: 400; }
 
 @media (max-width: 900px) {
   .workspace { flex-direction: column; }
-  .sidebar { flex-direction: row; flex-wrap: wrap; position: static; width: 100%; }
+  .sidebar { flex-direction: column; position: static; width: 100%; }
   .nav-item { flex: 1 1 auto; }
   .week-strip { grid-template-columns: 1fr 1fr; }
   .calendar-day { min-height: 4.5rem; }
 }
+
+
+/* ---------- sub tabs ---------- */
+
+.subtabs { display: flex; gap: 0.25rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+.subtab { background: #fff; border: 1px solid var(--line); padding: 0.35rem 0.7rem; font-size: 0.88rem; }
+.subtab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.sidebar nav { display: flex; flex-direction: column; gap: 0.25rem; }
+
+/* ---------- mini timetable ---------- */
+
+.mini-timetable { margin-top: 0.9rem; background: #fff; border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.5rem; }
+.mini-title { margin: 0 0 0.35rem; font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.mini-timetable table { font-size: 0.68rem; table-layout: fixed; }
+.mini-timetable th, .mini-timetable td { padding: 0.15rem 0.1rem; text-align: center; overflow: hidden; white-space: nowrap; }
+.mini-timetable thead th { font-size: 0.68rem; }
+.mini-timetable tbody th { color: var(--muted); font-weight: 400; width: 1.2rem; }
+.mini-timetable td.conflict { outline: 2px solid var(--danger); outline-offset: -2px; }
+
+/* ---------- import ---------- */
+
+.modal.wide { width: min(60rem, 100%); }
+.needs-input { background: #fff7e6; border-color: #e3bb70; }
+
+/* ---------- classes ---------- */
+
+.slot-row { display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap; margin-top: 0.5rem; }
+.slot-text { display: flex; flex-direction: column; gap: 0.2rem; }
+.slot-text label { font-size: 0.75rem; color: var(--muted); }
+.slot-text input { width: 9rem; }
+
+.paste-box { border: 1px dashed var(--line); border-radius: 0.4rem; padding: 0.5rem; margin-bottom: 0.5rem; }
+.paste-box textarea { min-height: 6rem; font-family: ui-monospace, monospace; font-size: 0.82rem; }
+
+/* ---------- attendance ---------- */
+
+.date-strip { display: flex; gap: 0.25rem; overflow-x: auto; padding-bottom: 0.4rem; margin-bottom: 0.5rem; }
+.date-chip { flex: 0 0 auto; background: #fff; border: 1px solid var(--line); padding: 0.2rem 0.45rem; display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+.date-chip small { color: var(--muted); font-size: 0.68rem; }
+.date-chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.date-chip.on small { color: #dbe7f6; }
+.date-chip.today { box-shadow: 0 0 0 2px var(--week); }
+
+.session-title { margin: 0.3rem 0 0.6rem; font-size: 1.02rem; }
+.attendance-table .status-cell { white-space: nowrap; }
+.attendance-table .status-cell .slot { width: auto; padding: 0 0.35rem; margin-right: 0.1rem; }
+.attendance-table td input { width: 100%; }
+.tally { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+.tally span { margin-right: 0.3rem; }
+
+.digest-row { display: flex; gap: 0.5rem; align-items: baseline; padding: 0.25rem 0; border-bottom: 1px solid #f0f2f6; font-size: 0.85rem; }
+.digest-row b { flex: 0 0 3rem; color: var(--muted); font-weight: 600; }
+.digest-lesson { flex: 0 0 9rem; color: var(--muted); }
