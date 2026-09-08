@@ -18,7 +18,10 @@ export default function ClassesView({ data, update, onFiles }: Props) {
   const addSubject = () => {
     if (!subjectName.trim()) return
     update({
-      subjects: [...data.subjects, { id: makeId('subject'), name: subjectName.trim(), color: nextSubjectColor(data.subjects) }],
+      subjects: [
+        ...data.subjects,
+        { id: makeId('subject'), name: subjectName.trim(), color: nextSubjectColor(data.subjects), usesProgress: true },
+      ],
     })
     setSubjectName('')
   }
@@ -70,11 +73,23 @@ export default function ClassesView({ data, update, onFiles }: Props) {
                 value={subject.color}
                 onChange={event => update({ subjects: data.subjects.map(item => (item.id === subject.id ? { ...item, color: event.target.value } : item)) })}
               />
+              <label className="chip-toggle" title="끄면 진도표에서 빠지고 달력·출석부에만 나옵니다">
+                <input
+                  type="checkbox"
+                  checked={subject.usesProgress !== false}
+                  onChange={event => update({ subjects: data.subjects.map(item => (item.id === subject.id ? { ...item, usesProgress: event.target.checked } : item)) })}
+                />
+                진도표
+              </label>
               <button onClick={() => removeSubject(subject.id)}>×</button>
             </span>
           ))}
           {!data.subjects.length && <p className="hint">출석부를 올리거나 위에서 직접 추가하면 됩니다.</p>}
         </div>
+        <p className="hint">
+          <b>진도표</b> 체크를 끄면 그 과목은 진도표와 수업 목록에서 빠집니다. CA·HR처럼 진도를 따로 관리하지 않는 시간에 쓰세요.
+          달력과 반별 출석부에는 그대로 나옵니다.
+        </p>
       </div>
 
       <div className="block">

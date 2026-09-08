@@ -10,12 +10,17 @@ type Props = {
 }
 
 export default function ProgressView({ data, sessions, update, onSelect }: Props) {
-  const [subjectId, setSubjectId] = useState(data.subjects[0]?.id || '')
-  const [memoTarget, setMemoTarget] = useState<string | null>(null)
+  const usable = data.subjects.filter(item => item.usesProgress !== false)
+  const [subjectId, setSubjectId] = useState(usable[0]?.id || '')
+  const [memoTarget, setMemoTarget] = useState<{ key: string; title: string } | null>(null)
 
-  const subject = data.subjects.find(item => item.id === subjectId) || data.subjects[0]
+  const subject = usable.find(item => item.id === subjectId) || usable[0]
   if (!subject) {
-    return <section className="panel empty-panel">과목이 없습니다. 먼저 <b>학급 관리</b>에서 출석부를 올리거나 과목을 추가해 주세요.</section>
+    return (
+      <section className="panel empty-panel">
+        진도표를 쓰는 과목이 없습니다. <b>설정 &gt; 학급·시간표</b>에서 과목을 추가하거나, 과목의 <b>진도표</b> 체크를 켜 주세요.
+      </section>
+    )
   }
 
   const classes = data.classes.filter(item => !item.archived && item.subjectId === subject.id)
@@ -34,7 +39,7 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
         <label>
           과목{' '}
           <select value={subject.id} onChange={event => setSubjectId(event.target.value)}>
-            {data.subjects.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+            {usable.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
         </label>
         <span className="legend"><i className="dot week" /> 이번 주 <i className="dot done" /> 완료</span>
@@ -98,19 +103,13 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
                                   </button>
                                 </label>
                               </div>
-                              {memoTarget === key ? (
-                                <textarea
-                                  autoFocus
-                                  value={record.memo || ''}
-                                  placeholder="이 반 이 차시 메모"
-                                  onChange={event => setProgress(key, { memo: event.target.value })}
-                                  onBlur={() => setMemoTarget(null)}
-                                />
-                              ) : (
-                                <button className="memo-button" onClick={() => setMemoTarget(key)}>
-                                  {record.memo ? record.memo : '+ 메모'}
-                                </button>
-                              )}
+                              <button
+                                className={record.memo ? 'memo-button filled' : 'memo-button'}
+                                title={record.memo || '메모 추가'}
+                                onClick={() => setMemoTarget({ key, title: `${classroom.name} · ${index + 1}. ${lesson.title}` })}
+                              >
+                                {record.memo || '+ 메모'}
+                              </button>
                             </>
                           ) : (
                             <span className="cell-empty">시간 부족</span>
@@ -152,6 +151,39 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
           </table>
         </div>
       )}
+      {memoTarget && (
+        <MemoModal
+          title={memoTarget.title}
+          value={data.progress[memoTarget.key]?.memo || ''}
+          onChange={value => setProgress(memoTarget.key, { memo: value })}
+          onClose={() => setMemoTarget(null)}
+        />
+      )}
     </section>
+  )
+}
+
+function MemoModal({ title, value, onChange, onClose }: { title: string; value: string; onChange: (value: string) => void; onClose: () => void }) {
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <section className="modal narrow" onClick={event => event.stopPropagation()}>
+        <header className="modal-head">
+          <div>
+            <p className="eyebrow">수업 메모</p>
+            <h2>{title}</h2>
+          </div>
+          <button className="ghost-button" onClick={onClose}>닫기</button>
+        </header>
+        <div className="modal-body">
+          <textarea
+            autoFocus
+            className="memo-editor"
+            value={value}
+            placeholder="이 반 이 차시에 있었던 일, 다음 시간에 이어갈 내용 등"
+            onChange={event => onChange(event.target.value)}
+          />
+        </div>
+      </section>
+    </div>
   )
 }

@@ -66,7 +66,7 @@ export default function App() {
 
       let subject = subjects.find(item => item.name === incoming.subject)
       if (!subject) {
-        subject = { id: makeId('subject'), name: incoming.subject, color: nextSubjectColor(subjects) }
+        subject = { id: makeId('subject'), name: incoming.subject, color: nextSubjectColor(subjects), usesProgress: true }
         subjects.push(subject)
       }
 

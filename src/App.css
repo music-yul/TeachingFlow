@@ -349,3 +349,25 @@ thead th small { display: block; font-weight: 400; }
 .swap-tag { font-style: normal; font-size: 0.62rem; background: #efe3fa; color: #6b4a8c; padding: 0 0.2rem; border-radius: 0.15rem; margin-left: 0.2rem; }
 .calendar-event.swap { background: #efe3fa; color: #6b4a8c; }
 .swap-pick { display: flex; align-items: center; gap: 0.25rem; font-size: 0.85rem; color: var(--muted); }
+
+/* ---------- progress table width ---------- */
+
+.progress-table { table-layout: fixed; }
+.progress-table .sticky-col { width: 15rem; }
+.progress-table thead th:not(.sticky-col) { width: 9.5rem; }
+.progress-cell { width: 9.5rem; max-width: 9.5rem; }
+.memo-button {
+  display: block; width: 100%; text-align: left;
+  background: none; border: 1px dashed var(--line); color: var(--muted);
+  font-size: 0.75rem; padding: 0.15rem 0.3rem; margin-top: 0.2rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.memo-button.filled { border-style: solid; color: var(--ink); background: #fff; }
+.cell-top { overflow: hidden; }
+.cell-top .link-button { white-space: nowrap; }
+
+.modal.narrow { width: min(30rem, 100%); }
+.memo-editor { min-height: 9rem; }
+
+.chip-toggle { display: inline-flex; align-items: center; gap: 0.15rem; font-size: 0.72rem; color: var(--muted); }
+.chip-toggle input { margin: 0; }

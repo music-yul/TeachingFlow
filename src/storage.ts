@@ -52,7 +52,7 @@ function normalize(saved: Partial<AppData>): AppData {
   return {
     version: 2,
     settings: { ...base.settings, ...(saved.settings || {}) },
-    subjects: saved.subjects || [],
+    subjects: (saved.subjects || []).map(item => ({ ...item, usesProgress: item.usesProgress !== false })),
     classes: (saved.classes || []).map(item => ({ ...item, slots: item.slots || [], students: item.students || [] })),
     lessons: (saved.lessons || []).map(item => ({ ...item, note: item.note || '' })),
     types: saved.types?.length ? saved.types : base.types,

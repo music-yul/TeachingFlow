@@ -8,15 +8,16 @@ type Props = {
 }
 
 export default function LessonsView({ data, update }: Props) {
-  const [subjectId, setSubjectId] = useState(data.subjects[0]?.id || '')
+  const usable = data.subjects.filter(item => item.usesProgress !== false)
+  const [subjectId, setSubjectId] = useState(usable[0]?.id || '')
   const [title, setTitle] = useState('')
   const [typeId, setTypeId] = useState(data.types[0]?.id || '')
   const [typeName, setTypeName] = useState('')
   const [typeColor, setTypeColor] = useState('#4f7db8')
 
-  const subject = data.subjects.find(item => item.id === subjectId) || data.subjects[0]
+  const subject = usable.find(item => item.id === subjectId) || usable[0]
   if (!subject) {
-    return <section className="panel empty-panel">과목을 먼저 등록해 주세요.</section>
+    return <section className="panel empty-panel">진도표를 쓰는 과목이 없습니다. 과목의 <b>진도표</b> 체크를 켜 주세요.</section>
   }
 
   const lessons = data.lessons.filter(item => item.subjectId === subject.id)
@@ -71,7 +72,7 @@ export default function LessonsView({ data, update }: Props) {
         <label>
           과목{' '}
           <select value={subject.id} onChange={event => setSubjectId(event.target.value)}>
-            {data.subjects.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+            {usable.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
         </label>
         <span className="hint">위에서부터 차례대로 배정됩니다. 순서를 바꾸면 진도표에 바로 반영됩니다.</span>

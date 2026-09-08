@@ -9,6 +9,8 @@ export type Subject = {
   id: string
   name: string
   color: string
+  /** false 면 진도표를 쓰지 않는 과목(CA·HR 등). 달력과 출석부에는 그대로 나온다. */
+  usesProgress: boolean
 }
 
 export type Student = {

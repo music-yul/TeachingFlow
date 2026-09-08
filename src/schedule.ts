@@ -90,7 +90,10 @@ export function buildSessions(data: AppData): Session[] {
   const cursorIndex: Record<string, number> = {}
   const lastLesson: Record<string, string | undefined> = {}
   active.forEach(classroom => {
-    queue[classroom.id] = data.lessons.filter(lesson => lesson.subjectId === classroom.subjectId).map(lesson => lesson.id)
+    const subject = data.subjects.find(item => item.id === classroom.subjectId)
+    queue[classroom.id] = subject && subject.usesProgress === false
+      ? []
+      : data.lessons.filter(lesson => lesson.subjectId === classroom.subjectId).map(lesson => lesson.id)
     cursorIndex[classroom.id] = 0
   })
 
@@ -157,7 +160,7 @@ export type ClassCoverage = {
 
 export function coverage(data: AppData, sessions: Session[]): ClassCoverage[] {
   return data.classes
-    .filter(item => !item.archived)
+    .filter(item => !item.archived && data.subjects.find(value => value.id === item.subjectId)?.usesProgress !== false)
     .map(classroom => {
       const own = sessions.filter(item => item.classId === classroom.id && item.mode !== 'none')
       const lessonCount = data.lessons.filter(lesson => lesson.subjectId === classroom.subjectId).length
@@ -169,6 +172,8 @@ export function coverage(data: AppData, sessions: Session[]): ClassCoverage[] {
 /** 달력·출석부에 보여줄 그 시간의 표시 문구 */
 export function sessionLabel(data: AppData, session: Session) {
   if (session.mode === 'none') return session.label || '수업 없음'
+  const subject = data.subjects.find(item => item.id === session.subjectId)
+  if (subject && subject.usesProgress === false) return session.label || ''
   const titles = session.lessonIds
     .map(id => data.lessons.find(item => item.id === id)?.title)
     .filter(Boolean)
