@@ -83,13 +83,17 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
               )}
               {daySessions.map(item => {
                 const classroom = data.classes.find(value => value.id === item.classId)
+                const subject = data.subjects.find(value => value.id === item.subjectId)
                 const lessons = effectiveLessonIds(item)
                   .map(id => data.lessons.find(value => value.id === id))
                   .filter(Boolean)
                 const type = data.types.find(value => value.id === lessons[0]?.typeId)
                 const marked = lessons.some(lesson => data.types.find(value => value.id === lesson!.typeId)?.emphasis)
-                const done = lessons.length > 0
-                  && lessons.every(lesson => data.progress[`${item.classId}:${lesson!.id}`]?.done)
+                // 진도표를 쓰지 않는 과목(CA·HR 등)은 체크할 진도 자체가 없다.
+                // 지난 날짜는 자동으로 완료(회색)처럼 보이게 한다.
+                const done = subject?.usesProgress === false
+                  ? item.date < today
+                  : lessons.length > 0 && lessons.every(lesson => data.progress[`${item.classId}:${lesson!.id}`]?.done)
                 return (
                   <button
                     className={['calendar-lesson', done ? 'done' : '', marked ? 'marked' : ''].filter(Boolean).join(' ')}
