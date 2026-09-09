@@ -34,89 +34,93 @@ export const themes: Theme[] = [
   {
     id: 'beige',
     name: '베이지',
-    swatch: '#a2764a',
+    // 시간표 기본 팔레트의 탠/베이지(#BDA18C, H26) 와 같은 색상(Hue)으로 맞췄다.
+    swatch: '#ab7a54',
     vars: {
-      '--ink': '#33291f',
-      '--muted': '#7d6f5e',
-      '--line': '#e2d9cb',
-      '--bg': '#f7f3ec',
-      '--card': '#fffdf9',
-      '--subtle': '#faf6ef',
-      '--chip': '#f0e9dd',
-      '--ghost': '#f3ede3',
+      '--ink': '#3b322b',
+      '--muted': '#81746a',
+      '--line': '#e2ddd9',
+      '--bg': '#f6f5f4',
+      '--card': '#fdfcfc',
+      '--subtle': '#f9f9f8',
+      '--chip': '#f0edeb',
+      '--ghost': '#f4f2f1',
       '--on-accent': '#ffffff',
-      '--accent-soft': '#f3e7d6',
-      '--done': '#efe9e0',
-      '--done-ink': '#a8968a',
-      '--mark': '#f8e6df',
-      '--mark-line': '#d0a08c',
-      '--today': '#fbeed2',
+      '--accent-soft': '#eadfd7',
+      '--done': '#eceae9',
+      '--done-ink': '#ada59f',
+      '--mark': '#f4e1e4',
+      '--mark-line': '#d49ba5',
+      '--today': '#f4e2af',
     },
   },
   {
     id: 'blue',
     name: '블루',
-    swatch: '#4f7db8',
+    // 시간표 기본 팔레트의 블루그레이(#9AA6B8, H216) 와 같은 색상으로 맞췄다.
+    swatch: '#5477ab',
     vars: {
-      '--ink': '#1f2733',
-      '--muted': '#6b7484',
-      '--line': '#dde2ea',
-      '--bg': '#f4f6fa',
-      '--card': '#ffffff',
-      '--subtle': '#fafbfd',
-      '--chip': '#f0f2f6',
-      '--ghost': '#f4f5f8',
+      '--ink': '#2b313b',
+      '--muted': '#6a7381',
+      '--line': '#d9dde2',
+      '--bg': '#f4f5f6',
+      '--card': '#fcfcfd',
+      '--subtle': '#f8f9f9',
+      '--chip': '#ebedf0',
+      '--ghost': '#f1f2f4',
       '--on-accent': '#ffffff',
-      '--accent-soft': '#e8effa',
-      '--done': '#eceef1',
-      '--done-ink': '#96a0ae',
-      '--mark': '#eaf1fb',
-      '--mark-line': '#a9c3e0',
-      '--today': '#fff6e0',
+      '--accent-soft': '#d7dfea',
+      '--done': '#e9eaec',
+      '--done-ink': '#9fa4ad',
+      '--mark': '#f4e1e4',
+      '--mark-line': '#d49ba5',
+      '--today': '#f4e2af',
     },
   },
   {
     id: 'green',
     name: '그린',
-    swatch: '#5f9c7d',
+    // 시간표 기본 팔레트의 올리브그린(#A3AF91, H84) 과 같은 색상으로 맞췄다.
+    swatch: '#729047',
     vars: {
-      '--ink': '#1c2f24',
-      '--muted': '#5f7b6c',
-      '--line': '#d4e4da',
-      '--bg': '#f1f7f3',
-      '--card': '#ffffff',
-      '--subtle': '#f7fbf9',
-      '--chip': '#e6f0ea',
-      '--ghost': '#eef5f1',
+      '--ink': '#353b2b',
+      '--muted': '#78816a',
+      '--line': '#dfe2d9',
+      '--bg': '#f5f6f4',
+      '--card': '#fdfdfc',
+      '--subtle': '#f9f9f8',
+      '--chip': '#eef0eb',
+      '--ghost': '#f3f4f1',
       '--on-accent': '#ffffff',
-      '--accent-soft': '#dcefe4',
-      '--done': '#e9eded',
-      '--done-ink': '#8fa39a',
-      '--mark': '#eaf3e3',
-      '--mark-line': '#a9c99a',
-      '--today': '#fdf1d8',
+      '--accent-soft': '#e2ead7',
+      '--done': '#ebece9',
+      '--done-ink': '#a7ad9f',
+      '--mark': '#f4e1e4',
+      '--mark-line': '#d49ba5',
+      '--today': '#f4e2af',
     },
   },
   {
     id: 'purple',
     name: '퍼플',
-    swatch: '#8a76b0',
+    // 시간표 기본 팔레트의 모브/퍼플(#A895A8, H300) 과 같은 색상으로 맞췄다.
+    swatch: '#ab54ab',
     vars: {
-      '--ink': '#28223a',
-      '--muted': '#726a8a',
-      '--line': '#ded7ec',
-      '--bg': '#f6f4fa',
-      '--card': '#ffffff',
-      '--subtle': '#faf9fc',
-      '--chip': '#ede8f4',
-      '--ghost': '#f2eff7',
+      '--ink': '#3b2b3b',
+      '--muted': '#816a81',
+      '--line': '#e2d9e2',
+      '--bg': '#f6f4f6',
+      '--card': '#fdfcfd',
+      '--subtle': '#f9f8f9',
+      '--chip': '#f0ebf0',
+      '--ghost': '#f4f1f4',
       '--on-accent': '#ffffff',
-      '--accent-soft': '#e6e0f2',
-      '--done': '#edecf0',
-      '--done-ink': '#9d97ac',
-      '--mark': '#efe9f6',
-      '--mark-line': '#bcaad4',
-      '--today': '#fdf0d3',
+      '--accent-soft': '#ead7ea',
+      '--done': '#ece9ec',
+      '--done-ink': '#ad9fad',
+      '--mark': '#f4e1e4',
+      '--mark-line': '#d49ba5',
+      '--today': '#f4e2af',
     },
   },
   {
@@ -145,23 +149,27 @@ export const themes: Theme[] = [
 
 /**
  * 과목 기본 색 6개. 순서 그 자체가 배정 순서다(1번 과목 -> colors[0] ...).
- * 테마마다 그 테마의 강조색과 같은 색 계열(색상)로 6개를 새로 만들어서,
- * 강조색은 선명한데 시간표 색은 칙칙해 따로 노는 일이 없게 한다.
- * 채도·명도는 원래 기본 팔레트와 비슷하게 맞춰서 톤 자체는 차분함을 유지한다.
+ * 색 자체는 항상 이 6개 그대로 두고, 화면 테마에 따라 순서만 돌려써서
+ * 그 테마와 어울리는 색이 앞으로 오게 한다(예: 그린 테마 -> 올리브그린이 1번).
+ * 톤을 맞추는 건 색을 새로 만드는 대신 테마 쪽 배경·강조색을 이 팔레트의
+ * 같은 색상(Hue)으로 맞추는 방식으로 해결한다.
  */
 export const baseSubjectColors = ['#86AEB8', '#9AA6B8', '#A3AF91', '#BDA18C', '#C49B9D', '#A895A8']
 
-const themedSubjectColors: Record<string, string[]> = {
-  beige: ['#B79685', '#BDAC93', '#B7B18F', '#B68B7C', '#B6919D', '#A4B08D'],
-  blue: ['#8BABBB', '#8197B1', '#959DBB', '#89ACB3', '#9491B6', '#87ABAB'],
-  green: ['#87B596', '#78B096', '#8FB7AF', '#83AF86', '#91B6B6', '#95B08D'],
-  purple: ['#988DB9', '#967EB4', '#AF95BB', '#8C89B3', '#B291B6', '#8D92B0'],
-  night: ['#8BABBB', '#8197B1', '#959DBB', '#89ACB3', '#9491B6', '#87ABAB'],
+/** 테마별로 맨 앞에 세울 색의 인덱스. 없으면 원래 순서를 그대로 쓴다. */
+const themeLeadColorIndex: Record<string, number> = {
+  beige: 3, // 탠/베이지
+  blue: 1, // 블루그레이
+  green: 2, // 올리브그린
+  purple: 5, // 모브/퍼플
+  night: 1, // 블루그레이
 }
 
-/** 화면 테마에 어울리는 과목 색 6개. 기본·매핑 없는 테마는 원래의 다색 팔레트를 쓴다. */
+/** 화면 테마에 맞춰 앞뒤 순서만 돌린 과목 색 목록. */
 export function subjectColorsForTheme(themeId: string): string[] {
-  return themedSubjectColors[themeId] || baseSubjectColors
+  const lead = themeLeadColorIndex[themeId]
+  if (lead === undefined) return baseSubjectColors
+  return [...baseSubjectColors.slice(lead), ...baseSubjectColors.slice(0, lead)]
 }
 
 

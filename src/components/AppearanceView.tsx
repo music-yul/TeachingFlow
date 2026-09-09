@@ -31,7 +31,7 @@ export default function AppearanceView({ data, update }: Props) {
       <div className="block">
         <h2>화면 테마</h2>
         <p className="hint">
-          화면 전체의 배경과 글자색이 바뀌고, <b>과목 색도 그 테마와 같은 색 계열로 다시 칠해집니다.</b>
+          화면 전체의 배경과 글자색이 바뀌고, <b>과목 색도 그 테마와 어울리는 색이 먼저 오도록 순서가 바뀝니다.</b>
           바꾼 뒤 아래 <b>과목별 색·글자색 미세 조정</b>에서 하나씩 다시 고를 수 있습니다.
         </p>
         <div className="theme-row">
