@@ -56,6 +56,8 @@ export type SchoolEvent = {
   date: string
   /** 기간 일정이면 마지막 날. 비어 있으면 하루짜리. */
   endDate?: string
+  /** 기간 일정에서 주말도 포함할지. 기본은 꺼짐(주말은 자동으로 빠짐). */
+  includeWeekends?: boolean
   title: string
   type: EventType
   /** blocked 일 때만 사용. 비어 있으면 그날 전 교시. */
@@ -100,8 +102,6 @@ export type Appearance = {
 export type Settings = {
   appearance: Appearance
   schoolName: string
-  /** 시간표 제목처럼 좁은 자리에 쓰는 줄임말. 비어 있으면 schoolName 을 쓴다. */
-  schoolShort: string
   teacherName: string
   year: string
   termName: string

@@ -48,11 +48,14 @@ export function progressKey(classId: string, lessonId: string) {
   return `${classId}:${lessonId}`
 }
 
-/** 하루짜리 일정과 기간 일정을 함께 판정한다. */
-export function coversDate(event: { date: string; endDate?: string }, date: string) {
+/** 하루짜리 일정과 기간 일정을 함께 판정한다. 기간 일정은 기본적으로 주말을 빼고 본다. */
+export function coversDate(event: { date: string; endDate?: string; includeWeekends?: boolean }, date: string) {
   if (!event.endDate) return event.date === date
   const [from, to] = event.date <= event.endDate ? [event.date, event.endDate] : [event.endDate, event.date]
-  return date >= from && date <= to
+  if (date < from || date > to) return false
+  if (event.includeWeekends) return true
+  const weekday = parseDate(date).getDay()
+  return weekday >= 1 && weekday <= 5
 }
 
 function blockedBy(data: AppData, date: string, classroom: Classroom, period: number) {

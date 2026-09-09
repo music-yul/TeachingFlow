@@ -145,24 +145,23 @@ export const themes: Theme[] = [
 
 /**
  * 과목 기본 색 6개. 순서 그 자체가 배정 순서다(1번 과목 -> colors[0] ...).
- * 팔레트를 여러 개 두는 대신, 화면 테마에 따라 이 순서를 돌려써서
- * 그 테마와 어울리는 색이 앞으로 오게 한다(예: 그린 테마 -> 초록이 1번).
+ * 테마마다 그 테마의 강조색과 같은 색 계열(색상)로 6개를 새로 만들어서,
+ * 강조색은 선명한데 시간표 색은 칙칙해 따로 노는 일이 없게 한다.
+ * 채도·명도는 원래 기본 팔레트와 비슷하게 맞춰서 톤 자체는 차분함을 유지한다.
  */
 export const baseSubjectColors = ['#86AEB8', '#9AA6B8', '#A3AF91', '#BDA18C', '#C49B9D', '#A895A8']
 
-/** 테마별로 맨 앞에 세울 색의 인덱스. 없으면 원래 순서를 그대로 쓴다. */
-const themeLeadColorIndex: Record<string, number> = {
-  beige: 3, // 탠/베이지
-  blue: 1, // 블루그레이
-  green: 2, // 올리브그린
-  purple: 5, // 모브/퍼플
+const themedSubjectColors: Record<string, string[]> = {
+  beige: ['#B79685', '#BDAC93', '#B7B18F', '#B68B7C', '#B6919D', '#A4B08D'],
+  blue: ['#8BABBB', '#8197B1', '#959DBB', '#89ACB3', '#9491B6', '#87ABAB'],
+  green: ['#87B596', '#78B096', '#8FB7AF', '#83AF86', '#91B6B6', '#95B08D'],
+  purple: ['#988DB9', '#967EB4', '#AF95BB', '#8C89B3', '#B291B6', '#8D92B0'],
+  night: ['#8BABBB', '#8197B1', '#959DBB', '#89ACB3', '#9491B6', '#87ABAB'],
 }
 
-/** 화면 테마에 맞춰 앞뒤 순서만 돌린 과목 색 목록. */
+/** 화면 테마에 어울리는 과목 색 6개. 기본·매핑 없는 테마는 원래의 다색 팔레트를 쓴다. */
 export function subjectColorsForTheme(themeId: string): string[] {
-  const lead = themeLeadColorIndex[themeId]
-  if (lead === undefined) return baseSubjectColors
-  return [...baseSubjectColors.slice(lead), ...baseSubjectColors.slice(0, lead)]
+  return themedSubjectColors[themeId] || baseSubjectColors
 }
 
 

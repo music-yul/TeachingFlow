@@ -43,19 +43,10 @@ export default function SettingsHub({ data, update, onFiles, onImport, onReset }
           <div className="block">
             <h2>학기 설정</h2>
             <p className="hint">
-              여기 입력한 기간 안에서만 수업이 배정됩니다. 학기가 바뀌면 날짜를 바꿔 주세요.<br />
-              <b>학교 줄임말</b>은 주간 시간표 제목처럼 좁은 자리에 쓰입니다. 비워두면 학교명을 그대로 씁니다.
+              여기 입력한 기간 안에서만 수업이 배정됩니다. 학기가 바뀌면 날짜를 바꿔 주세요.
             </p>
             <div className="field-grid">
               <label>학교명<input value={data.settings.schoolName} onChange={event => edit({ schoolName: event.target.value })} /></label>
-              <label>
-                학교 줄임말
-                <input
-                  value={data.settings.schoolShort}
-                  placeholder="예: 대연고"
-                  onChange={event => edit({ schoolShort: event.target.value })}
-                />
-              </label>
               <label>교사명<input value={data.settings.teacherName} onChange={event => edit({ teacherName: event.target.value })} /></label>
               <label>학년도<input value={data.settings.year} onChange={event => edit({ year: event.target.value })} /></label>
               <label>학기 이름<input value={data.settings.termName} onChange={event => edit({ termName: event.target.value })} /></label>

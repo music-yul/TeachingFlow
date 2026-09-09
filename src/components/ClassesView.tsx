@@ -56,7 +56,29 @@ export default function ClassesView({ data, update, onFiles }: Props) {
   return (
     <section className="panel">
       <div className="block">
+        <h2>출석부 파일로 가져오기</h2>
+        <p className="hint">
+          나이스 <b>교과시간별출석부</b>가 가장 잘 읽힙니다. 다른 학교 양식이나 직접 만든 표도 시도해 보세요.
+          자동으로 못 읽은 항목은 다음 화면에서 직접 채울 수 있습니다. 과목·학급·시간표·명단이 한 번에 만들어집니다.
+        </p>
+        <label className="file-button">
+          파일 선택 (여러 개 가능)
+          <input
+            type="file"
+            multiple
+            accept=".xlsx,.xls,.csv"
+            onChange={event => {
+              const files = Array.from(event.target.files || [])
+              if (files.length) onFiles(files)
+              event.currentTarget.value = ''
+            }}
+          />
+        </label>
+      </div>
+
+      <div className="block">
         <h2>과목</h2>
+        <p className="hint">파일 없이 직접 만들 수도 있습니다.</p>
         <div className="inline-form">
           <input value={subjectName} placeholder="예: 음악연주" onChange={event => setSubjectName(event.target.value)} />
           <button className="primary-button" onClick={addSubject}>+ 과목 추가</button>
@@ -94,27 +116,6 @@ export default function ClassesView({ data, update, onFiles }: Props) {
           <b>진도표</b> 체크를 끄면 그 과목은 진도표와 수업 목록에서 빠집니다. CA·HR처럼 진도를 따로 관리하지 않는 시간에 쓰세요.
           달력과 반별 출석부에는 그대로 나옵니다.
         </p>
-      </div>
-
-      <div className="block">
-        <h2>출석부 파일로 가져오기</h2>
-        <p className="hint">
-          나이스 <b>교과시간별출석부</b>가 가장 잘 읽힙니다. 다른 학교 양식이나 직접 만든 표도 시도해 보세요.
-          자동으로 못 읽은 항목은 다음 화면에서 직접 채울 수 있습니다.
-        </p>
-        <label className="file-button">
-          파일 선택 (여러 개 가능)
-          <input
-            type="file"
-            multiple
-            accept=".xlsx,.xls,.csv"
-            onChange={event => {
-              const files = Array.from(event.target.files || [])
-              if (files.length) onFiles(files)
-              event.currentTarget.value = ''
-            }}
-          />
-        </label>
       </div>
 
       <div className="block">

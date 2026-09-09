@@ -15,7 +15,7 @@ export default function MiniTimetable({ data }: { data: AppData }) {
           {[
             data.settings.year && `${data.settings.year}학년도`,
             data.settings.termName,
-            data.settings.schoolShort || data.settings.schoolName,
+            data.settings.schoolName,
           ]
             .filter(Boolean)
             .join(' ')}

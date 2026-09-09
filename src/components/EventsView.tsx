@@ -44,6 +44,7 @@ const emptyDraft: Draft = {
   classIds: [],
   sourceDay: '금',
   ranged: false,
+  includeWeekends: false,
 }
 
 export default function EventsView({ data, update }: Props) {
@@ -75,9 +76,12 @@ export default function EventsView({ data, update }: Props) {
       <p className="hint">
         휴업일과 행사를 등록하면 그 시간은 진도 배정에서 빠지고, 뒤 차시가 자동으로 밀립니다.<br />
         방학·명절처럼 여러 날이 이어지면 <b>기간으로 등록</b>을 켜고 시작일과 종료일만 넣으면 됩니다.
+        기간에 토·일요일이 걸쳐도 <b>자동으로 빠지며</b>, 주말에도 실제로 적용되는 일정이면 <b>주말 포함</b>을 켜세요.
       </p>
 
-      <div className="event-form">
+      <div className="event-input-box">
+        <p className="event-input-label">새 일정 등록</p>
+        <div className="event-form">
         <label className="range-toggle">
           <input
             type="checkbox"
@@ -96,6 +100,14 @@ export default function EventsView({ data, update }: Props) {
               min={draft.date || undefined}
               onChange={event => setDraft({ ...draft, endDate: event.target.value })}
             />
+            <label className="range-toggle" title="끄면 이 기간의 토·일요일은 자동으로 빠집니다">
+              <input
+                type="checkbox"
+                checked={Boolean(draft.includeWeekends)}
+                onChange={event => setDraft({ ...draft, includeWeekends: event.target.checked })}
+              />
+              주말 포함
+            </label>
           </>
         )}
         <input placeholder="일정 이름" value={draft.title} onChange={event => setDraft({ ...draft, title: event.target.value })} />
@@ -112,31 +124,34 @@ export default function EventsView({ data, update }: Props) {
           </label>
         )}
         <button className="primary-button" onClick={addEvent}>+ 등록</button>
+        </div>
+
+        {draftSpan && (
+          <p className="hint">총 {draftSpan.days}일 · 수업일 기준 평일 {draftSpan.weekdays}일이 빠집니다.</p>
+        )}
+
+        {draft.type === 'blocked' && (
+          <div className="period-picker">
+            <span>교시 (선택 없으면 그날 전 교시)</span>
+            {PERIODS.map(period => (
+              <button
+                className={draft.periods.includes(period) ? 'slot on' : 'slot'}
+                key={period}
+                onClick={() => setDraft({
+                  ...draft,
+                  periods: draft.periods.includes(period)
+                    ? draft.periods.filter(item => item !== period)
+                    : [...draft.periods, period],
+                })}
+              >
+                {period}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {draftSpan && (
-        <p className="hint">총 {draftSpan.days}일 · 수업일 기준 평일 {draftSpan.weekdays}일이 빠집니다.</p>
-      )}
-
-      {draft.type === 'blocked' && (
-        <div className="period-picker">
-          <span>교시 (선택 없으면 그날 전 교시)</span>
-          {PERIODS.map(period => (
-            <button
-              className={draft.periods.includes(period) ? 'slot on' : 'slot'}
-              key={period}
-              onClick={() => setDraft({
-                ...draft,
-                periods: draft.periods.includes(period)
-                  ? draft.periods.filter(item => item !== period)
-                  : [...draft.periods, period],
-              })}
-            >
-              {period}
-            </button>
-          ))}
-        </div>
-      )}
+      <p className="event-list-label">등록된 일정 {sorted.length > 0 && `(${sorted.length}건)`}</p>
 
       {sorted.map(event => {
         const span = spanInfo(event.date, event.endDate)
@@ -147,6 +162,14 @@ export default function EventsView({ data, update }: Props) {
               <>
                 <span className="tilde">~</span>
                 <input type="date" value={event.endDate} min={event.date} onChange={input => editEvent(event.id, { endDate: input.target.value })} />
+                <label className="range-toggle" title="끄면 이 기간의 토·일요일은 자동으로 빠집니다">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(event.includeWeekends)}
+                    onChange={input => editEvent(event.id, { includeWeekends: input.target.checked })}
+                  />
+                  주말 포함
+                </label>
                 <button className="ghost-button" title="하루짜리로 되돌리기" onClick={() => editEvent(event.id, { endDate: undefined })}>기간 해제</button>
               </>
             ) : (

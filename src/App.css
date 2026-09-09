@@ -294,8 +294,21 @@ thead th small { display: block; font-weight: 400; }
 .note-input { font-size: 0.82rem; }
 .row-actions { display: flex; gap: 0.2rem; }
 
-.event-form { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; margin-bottom: 0.5rem; }
-.event-row { display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; padding: 0.35rem 0; border-top: 1px solid var(--line); }
+.event-input-box {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  padding: 0.7rem 0.8rem;
+  margin-bottom: 0.9rem;
+}
+.event-input-label { margin: 0 0 0.4rem; font-size: 0.78rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.02em; }
+.event-form { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+.event-list-label { margin: 0 0 0.4rem; font-size: 0.82rem; font-weight: 600; color: var(--muted); }
+.event-row {
+  display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center;
+  padding: 0.5rem 0.6rem; margin-bottom: 0.4rem;
+  background: var(--card); border: 1px solid var(--line); border-radius: 0.4rem;
+}
 .period-picker { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; margin-bottom: 0.5rem; font-size: 0.82rem; color: var(--muted); }
 .period-picker.compact { margin: 0; }
 
@@ -642,3 +655,22 @@ thead th small { display: block; font-weight: 400; }
 }
 .period-tab.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .period-tab.on .swap-tag { background: rgba(255,255,255,0.25); color: var(--on-accent); }
+
+/* ---------- 수업 유형 칩 (좁고 한 줄에 최대한 배치) ---------- */
+
+.type-chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0; }
+.type-chip {
+  display: flex; align-items: center; gap: 0.3rem;
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 0.2rem 0.4rem 0.2rem 0.3rem; background: var(--card);
+}
+.type-chip-color {
+  flex: 0 0 1.1rem; width: 1.1rem; height: 1.1rem;
+  padding: 0; border: 1px solid var(--line); border-radius: 50%;
+  background: none; cursor: pointer;
+}
+.type-chip-name {
+  width: 4.2rem; min-width: 0; border: none; background: var(--subtle);
+  padding: 0.1rem 0.3rem; border-radius: 999px; font-size: 0.82rem;
+}
+.type-chip-name:focus { background: var(--card); outline: 1px solid var(--accent); }

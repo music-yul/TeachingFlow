@@ -30,7 +30,6 @@ export function emptyData(): AppData {
     settings: {
       appearance: { themeId: 'default', accent: '#7c8794', fontId: 'pretendard', fontSize: 'normal' },
       schoolName: '',
-      schoolShort: '',
       teacherName: '',
       year: thisYear(),
       termName: '1학기',

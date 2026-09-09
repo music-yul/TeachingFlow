@@ -67,13 +67,7 @@ export default function App() {
     const settings = { ...data.settings }
 
     incomingList.forEach(incoming => {
-      if (!settings.schoolName && incoming.school) {
-        settings.schoolName = incoming.school
-        if (!settings.schoolShort) {
-          // 대연고등학교 → 대연고, 부산중학교 → 부산중
-          settings.schoolShort = incoming.school.replace(/등학교$/, '').replace(/학교$/, '')
-        }
-      }
+      if (!settings.schoolName && incoming.school) settings.schoolName = incoming.school
       if (!settings.teacherName && incoming.teacher) settings.teacherName = incoming.teacher
 
       let subject = subjects.find(item => item.name === incoming.subject)

@@ -78,6 +78,44 @@ export default function LessonsView({ data, update }: Props) {
         <span className="hint">위에서부터 차례대로 배정됩니다. 순서를 바꾸면 진도표에 바로 반영됩니다.</span>
       </div>
 
+      <div className="block">
+        <h2>수업 유형</h2>
+        <p className="hint"><b>강조</b>를 켜면 그 유형의 수업이 달력과 진도표에서 굵게, 눈에 띄는 배경으로 표시됩니다. 수행평가에 쓰세요.</p>
+        <div className="inline-form">
+          <input value={typeName} placeholder="예: 음악사" onChange={event => setTypeName(event.target.value)} />
+          <input type="color" value={typeColor} onChange={event => setTypeColor(event.target.value)} />
+          <button className="ghost-button" onClick={addType}>+ 유형 추가</button>
+        </div>
+        <div className="type-chip-row">
+          {data.types.map(type => (
+            <div className="type-chip" key={type.id}>
+              <input
+                className="type-chip-color"
+                type="color"
+                title="유형 색"
+                value={type.color}
+                onChange={event => update({ types: data.types.map(item => (item.id === type.id ? { ...item, color: event.target.value } : item)) })}
+              />
+              <input
+                className="type-chip-name"
+                value={type.name}
+                placeholder="유형 이름"
+                onChange={event => update({ types: data.types.map(item => (item.id === type.id ? { ...item, name: event.target.value } : item)) })}
+              />
+              <label className={type.emphasis ? 'subject-toggle on' : 'subject-toggle'} title="켜면 달력·진도표에서 굵게 강조됩니다">
+                <input
+                  type="checkbox"
+                  checked={Boolean(type.emphasis)}
+                  onChange={event => update({ types: data.types.map(item => (item.id === type.id ? { ...item, emphasis: event.target.checked } : item)) })}
+                />
+                <span>강조</span>
+              </label>
+              <button className="subject-remove" title="유형 삭제" onClick={() => removeType(type.id)}>×</button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="inline-form">
         <input value={title} placeholder="새 수업 내용" onChange={event => setTitle(event.target.value)} />
         <select value={typeId} onChange={event => setTypeId(event.target.value)}>
@@ -111,44 +149,6 @@ export default function LessonsView({ data, update }: Props) {
         </div>
       ))}
       {!lessons.length && <p className="hint">등록된 차시가 없습니다.</p>}
-
-      <div className="block">
-        <h2>수업 유형</h2>
-        <p className="hint"><b>강조</b>를 켜면 그 유형의 수업이 달력과 진도표에서 굵게, 눈에 띄는 배경으로 표시됩니다. 수행평가에 쓰세요.</p>
-        <div className="inline-form">
-          <input value={typeName} placeholder="예: 음악사" onChange={event => setTypeName(event.target.value)} />
-          <input type="color" value={typeColor} onChange={event => setTypeColor(event.target.value)} />
-          <button className="ghost-button" onClick={addType}>+ 유형 추가</button>
-        </div>
-        <div className="subject-list">
-          {data.types.map(type => (
-            <div className="subject-card" key={type.id}>
-              <input
-                className="subject-color"
-                type="color"
-                title="유형 색"
-                value={type.color}
-                onChange={event => update({ types: data.types.map(item => (item.id === type.id ? { ...item, color: event.target.value } : item)) })}
-              />
-              <input
-                className="subject-name"
-                value={type.name}
-                placeholder="유형 이름"
-                onChange={event => update({ types: data.types.map(item => (item.id === type.id ? { ...item, name: event.target.value } : item)) })}
-              />
-              <label className={type.emphasis ? 'subject-toggle on' : 'subject-toggle'} title="켜면 달력·진도표에서 굵게 강조됩니다">
-                <input
-                  type="checkbox"
-                  checked={Boolean(type.emphasis)}
-                  onChange={event => update({ types: data.types.map(item => (item.id === type.id ? { ...item, emphasis: event.target.checked } : item)) })}
-                />
-                <span>강조</span>
-              </label>
-              <button className="subject-remove" title="유형 삭제" onClick={() => removeType(type.id)}>×</button>
-            </div>
-          ))}
-        </div>
-      </div>
     </section>
   )
 }
