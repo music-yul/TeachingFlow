@@ -225,14 +225,6 @@ thead th small { display: block; font-weight: 400; }
 .coverage { margin-top: 1rem; }
 .coverage table { max-width: 34rem; }
 
-/* ---------- timetable ---------- */
-
-.timetable td { height: 3rem; }
-.timetable th:first-child { width: 3rem; text-align: center; }
-.timetable td.conflict { background: #fdecec; }
-.tt-cell { border-left: 3px solid var(--accent); padding-left: 0.35rem; line-height: 1.2; }
-.tt-cell small { color: var(--muted); font-size: 0.72rem; display: block; }
-
 
 /* ---------- classes / lessons / events ---------- */
 
@@ -382,18 +374,6 @@ thead th small { display: block; font-weight: 400; }
 
 .modal.narrow { width: min(30rem, 100%); }
 .memo-editor { min-height: 9rem; }
-
-.chip-toggle { display: inline-flex; align-items: center; gap: 0.15rem; font-size: 0.72rem; color: var(--muted); }
-.chip-toggle input { margin: 0; }
-
-/* ---------- 요일 변경 표시 ---------- */
-
-.calendar-lesson.cancelled {
-  background: var(--ghost); border-style: dashed; border-left-color: #c7ccd6;
-  color: #9aa1ad; cursor: default;
-}
-.calendar-lesson.cancelled span { text-decoration: line-through; }
-.calendar-lesson.cancelled b { color: #9aa1ad; }
 
 /* ---------- 도움말 ---------- */
 

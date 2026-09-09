@@ -19,25 +19,9 @@ export function todayKey() {
   return dateKey(new Date())
 }
 
-export function monthLabel(date: Date) {
-  return `${date.getFullYear()}년 ${date.getMonth() + 1}월`
-}
-
 export function formatShort(key: string) {
   const [, month, day] = key.split('-')
   return `${Number(month)}/${Number(day)}`
-}
-
-/** 이번 주(월~금)의 날짜 키 목록 */
-export function weekKeys(today = new Date()) {
-  const monday = new Date(today)
-  const shift = (today.getDay() + 6) % 7
-  monday.setDate(today.getDate() - shift)
-  return Array.from({ length: 5 }, (_, index) => {
-    const date = new Date(monday)
-    date.setDate(monday.getDate() + index)
-    return dateKey(date)
-  })
 }
 
 export function sessionId(date: string, classId: string, period: number) {

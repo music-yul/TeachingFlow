@@ -10,8 +10,6 @@ import { lunarToSolar, shiftDate, weekdayOfKey } from './lunar'
  * 설날·추석 연휴. 신정·현충일·제헌절은 대상이 아니다.
  */
 
-type Entry = { date: string; name: string }
-
 type Rule = {
   days: string[]
   name: string
@@ -124,11 +122,4 @@ export function holidayName(date: string) {
   const year = Number(date.slice(0, 4))
   if (!year || year < 1900 || year > 2100) return undefined
   return yearTable(year)[date]
-}
-
-/** 특정 해의 공휴일 전체 (설정 화면 확인용) */
-export function holidaysOfYear(year: number): Entry[] {
-  return Object.entries(yearTable(year))
-    .map(([date, name]) => ({ date, name }))
-    .sort((left, right) => left.date.localeCompare(right.date))
 }

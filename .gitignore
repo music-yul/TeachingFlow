@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 다운로드해서 적용한 패치 파일은 저장소에 남기지 않는다
+planner-v*.patch
