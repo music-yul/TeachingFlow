@@ -131,7 +131,7 @@ export default function App() {
     <div className="app-shell">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark" role="img" aria-label="티칭플로">🧑‍🏫</span>
+          <span className="brand-mark" role="img" aria-label="티칭플로">🏫</span>
           <div className="brand-text">
             <span className="brand-title">
               <strong>티칭플로</strong>
