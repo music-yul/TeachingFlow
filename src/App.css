@@ -164,7 +164,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .weekday-row { margin-bottom: 1px; }
 .weekday-row b { background: var(--subtle); text-align: center; padding: 0.2rem 0; font-size: 0.74rem; color: var(--muted); }
 
-.calendar-day { background: var(--card); min-height: 4rem; padding: 0.2rem; display: flex; flex-direction: column; gap: 0.1rem; }
+.calendar-day { background: var(--card); min-height: 5.8rem; padding: 0.2rem; display: flex; flex-direction: column; gap: 0.1rem; }
 .calendar-day.outside { background: var(--subtle); color: #b6bcc7; }
 .calendar-day.today { background: var(--today); }
 .calendar-day-head { display: flex; align-items: center; justify-content: space-between; }
@@ -352,9 +352,7 @@ thead th small { display: block; font-weight: 400; }
   .event-row { flex-direction: column; align-items: stretch; }
   .event-row > input, .event-row > select { width: 100%; }
 
-  .calendar-day { min-height: 4.2rem; }
-  .calendar-lesson b { font-size: 0.66rem; }
-  .calendar-lesson span { font-size: 0.7rem; }
+  .calendar-day { min-height: 5rem; }
 
   .mode-picker { grid-template-columns: 1fr; }
   .mode { flex-direction: column; align-items: flex-start; gap: 0.1rem; }
