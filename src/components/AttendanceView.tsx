@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { AppData, AttendanceStatus, Session } from '../types'
 import { dateKey, formatShort, sessionLabel, todayKey } from '../schedule'
+import { exportClassDigestXlsx } from '../exportPrint'
 
 type Props = {
   data: AppData
@@ -111,7 +112,9 @@ export default function AttendanceView({ data, sessions, update }: Props) {
             {!classroom.students.length && <p className="hint">학생 명단이 비어 있습니다.</p>}
 
             {classroom.students.length > 0 && (
-              <div className="table-wrap">
+              <>
+                <p className="hint">체크하지 않은 학생은 출석으로 봅니다.</p>
+                <div className="table-wrap">
                 <table className="attendance-table">
                   <thead>
                     <tr>
@@ -164,13 +167,12 @@ export default function AttendanceView({ data, sessions, update }: Props) {
                     })}
                   </tbody>
                 </table>
-              </div>
+                </div>
+              </>
             )}
           </div>
         )
       })()}
-
-      {daySessions.length > 0 && <p className="hint">체크하지 않은 학생은 출석으로 봅니다.</p>}
 
       <StudentDigest data={data} sessions={sessions} classes={active} />
     </section>
@@ -200,7 +202,10 @@ function StudentDigest({ data, sessions, classes }: { data: AppData; sessions: S
   return (
     <div className="block">
       <h3>학생별 기록 모아 보기</h3>
-      <p className="hint">한 학생의 학기 전체 기록을 모아 봅니다. 세특 쓰실 때 근거로 쓰세요.</p>
+      <p className="hint">
+        한 학생의 학기 전체 기록을 모아 봅니다. 세특 쓰실 때 근거로 쓰세요.
+        아래 학급을 골라두면 그 반 <b>전체 학생</b>의 기록을 한 번에 엑셀로도 받을 수 있습니다.
+      </p>
       <div className="inline-form">
         <select value={classId} onChange={event => { setClassId(event.target.value); setStudentId('') }}>
           {classes.map(item => {
@@ -214,6 +219,13 @@ function StudentDigest({ data, sessions, classes }: { data: AppData; sessions: S
             <option key={item.id} value={item.id}>{item.number}. {item.name}</option>
           ))}
         </select>
+        <button
+          className="ghost-button"
+          disabled={!classroom}
+          onClick={() => classroom && exportClassDigestXlsx(data, sessions, classroom.id)}
+        >
+          이 반 전체 기록 엑셀로 내려받기
+        </button>
       </div>
       {student && !notes.length && <p className="hint">쌓인 기록이 없습니다.</p>}
       {notes.map(item => (

@@ -65,6 +65,35 @@ export function exportCalendarXlsx(data: AppData, sessions: Session[], month: Da
   XLSX.writeFile(workbook, `달력_${year}년${monthNumber}월.xlsx`)
 }
 
+/** 한 학급 전체 학생의 출결·특이사항 기록을 한 시트로 내려받는다. */
+export function exportClassDigestXlsx(data: AppData, sessions: Session[], classId: string) {
+  const classroom = data.classes.find(item => item.id === classId)
+  if (!classroom) return
+
+  const own = sessions
+    .filter(item => item.classId === classId && item.mode !== 'none' && !item.cancelled)
+    .sort((left, right) => (left.date + String(left.period)).localeCompare(right.date + String(right.period)))
+
+  const rows: (string | number)[][] = [['번호', '이름', '날짜', '교시', '수업 내용', '출결', '특이사항']]
+  classroom.students.forEach(student => {
+    own.forEach(session => {
+      const key = `${session.id}:${student.id}`
+      const status = data.attendance[key] || '출석'
+      const note = data.activities[key] || ''
+      if (status === '출석' && !note) return
+      rows.push([student.number, student.name, session.date, session.period, sessionLabel(data, session), status, note])
+    })
+  })
+
+  const sheet = XLSX.utils.aoa_to_sheet(rows)
+  sheet['!cols'] = [{ wch: 6 }, { wch: 8 }, { wch: 12 }, { wch: 6 }, { wch: 20 }, { wch: 8 }, { wch: 34 }]
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, sheet, classroom.name)
+
+  const stamp = new Date().toISOString().slice(0, 10)
+  XLSX.writeFile(workbook, `출결기록_${classroom.name}_${stamp}.xlsx`)
+}
+
 /** 현재 화면(.content 안쪽)만 인쇄한다. 메뉴·버튼은 인쇄 스타일로 숨긴다. */
 export function printCurrentView() {
   window.print()

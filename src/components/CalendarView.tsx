@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { AppData, Session } from '../types'
-import { coversDate, dateKey, sessionLabel, todayKey } from '../schedule'
+import { coversDate, dateKey, effectiveLessonIds, sessionLabel, todayKey } from '../schedule'
 import { holidayName } from '../holidays'
 import { makeId } from '../storage'
 import { exportCalendarXlsx, printCurrentView } from '../exportPrint'
@@ -83,7 +83,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
               )}
               {daySessions.map(item => {
                 const classroom = data.classes.find(value => value.id === item.classId)
-                const lessons = item.lessonIds
+                const lessons = effectiveLessonIds(item)
                   .map(id => data.lessons.find(value => value.id === id))
                   .filter(Boolean)
                 const type = data.types.find(value => value.id === lessons[0]?.typeId)

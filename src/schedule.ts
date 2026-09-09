@@ -200,6 +200,17 @@ export function coverage(data: AppData, sessions: Session[]): ClassCoverage[] {
 }
 
 /** 달력·출석부에 보여줄 그 시간의 표시 문구 */
+/**
+ * 진도 표시용 실제 차시 목록.
+ * '이어서'(extend) 모드는 새 진도를 소비하지 않아 lessonIds 가 비어 있지만,
+ * 실제로는 앞 차시(continuedFrom)를 계속 다루는 시간이다. 완료 표시·메모가
+ * 그 차시와 이어지도록, 달력·상세창에서는 이 함수로 얻은 목록을 쓴다.
+ */
+export function effectiveLessonIds(session: Session): string[] {
+  if (session.mode === 'extend' && session.continuedFrom) return [session.continuedFrom]
+  return session.lessonIds
+}
+
 export function sessionLabel(data: AppData, session: Session) {
   if (session.mode === 'none') return session.label || '수업 없음'
   const subject = data.subjects.find(item => item.id === session.subjectId)

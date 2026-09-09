@@ -1,5 +1,5 @@
 import type { AppData, AttendanceStatus, Session, SessionMode } from '../types'
-import { progressKey, sessionLabel } from '../schedule'
+import { effectiveLessonIds, progressKey, sessionLabel } from '../schedule'
 
 type Props = {
   data: AppData
@@ -22,7 +22,7 @@ export default function SessionModal({ data, session, update, onClose }: Props) 
   if (!classroom) return null
 
   const override = data.overrides[session.id] || {}
-  const lessons = session.lessonIds.map(id => data.lessons.find(item => item.id === id)).filter(Boolean)
+  const lessons = effectiveLessonIds(session).map(id => data.lessons.find(item => item.id === id)).filter(Boolean)
 
   const setOverride = (change: { mode?: SessionMode; label?: string }) => {
     update({ overrides: { ...data.overrides, [session.id]: { ...override, ...change } } })
@@ -78,6 +78,9 @@ export default function SessionModal({ data, session, update, onClose }: Props) 
           {lessons.length > 0 && (
             <div className="block">
               <h3>진도 기록</h3>
+              {session.mode === 'extend' && (
+                <p className="hint">앞 시간과 같은 차시를 이어갑니다. 아래 체크·메모는 그 차시 기록과 함께 갑니다.</p>
+              )}
               {lessons.map(lesson => {
                 const key = progressKey(classroom.id, lesson!.id)
                 const record = data.progress[key] || {}
