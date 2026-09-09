@@ -391,7 +391,7 @@ thead th small { display: block; font-weight: 400; }
   .class-filter { margin-left: 0; }
   .day-note-add { opacity: 0.6; font-size: 1rem; padding: 0 0.3rem; }
   .class-grid { grid-template-columns: 1fr; }
-  .palette-card, .theme-card, .font-card { min-width: 0; flex: 1 1 45%; }
+  .theme-card, .font-card { min-width: 0; flex: 1 1 45%; }
 }
 
 @media (max-width: 560px) {
@@ -619,14 +619,6 @@ thead th small { display: block; font-weight: 400; }
 
 /* ---------- 시간표 색 팔레트 카드 ---------- */
 
-.palette-card {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem;
-  background: var(--card); border: 1px solid var(--line); padding: 0.45rem 0.6rem;
-  color: var(--ink); font-size: 0.82rem; min-width: 8.5rem;
-}
-.palette-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.palette-swatches { display: flex; gap: 0.15rem; }
-.palette-swatches i { width: 1rem; height: 1rem; border-radius: 0.2rem; display: block; }
 
 /* ---------- 인쇄 ---------- */
 

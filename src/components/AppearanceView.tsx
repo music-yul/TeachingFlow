@@ -1,5 +1,5 @@
 import type { AppData, Appearance } from '../types'
-import { classroomPalettes, ensureFontLoaded, fonts, fontSizes, themes } from '../theme'
+import { ensureFontLoaded, fonts, fontSizes, subjectColorsForTheme, themes } from '../theme'
 
 type Props = {
   data: AppData
@@ -18,15 +18,11 @@ export default function AppearanceView({ data, update }: Props) {
   const pickTheme = (id: string) => {
     const theme = themes.find(item => item.id === id)
     if (!theme) return
-    edit({ themeId: id, accent: theme.swatch })
-  }
-
-  const applyPalette = (id: string) => {
-    const palette = classroomPalettes.find(item => item.id === id)
-    if (!palette) return
+    // 테마에 맞춰 과목 색 순서도 함께 돌린다(예: 그린 테마 -> 초록이 1번 과목 색으로).
+    const colors = subjectColorsForTheme(id)
     update({
-      settings: { ...data.settings, appearance: { ...current, timetablePaletteId: id } },
-      subjects: data.subjects.map((item, index) => ({ ...item, color: palette.colors[index % palette.colors.length] })),
+      settings: { ...data.settings, appearance: { ...current, themeId: id, accent: theme.swatch } },
+      subjects: data.subjects.map((item, index) => ({ ...item, color: colors[index % colors.length] })),
     })
   }
 
@@ -34,7 +30,10 @@ export default function AppearanceView({ data, update }: Props) {
     <section className="panel">
       <div className="block">
         <h2>화면 테마</h2>
-        <p className="hint">화면 전체의 배경과 글자색이 바뀝니다. 시간표 색과는 별개입니다.</p>
+        <p className="hint">
+          화면 전체의 배경과 글자색이 바뀌고, <b>과목 색도 그 테마와 어울리는 색이 먼저 오도록 순서가 바뀝니다.</b>
+          바꾼 뒤 아래 <b>과목별 색·글자색 미세 조정</b>에서 하나씩 다시 고를 수 있습니다.
+        </p>
         <div className="theme-row">
           {themes.map(theme => (
             <button
@@ -63,29 +62,6 @@ export default function AppearanceView({ data, update }: Props) {
             style={{ width: '7rem', fontFamily: 'ui-monospace, monospace' }}
           />
           <button className="ghost-button" onClick={() => pickTheme(current.themeId)}>기본값으로</button>
-        </div>
-      </div>
-
-      <div className="block">
-        <h2>시간표 색</h2>
-        <p className="hint">
-          과목마다 어떤 색으로 표시할지 정하는 조합입니다. <b>화면 테마와는 무관하게</b> 고를 수 있습니다.
-          누르면 현재 등록된 과목에 이 조합의 색이 순서대로 칠해집니다. 이후 아래에서 과목별로 다시 고를 수 있습니다.
-        </p>
-        <div className="theme-row">
-          {classroomPalettes.map(palette => (
-            <button
-              className={current.timetablePaletteId === palette.id ? 'palette-card on' : 'palette-card'}
-              key={palette.id}
-              onClick={() => applyPalette(palette.id)}
-              title={`${palette.name} 조합 적용`}
-            >
-              <span className="palette-swatches">
-                {palette.colors.map(color => <i key={color} style={{ background: color }} />)}
-              </span>
-              {palette.name}
-            </button>
-          ))}
         </div>
       </div>
 

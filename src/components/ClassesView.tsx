@@ -20,7 +20,7 @@ export default function ClassesView({ data, update, onFiles }: Props) {
     update({
       subjects: [
         ...data.subjects,
-        { id: makeId('subject'), name: subjectName.trim(), color: nextSubjectColor(data.subjects), usesProgress: true },
+        { id: makeId('subject'), name: subjectName.trim(), color: nextSubjectColor(data.subjects, data.settings.appearance.themeId), usesProgress: true },
       ],
     })
     setSubjectName('')

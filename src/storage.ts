@@ -1,4 +1,5 @@
 import type { AppData, LessonType, Subject } from './types'
+import { subjectColorsForTheme } from './theme'
 
 export const APP_VERSION = 'v4.0'
 export const APP_NAME = '티칭플로'
@@ -14,7 +15,6 @@ export const defaultTypes: LessonType[] = [
   { id: 'assessment', name: '수행평가', color: '#d04f5d', emphasis: true },
 ]
 
-export const subjectColors = ['#86AEB8', '#9AA6B8', '#A3AF91', '#BDA18C', '#C49B9D', '#A895A8']
 
 export function makeId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
@@ -28,7 +28,7 @@ export function emptyData(): AppData {
   return {
     version: 2,
     settings: {
-      appearance: { themeId: 'default', accent: '#7c8794', fontId: 'pretendard', fontSize: 'normal', timetablePaletteId: 'default' },
+      appearance: { themeId: 'default', accent: '#7c8794', fontId: 'pretendard', fontSize: 'normal' },
       schoolName: '',
       schoolShort: '',
       teacherName: '',
@@ -113,6 +113,7 @@ export async function importData(file: File): Promise<AppData> {
   return normalize(parsed)
 }
 
-export function nextSubjectColor(subjects: Subject[]) {
-  return subjectColors[subjects.length % subjectColors.length]
+export function nextSubjectColor(subjects: Subject[], themeId: string = 'default') {
+  const colors = subjectColorsForTheme(themeId)
+  return colors[subjects.length % colors.length]
 }

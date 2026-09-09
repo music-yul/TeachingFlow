@@ -95,8 +95,6 @@ export type Appearance = {
   accent: string
   fontId: string
   fontSize: string
-  /** 시간표(과목) 색 조합. 화면 테마와는 별개다. */
-  timetablePaletteId: string
 }
 
 export type Settings = {
