@@ -150,12 +150,22 @@ export type EvaluationType = {
   name: string
 }
 
+export type RubricLevel = {
+  id: string
+  score: number
+  description: string
+}
+
 export type EvaluationItem = {
   id: string
   name: string
   maxScore: number
   /** 평가 기준·성취 수준 메모. 지금은 자유 텍스트 한 칸. */
   description?: string
+  /** 채점기준(레벨). 있으면 채점표에서 숫자 입력 대신 이 버튼들로 클릭 입력한다. */
+  levels?: RubricLevel[]
+  /** 미참여·미제출 시 기본으로 줄 점수. */
+  basicScore?: number
 }
 
 export type Evaluation = {
@@ -169,6 +179,8 @@ export type Evaluation = {
   /** 대상 학급. 비어 있으면 그 과목의 모든 학급. */
   classIds: string[]
   items: EvaluationItem[]
+  /** 이 채점기준을 만든 원본 파일 이름(참고용 표시만, 파일 자체는 저장하지 않는다). */
+  sourceFileName?: string
 }
 
 /** 자동 배정된 한 번의 수업 시간 */
