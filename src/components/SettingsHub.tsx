@@ -62,6 +62,14 @@ export default function SettingsHub({ data, update, onFiles, onImport, onReset }
               <label>학기 시작<input type="date" value={data.settings.termStart} onChange={event => edit({ termStart: event.target.value })} /></label>
               <label>학기 종료<input type="date" value={data.settings.termEnd} onChange={event => edit({ termEnd: event.target.value })} /></label>
             </div>
+            <label className="switch-row">
+              <input
+                type="checkbox"
+                checked={data.settings.useHolidays !== false}
+                onChange={event => edit({ useHolidays: event.target.checked })}
+              />
+              대한민국 공휴일을 달력에 표시하고 그날 수업을 자동으로 뺍니다 (2028년까지)
+            </label>
           </div>
 
           <div className="block">

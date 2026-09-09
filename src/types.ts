@@ -107,6 +107,8 @@ export type Settings = {
   termName: string
   termStart: string
   termEnd: string
+  /** true 면 대한민국 공휴일에 자동으로 수업을 빼고 달력에 표시한다. */
+  useHolidays: boolean
 }
 
 export type AppData = {

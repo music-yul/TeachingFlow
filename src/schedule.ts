@@ -1,5 +1,6 @@
 import type { AppData, Classroom, Day, Session, SessionMode } from './types'
 import { DAYS, DAY_NUMBER } from './types'
+import { holidayName } from './holidays'
 
 /** 로컬 시간 기준 YYYY-MM-DD. toISOString() 은 UTC 라서 하루 밀린다. */
 export function dateKey(date: Date) {
@@ -55,6 +56,7 @@ export function coversDate(event: { date: string; endDate?: string }, date: stri
 }
 
 function blockedBy(data: AppData, date: string, classroom: Classroom, period: number) {
+  if (data.settings.useHolidays !== false && holidayName(date)) return true
   return data.events.some(event => {
     if (!coversDate(event, date)) return false
     if (event.type === 'note' || event.type === 'swap') return false
@@ -209,6 +211,10 @@ export function sessionLabel(data: AppData, session: Session) {
     const previous = data.lessons.find(item => item.id === session.continuedFrom)
     return previous ? `${previous.title} (이어서)` : (session.label || '이어서 진행')
   }
-  if (!titles.length) return '미배정'
+  if (!titles.length) {
+    // 수업 목록 자체가 비어 있으면 아직 계획을 안 세운 것이므로 빈칸으로 둔다.
+    const registered = data.lessons.some(item => item.subjectId === session.subjectId)
+    return registered ? '미배정' : ''
+  }
   return titles.join(' + ')
 }

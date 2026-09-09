@@ -1,5 +1,6 @@
 import type { AppData, Session } from '../types'
 import { coversDate, dateKey, sessionLabel, todayKey } from '../schedule'
+import { holidayName } from '../holidays'
 
 type Props = {
   data: AppData
@@ -40,9 +41,13 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
         {cells.map(date => {
           const key = dateKey(date)
           const outside = !key.startsWith(monthPrefix)
+          const holiday = data.settings.useHolidays !== false ? holidayName(key) : undefined
+          const weekday = date.getDay()
           const classNames = ['calendar-day']
           if (outside) classNames.push('outside')
           if (key === today) classNames.push('today')
+          if (holiday || weekday === 0) classNames.push('holiday')
+          if (weekday === 6) classNames.push('saturday')
           const dayEvents = data.events.filter(event => coversDate(event, key))
           const daySessions = sessions
             .filter(item => item.date === key && !item.cancelled)
@@ -50,6 +55,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
           return (
             <div className={classNames.join(' ')} key={key}>
               <strong>{date.getDate()}</strong>
+              {holiday && <div className="calendar-event holiday-tag">{holiday}</div>}
               {dayEvents.map(event => (
                 <div className={`calendar-event ${event.type}`} key={event.id}>
                   {event.type === 'swap' && event.sourceDay ? `${event.sourceDay}요일 시간표` : event.title}

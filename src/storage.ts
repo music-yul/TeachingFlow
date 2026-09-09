@@ -34,6 +34,7 @@ export function emptyData(): AppData {
       termName: '1학기',
       termStart: `${thisYear()}-03-02`,
       termEnd: `${thisYear()}-07-17`,
+      useHolidays: true,
     },
     subjects: [],
     classes: [],
