@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx'
-import type { AppData, Session } from './types'
+import type { AppData, Evaluation, Session } from './types'
 import { coverage, sessionLabel } from './schedule'
+import { evaluationClasses, noteKey, rawTotal, scoreKey, weightedScore } from './evaluation'
 
 /** 진도표를 엑셀 파일로 내려받는다. */
 export function exportProgressXlsx(data: AppData, sessions: Session[], subjectId: string) {
@@ -92,6 +93,43 @@ export function exportClassDigestXlsx(data: AppData, sessions: Session[], classI
 
   const stamp = new Date().toISOString().slice(0, 10)
   XLSX.writeFile(workbook, `출결기록_${classroom.name}_${stamp}.xlsx`)
+}
+
+/** 평가 점수를 학급별 시트로 내려받는다. 학교 평가표와 비슷한 형태(학번·성명·요소별 점수·합계·비고). */
+export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
+  const classes = evaluationClasses(data, evaluation)
+  if (!classes.length) return
+
+  const workbook = XLSX.utils.book_new()
+  classes.forEach(classroom => {
+    const header = ['번호', '학번', '이름', ...evaluation.items.map(item => `${item.name}(${item.maxScore})`), '원점수', '반영점수', '비고']
+    const rows: (string | number)[][] = [
+      [`${evaluation.name} (${evaluation.weight}% 반영, ${evaluation.date})`],
+      header,
+    ]
+    classroom.students.forEach(student => {
+      const row: (string | number)[] = [
+        student.number,
+        student.number,
+        student.name,
+        ...evaluation.items.map(item => data.scores[scoreKey(evaluation.id, item.id, student.id)] ?? ''),
+        rawTotal(data, evaluation, student.id),
+        Math.round(weightedScore(data, evaluation, student.id) * 10) / 10,
+        data.evaluationNotes[noteKey(evaluation.id, student.id)] || '',
+      ]
+      rows.push(row)
+    })
+    const sheet = XLSX.utils.aoa_to_sheet(rows)
+    sheet['!cols'] = [
+      { wch: 5 }, { wch: 8 }, { wch: 8 },
+      ...evaluation.items.map(() => ({ wch: 10 })),
+      { wch: 8 }, { wch: 8 }, { wch: 24 },
+    ]
+    XLSX.utils.book_append_sheet(workbook, sheet, classroom.name.slice(0, 31))
+  })
+
+  const stamp = new Date().toISOString().slice(0, 10)
+  XLSX.writeFile(workbook, `평가_${evaluation.name}_${stamp}.xlsx`)
 }
 
 /** 현재 화면(.content 안쪽)만 인쇄한다. 메뉴·버튼은 인쇄 스타일로 숨긴다. */

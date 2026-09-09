@@ -130,6 +130,38 @@ export type AppData = {
   activities: Record<string, string>
   /** 날짜별 자유 메모. 학사일정과 달리 진도·시간표에 영향을 주지 않는 개인 기록용. 키는 YYYY-MM-DD. */
   dayNotes: Record<string, DayNote[]>
+  evaluationTypes: EvaluationType[]
+  evaluations: Evaluation[]
+  /** 평가 점수. 키는 `${evaluationId}:${itemId}:${studentId}`. */
+  scores: Record<string, number>
+  /** 학생별 평가 비고. 키는 `${evaluationId}:${studentId}`. */
+  evaluationNotes: Record<string, string>
+}
+
+export type EvaluationType = {
+  id: string
+  name: string
+}
+
+export type EvaluationItem = {
+  id: string
+  name: string
+  maxScore: number
+  /** 평가 기준·성취 수준 메모. 지금은 자유 텍스트 한 칸. */
+  description?: string
+}
+
+export type Evaluation = {
+  id: string
+  subjectId: string
+  name: string
+  typeId: string
+  /** 반영 비율(%). 예: 30 */
+  weight: number
+  date: string
+  /** 대상 학급. 비어 있으면 그 과목의 모든 학급. */
+  classIds: string[]
+  items: EvaluationItem[]
 }
 
 /** 자동 배정된 한 번의 수업 시간 */

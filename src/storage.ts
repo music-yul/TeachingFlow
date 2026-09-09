@@ -1,4 +1,4 @@
-import type { AppData, LessonType, Subject } from './types'
+import type { AppData, EvaluationType, LessonType, Subject } from './types'
 import { subjectColorsForTheme } from './theme'
 
 export const APP_VERSION = 'v4.0'
@@ -13,6 +13,13 @@ export const defaultTypes: LessonType[] = [
   { id: 'create', name: '창작', color: '#d08043' },
   { id: 'korean', name: '국악', color: '#b36a50' },
   { id: 'assessment', name: '수행평가', color: '#d04f5d', emphasis: true },
+]
+
+export const defaultEvaluationTypes: EvaluationType[] = [
+  { id: 'performance', name: '수행평가' },
+  { id: 'written', name: '지필평가' },
+  { id: 'observation', name: '관찰평가' },
+  { id: 'etc', name: '기타' },
 ]
 
 
@@ -47,6 +54,10 @@ export function emptyData(): AppData {
     attendance: {},
     activities: {},
     dayNotes: {},
+    evaluationTypes: defaultEvaluationTypes,
+    evaluations: [],
+    scores: {},
+    evaluationNotes: {},
   }
 }
 
@@ -70,6 +81,10 @@ function normalize(saved: Partial<AppData>): AppData {
     attendance: saved.attendance || {},
     activities: saved.activities || {},
     dayNotes: saved.dayNotes || {},
+    evaluationTypes: saved.evaluationTypes?.length ? saved.evaluationTypes : defaultEvaluationTypes,
+    evaluations: (saved.evaluations || []).map(item => ({ ...item, classIds: item.classIds || [], items: item.items || [] })),
+    scores: saved.scores || {},
+    evaluationNotes: saved.evaluationNotes || {},
   }
 }
 

@@ -5,6 +5,7 @@ import { ensureFontLoaded, fonts, fontSizes, themes } from './theme'
 import { buildSessions } from './schedule'
 import { parseWorkbooks, type ImportedClass } from './naesAttendanceParser'
 import CalendarView from './components/CalendarView'
+import EvaluationsView from './components/EvaluationsView'
 import ProgressView from './components/ProgressView'
 import AttendanceView from './components/AttendanceView'
 import SettingsHub from './components/SettingsHub'
@@ -13,7 +14,7 @@ import ImportModal from './components/ImportModal'
 import MiniTimetable from './components/MiniTimetable'
 import './App.css'
 
-const tabs = ['달력', '진도표', '반별 출석부', '설정'] as const
+const tabs = ['달력', '진도표', '반별 출석부', '평가 관리', '설정'] as const
 type Tab = (typeof tabs)[number]
 
 export default function App() {
@@ -178,6 +179,7 @@ export default function App() {
           )}
           {tab === '진도표' && <ProgressView data={data} sessions={sessions} update={update} onSelect={setSelected} />}
           {tab === '반별 출석부' && <AttendanceView data={data} sessions={sessions} update={update} />}
+          {tab === '평가 관리' && <EvaluationsView data={data} update={update} />}
           {tab === '설정' && (
             <SettingsHub data={data} update={update} onFiles={openFiles} onImport={loadBackup} onReset={reset} />
           )}
