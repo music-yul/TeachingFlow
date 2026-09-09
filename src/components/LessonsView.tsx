@@ -86,9 +86,9 @@ export default function LessonsView({ data, update }: Props) {
           <input type="color" value={typeColor} onChange={event => setTypeColor(event.target.value)} />
           <button className="ghost-button" onClick={addType}>+ 유형 추가</button>
         </div>
-        <div className="type-chip-row">
+        <div className="type-editor-row">
           {data.types.map(type => (
-            <div className="type-chip" key={type.id}>
+            <div className="type-editor-chip" key={type.id}>
               <input
                 className="type-chip-color"
                 type="color"

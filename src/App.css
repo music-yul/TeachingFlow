@@ -514,11 +514,11 @@ thead th small { display: block; font-weight: 400; }
 
 /* ---------- 수업 유형 칩 (좁고 한 줄에 최대한 배치) ---------- */
 
-.type-chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0; }
-.type-chip {
+.type-editor-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0; }
+.type-editor-chip {
   display: flex; align-items: center; gap: 0.3rem;
   border: 1px solid var(--line); border-radius: 999px;
-  padding: 0.2rem 0.4rem 0.2rem 0.3rem; background: var(--card);
+  padding: 0.2rem 0.4rem 0.2rem 0.3rem; background: var(--card); color: var(--ink);
 }
 .type-chip-color {
   flex: 0 0 1.1rem; width: 1.1rem; height: 1.1rem;
@@ -526,7 +526,7 @@ thead th small { display: block; font-weight: 400; }
   background: none; cursor: pointer;
 }
 .type-chip-name {
-  width: 4.2rem; min-width: 0; border: none; background: var(--subtle);
+  width: 4.2rem; min-width: 0; border: none; background: var(--subtle); color: var(--ink);
   padding: 0.1rem 0.3rem; border-radius: 999px; font-size: 0.82rem;
 }
 .type-chip-name:focus { background: var(--card); outline: 1px solid var(--accent); }
