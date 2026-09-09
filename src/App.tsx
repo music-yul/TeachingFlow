@@ -131,10 +131,10 @@ export default function App() {
     <div className="app-shell">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark">시수</span>
+          <span className="brand-mark">TF</span>
           <div className="brand-text">
-            <strong>수업시수 플래너</strong>
-            <small>{APP_VERSION} · © 2026 율쌤 ｜ 무단 배포 및 수정 금지</small>
+            <strong>티칭플로</strong>
+            <small>{APP_VERSION} · TEACHING FLOW · 수업의 흐름을 한눈에 · © 2026 율쌤 ｜ 무단 배포 및 수정 금지</small>
           </div>
         </div>
         <div className="topbar-right">
@@ -176,7 +176,7 @@ export default function App() {
           )}
 
           {tab === '달력' && (
-            <CalendarView data={data} sessions={sessions} month={month} setMonth={setMonth} onSelect={setSelected} />
+            <CalendarView data={data} sessions={sessions} month={month} setMonth={setMonth} onSelect={setSelected} update={update} />
           )}
           {tab === '진도표' && <ProgressView data={data} sessions={sessions} update={update} onSelect={setSelected} />}
           {tab === '반별 출석부' && <AttendanceView data={data} sessions={sessions} update={update} />}

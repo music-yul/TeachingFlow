@@ -1,6 +1,8 @@
 import type { AppData, LessonType, Subject } from './types'
 
-export const APP_VERSION = 'v3.0'
+export const APP_VERSION = 'v4.0'
+export const APP_NAME = '티칭플로'
+export const APP_TAGLINE = 'TEACHING FLOW · 수업의 흐름을 한눈에'
 export const STORAGE_KEY = 'class-schedule-planner-data'
 
 export const defaultTypes: LessonType[] = [
@@ -12,7 +14,7 @@ export const defaultTypes: LessonType[] = [
   { id: 'assessment', name: '수행평가', color: '#d04f5d', emphasis: true },
 ]
 
-export const subjectColors = ['#4f7db8', '#2d8c7b', '#d08043', '#9a72b0', '#b36a50', '#d04f5d']
+export const subjectColors = ['#86AEB8', '#9AA6B8', '#A3AF91', '#BDA18C', '#C49B9D', '#A895A8']
 
 export function makeId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
@@ -26,7 +28,7 @@ export function emptyData(): AppData {
   return {
     version: 2,
     settings: {
-      appearance: { themeId: 'default', accent: '#3b6ea8', fontId: 'pretendard', fontSize: 'normal' },
+      appearance: { themeId: 'default', accent: '#7c8794', fontId: 'pretendard', fontSize: 'normal', timetablePaletteId: 'default' },
       schoolName: '',
       schoolShort: '',
       teacherName: '',
@@ -45,6 +47,7 @@ export function emptyData(): AppData {
     overrides: {},
     attendance: {},
     activities: {},
+    dayNotes: {},
   }
 }
 
@@ -67,6 +70,7 @@ function normalize(saved: Partial<AppData>): AppData {
     overrides: saved.overrides || {},
     attendance: saved.attendance || {},
     activities: saved.activities || {},
+    dayNotes: saved.dayNotes || {},
   }
 }
 

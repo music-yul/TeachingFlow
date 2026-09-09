@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { AppData, Settings } from '../types'
-import { APP_VERSION, exportData } from '../storage'
+import { APP_NAME, APP_TAGLINE, APP_VERSION, exportData } from '../storage'
 import ClassesView from './ClassesView'
 import LessonsView from './LessonsView'
 import EventsView from './EventsView'
@@ -99,8 +99,9 @@ export default function SettingsHub({ data, update, onFiles, onImport, onReset }
           <div className="block">
             <h2>프로그램 정보</h2>
             <p className="hint">
-              수업시수 플래너 {APP_VERSION}<br />
-              © 2026 율쌤. 무단 배포 및 수정 금지<br />
+              {APP_NAME} {APP_VERSION}<br />
+              {APP_TAGLINE}<br />
+              © 2026 율쌤 ｜ 무단 배포 및 수정 금지<br />
               쓰는 방법은 위 <b>도움말</b> 탭에 정리돼 있습니다.
             </p>
           </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { APP_VERSION } from '../storage'
+import { APP_NAME, APP_VERSION } from '../storage'
 
 const sections = ['처음 설정', '매일 쓰는 법', '계획이 틀어졌을 때', '백업', '문제 해결'] as const
 type Section = (typeof sections)[number]
@@ -102,13 +102,16 @@ export default function HelpView() {
         <div className="help-body">
           <h3>달력</h3>
           <ul>
-            <li>오늘 날짜는 파란 테두리, 완료한 수업은 연두색입니다.</li>
+            <li>오늘 날짜는 <b>노란 배경</b>, 완료한 수업은 회색입니다.</li>
             <li>수업을 클릭하면 상세 창이 열립니다.</li>
+            <li>날짜 칸 오른쪽 위 <b>+</b> 를 누르면 그날의 개인 메모를 추가할 수 있습니다. 특정 학생 수행평가 예정처럼 수업·시간표와는 무관한 기록을 남기는 용도입니다. 메모가 있는 날은 📌 로 표시됩니다.</li>
+            <li>위쪽 <b>엑셀로 내보내기 / 인쇄</b> 버튼으로 그 달의 배정 결과를 뽑을 수 있습니다.</li>
           </ul>
 
           <h3>반별 출석부</h3>
           <ol>
-            <li>학급을 고르면 <b>오늘 수업</b>이 바로 나옵니다. 날짜를 바꾸려면 <b>이전 수업 / 다음 수업</b> 화살표를 쓰거나 날짜를 직접 고르세요.</li>
+            <li>탭을 열면 <b>오늘 수업이 있는 모든 학급</b>이 한 번에 나옵니다. 반을 먼저 고르지 않아도 됩니다.</li>
+            <li>다른 날을 보려면 <b>하루 전 / 다음 날</b> 화살표를 쓰거나 날짜를 직접 고르세요. 특정 반만 보고 싶으면 오른쪽 <b>학급</b> 선택으로 좁힐 수 있습니다.</li>
             <li>학생별로 출결 버튼을 누릅니다. <b>아무것도 안 누르면 출석으로 봅니다.</b> 같은 버튼을 다시 누르면 취소됩니다.</li>
             <li>오른쪽 칸에 수업 중 특이사항을 적습니다.</li>
             <li>맨 오른쪽에 그 학생의 결석·지각 누계가 표시됩니다.</li>
@@ -128,6 +131,7 @@ export default function HelpView() {
               <tr><td>파란 테두리</td><td>오늘 하는 수업</td></tr>
               <tr><td>+ 메모</td><td>누르면 팝업이 열립니다. 길어도 칸은 한 줄로 고정됩니다.</td></tr>
               <tr><td>굵은 글씨·다른 배경</td><td>수행평가처럼 <b>강조</b>로 지정한 유형입니다. 설정 › 수업 목록에서 바꿉니다.</td></tr>
+              <tr><td>엑셀로 내보내기 / 인쇄</td><td>진도표·달력 위쪽 버튼으로 지금 화면을 엑셀 파일이나 인쇄물로 뽑을 수 있습니다.</td></tr>
               <tr><td>시간 부족</td><td>학기 안에 이 차시를 할 시간이 없다는 뜻</td></tr>
             </tbody>
           </table>
@@ -233,7 +237,7 @@ export default function HelpView() {
         </div>
       )}
 
-      <p className="help-foot">수업시수 플래너 {APP_VERSION} · © 2026 율쌤. 무단 배포 및 수정 금지</p>
+      <p className="help-foot">{APP_NAME} {APP_VERSION} · © 2026 율쌤. 무단 배포 및 수정 금지</p>
     </section>
   )
 }

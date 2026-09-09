@@ -15,7 +15,7 @@
   --done-ink: #96a0ae;
   --mark: #fdeef0;
   --mark-line: #e6a3ac;
-  --week: #fff6e0;
+  --today: #fff3c4;
 }
 
 * { box-sizing: border-box; }
@@ -151,33 +151,45 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .legend { color: var(--muted); font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem; }
 .dot { width: 0.7rem; height: 0.7rem; border-radius: 0.2rem; display: inline-block; border: 1px solid var(--line); }
-.dot.week { background: var(--week); }
+.dot.today { background: var(--today); }
 .dot.done { background: var(--done); }
 
 /* ---------- calendar ---------- */
 
+.calendar-panel { display: flex; flex-direction: column; }
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
 .weekday-row { margin-bottom: 1px; }
-.weekday-row b { background: var(--subtle); text-align: center; padding: 0.3rem 0; font-size: 0.8rem; color: var(--muted); }
+.weekday-row b { background: var(--subtle); text-align: center; padding: 0.2rem 0; font-size: 0.74rem; color: var(--muted); }
 
-.calendar-day { background: var(--card); min-height: 6rem; padding: 0.25rem; display: flex; flex-direction: column; gap: 0.15rem; }
+.calendar-day { background: var(--card); min-height: 4rem; padding: 0.2rem; display: flex; flex-direction: column; gap: 0.1rem; }
 .calendar-day.outside { background: var(--subtle); color: #b6bcc7; }
-.calendar-day.today { box-shadow: inset 0 0 0 2px var(--accent); }
-.calendar-day > strong { font-size: 0.8rem; }
+.calendar-day.today { background: var(--today); }
+.calendar-day-head { display: flex; align-items: center; justify-content: space-between; }
+.calendar-day-head > strong { font-size: 0.74rem; }
+.day-note-add {
+  background: none; border: none; color: var(--muted); font-size: 0.85rem; line-height: 1;
+  padding: 0 0.15rem; opacity: 0.45;
+}
+.day-note-add:hover, .day-note-add:focus { opacity: 1; }
+.day-note-chip {
+  text-align: left; background: var(--mark); border: 1px dashed var(--mark-line); color: var(--ink);
+  font-size: 0.66rem; padding: 0.05rem 0.25rem; border-radius: 0.2rem; line-height: 1.2;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
-.calendar-event { font-size: 0.7rem; padding: 0.1rem 0.25rem; border-radius: 0.2rem; background: var(--chip); }
+.calendar-event { font-size: 0.64rem; padding: 0.05rem 0.2rem; border-radius: 0.2rem; background: var(--chip); line-height: 1.2; }
 .calendar-event.closed { background: #fdecec; color: var(--danger); }
 .calendar-event.blocked { background: #fff3df; color: #9a6317; }
 
 .calendar-lesson {
   text-align: left; background: var(--card); border: 1px solid var(--line);
   border-left: 3px solid var(--accent);
-  padding: 0.15rem 0.3rem; display: flex; flex-direction: column; line-height: 1.25;
+  padding: 0.1rem 0.25rem; display: flex; flex-direction: row; align-items: baseline; gap: 0.3rem; line-height: 1.2;
 }
-.calendar-lesson b { font-size: 0.72rem; color: var(--muted); font-weight: 600; }
-.calendar-lesson span { font-size: 0.78rem; }
+.cl-left { flex: 0 0 3.6rem; font-size: 0.62rem; color: var(--muted); font-weight: 600; overflow-wrap: anywhere; }
+.cl-right { flex: 1 1 auto; font-size: 0.68rem; overflow-wrap: anywhere; min-width: 0; }
 .calendar-lesson.done { background: var(--done); border-color: var(--done); color: var(--done-ink); }
-.calendar-lesson.done b, .calendar-lesson.done span { color: var(--done-ink); }
+.calendar-lesson.done .cl-left, .calendar-lesson.done .cl-right { color: var(--done-ink); }
 .calendar-lesson.done { border-left-color: var(--done-ink) !important; }
 
 /* ---------- tables ---------- */
@@ -195,13 +207,12 @@ thead th small { display: block; font-weight: 400; }
 .lesson-note { display: block; color: var(--muted); font-size: 0.75rem; }
 
 .progress-cell { min-width: 8rem; }
-.progress-cell.week { background: var(--week); }
+.progress-cell.today { background: var(--today); }
 .progress-cell.done { background: var(--done); color: var(--done-ink); }
 .progress-cell.done .link-button { color: var(--done-ink); }
 .progress-cell.done .memo-button { color: var(--done-ink); border-color: var(--done-ink); }
-/* 완료 표시는 이번 주 강조보다 우선한다 */
-.progress-cell.week.done { background: var(--done); }
-.progress-cell.today { box-shadow: inset 0 0 0 2px var(--accent); }
+/* 완료 표시가 오늘 강조보다 우선한다 */
+.progress-cell.today.done { background: var(--done); }
 .cell-empty { color: var(--muted); font-size: 0.8rem; }
 .cell-top { display: flex; align-items: center; gap: 0.3rem; }
 .check { display: flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; }
@@ -219,16 +230,6 @@ thead th small { display: block; font-weight: 400; }
 .tt-cell { border-left: 3px solid var(--accent); padding-left: 0.35rem; line-height: 1.2; }
 .tt-cell small { color: var(--muted); font-size: 0.72rem; display: block; }
 
-.week-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
-.week-day { border: 1px solid var(--line); border-radius: 0.4rem; padding: 0.4rem; background: var(--card); }
-.week-day.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.week-day header { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem; }
-.week-day header span { color: var(--muted); font-weight: 400; }
-.week-item { display: flex; flex-direction: column; text-align: left; width: 100%; background: var(--subtle); border: 1px solid var(--line); padding: 0.2rem 0.35rem; margin-bottom: 0.2rem; line-height: 1.25; }
-.week-item b { font-size: 0.72rem; color: var(--muted); }
-.week-item span { font-size: 0.8rem; }
-.week-item.done { background: var(--done); color: var(--done-ink); }
-.week-item.done b { color: var(--done-ink); }
 
 /* ---------- classes / lessons / events ---------- */
 
@@ -261,7 +262,11 @@ thead th small { display: block; font-weight: 400; }
 .subject-remove { flex: 0 0 auto; background: none; border: none; color: var(--muted); font-size: 1.05rem; line-height: 1; padding: 0 0.15rem; }
 .subject-remove:hover { color: var(--danger); }
 
-.class-block { border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.6rem; margin-top: 0.5rem; }
+.class-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; margin-top: 0.5rem; align-items: start; }
+.class-block { border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.6rem; min-width: 0; }
+@media (max-width: 720px) {
+  .class-grid { grid-template-columns: 1fr; }
+}
 .class-head { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
 .class-head input { width: 6rem; }
 .class-head small { color: var(--muted); font-size: 0.8rem; margin-right: auto; }
@@ -376,6 +381,12 @@ thead th small { display: block; font-weight: 400; }
   .class-head input { width: 5rem; }
   .slot-row { gap: 0.5rem; }
   .help-body { max-width: none; }
+
+  .toolbar-actions { margin-left: 0; width: 100%; }
+  .class-filter { margin-left: 0; }
+  .day-note-add { opacity: 0.6; font-size: 1rem; padding: 0 0.3rem; }
+  .class-grid { grid-template-columns: 1fr; }
+  .palette-card, .theme-card, .font-card { min-width: 0; flex: 1 1 45%; }
 }
 
 @media (max-width: 560px) {
@@ -585,8 +596,53 @@ thead th small { display: block; font-weight: 400; }
 
 /* ---------- 공휴일 ---------- */
 
-.calendar-day.holiday > strong { color: var(--danger); }
-.calendar-day.saturday > strong { color: #4a72b8; }
+.calendar-day.holiday .calendar-day-head > strong { color: var(--danger); }
+.calendar-day.saturday .calendar-day-head > strong { color: #4a72b8; }
 .calendar-event.holiday-tag { background: #fdecec; color: var(--danger); font-weight: 600; }
 .switch-row { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.6rem; font-size: 0.85rem; color: var(--muted); }
 .switch-row input { margin: 0; }
+
+/* ---------- 날짜 메모 ---------- */
+
+.day-note-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.3rem 0; border-bottom: 1px solid var(--line); font-size: 0.85rem; }
+.day-note-row:last-of-type { border-bottom: none; }
+
+/* ---------- 툴바 우측 정렬 액션 ---------- */
+
+.toolbar-actions { margin-left: auto; display: flex; gap: 0.4rem; }
+
+/* ---------- 시간표 색 팔레트 카드 ---------- */
+
+.palette-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem;
+  background: var(--card); border: 1px solid var(--line); padding: 0.45rem 0.6rem;
+  color: var(--ink); font-size: 0.82rem; min-width: 8.5rem;
+}
+.palette-card.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.palette-swatches { display: flex; gap: 0.15rem; }
+.palette-swatches i { width: 1rem; height: 1rem; border-radius: 0.2rem; display: block; }
+
+/* ---------- 인쇄 ---------- */
+
+@media print {
+  .sidebar, .topbar, .banner, .no-print, .day-note-add { display: none !important; }
+  .toolbar button, .toolbar select { display: none !important; }
+  .toolbar { margin-bottom: 0.4rem; }
+  .workspace { display: block; padding: 0; }
+  .content { width: 100%; }
+  .panel { border: none; box-shadow: none; padding: 0; }
+  body { background: #fff; }
+  .calendar-day { min-height: 3.4rem; }
+}
+
+.class-filter { display: inline-flex; align-items: center; gap: 0.3rem; margin-left: auto; font-size: 0.85rem; color: var(--muted); }
+
+/* ---------- 출석부 교시 탭 ---------- */
+
+.period-tabs { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.period-tab {
+  background: var(--card); border: 1px solid var(--line); padding: 0.35rem 0.7rem;
+  font-size: 0.85rem; display: flex; align-items: center; gap: 0.25rem;
+}
+.period-tab.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.period-tab.on .swap-tag { background: rgba(255,255,255,0.25); color: var(--on-accent); }

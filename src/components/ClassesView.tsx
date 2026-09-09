@@ -128,9 +128,11 @@ export default function ClassesView({ data, update, onFiles }: Props) {
           <button className="primary-button" onClick={addClass} disabled={!data.subjects.length}>+ 학급 추가</button>
         </div>
 
-        {data.classes.filter(item => !item.archived).map(classroom => (
-          <ClassBlock key={classroom.id} data={data} classroom={classroom} editClass={editClass} removeClass={removeClass} />
-        ))}
+        <div className="class-grid">
+          {data.classes.filter(item => !item.archived).map(classroom => (
+            <ClassBlock key={classroom.id} data={data} classroom={classroom} editClass={editClass} removeClass={removeClass} />
+          ))}
+        </div>
         {!data.classes.length && <p className="hint">등록된 학급이 없습니다.</p>}
       </div>
     </section>

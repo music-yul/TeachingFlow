@@ -95,6 +95,8 @@ export type Appearance = {
   accent: string
   fontId: string
   fontSize: string
+  /** 시간표(과목) 색 조합. 화면 테마와는 별개다. */
+  timetablePaletteId: string
 }
 
 export type Settings = {
@@ -111,6 +113,11 @@ export type Settings = {
   useHolidays: boolean
 }
 
+export type DayNote = {
+  id: string
+  text: string
+}
+
 export type AppData = {
   version: number
   settings: Settings
@@ -123,6 +130,8 @@ export type AppData = {
   overrides: Record<string, SessionOverride>
   attendance: Record<string, AttendanceStatus>
   activities: Record<string, string>
+  /** 날짜별 자유 메모. 학사일정과 달리 진도·시간표에 영향을 주지 않는 개인 기록용. 키는 YYYY-MM-DD. */
+  dayNotes: Record<string, DayNote[]>
 }
 
 /** 자동 배정된 한 번의 수업 시간 */

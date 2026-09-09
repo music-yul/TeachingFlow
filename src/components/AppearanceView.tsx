@@ -1,5 +1,5 @@
 import type { AppData, Appearance } from '../types'
-import { ensureFontLoaded, fonts, fontSizes, themes } from '../theme'
+import { classroomPalettes, ensureFontLoaded, fonts, fontSizes, themes } from '../theme'
 
 type Props = {
   data: AppData
@@ -18,21 +18,23 @@ export default function AppearanceView({ data, update }: Props) {
   const pickTheme = (id: string) => {
     const theme = themes.find(item => item.id === id)
     if (!theme) return
+    edit({ themeId: id, accent: theme.swatch })
+  }
+
+  const applyPalette = (id: string) => {
+    const palette = classroomPalettes.find(item => item.id === id)
+    if (!palette) return
     update({
-      settings: { ...data.settings, appearance: { ...current, themeId: id, accent: theme.swatch } },
-      // 과목 색도 그 테마에 어울리는 조합으로 다시 칠한다.
-      subjects: data.subjects.map((item, index) => ({ ...item, color: theme.palette[index % theme.palette.length] })),
+      settings: { ...data.settings, appearance: { ...current, timetablePaletteId: id } },
+      subjects: data.subjects.map((item, index) => ({ ...item, color: palette.colors[index % palette.colors.length] })),
     })
   }
 
   return (
     <section className="panel">
       <div className="block">
-        <h2>색 테마</h2>
-        <p className="hint">
-          화면 전체의 배경과 글자색이 바뀌고, <b>과목 색도 그 테마에 어울리는 조합으로 다시 칠해집니다.</b>
-          바꾼 뒤에 아래에서 과목별로 다시 고르실 수 있습니다.
-        </p>
+        <h2>화면 테마</h2>
+        <p className="hint">화면 전체의 배경과 글자색이 바뀝니다. 시간표 색과는 별개입니다.</p>
         <div className="theme-row">
           {themes.map(theme => (
             <button
@@ -52,7 +54,7 @@ export default function AppearanceView({ data, update }: Props) {
 
       <div className="block">
         <h2>강조색</h2>
-        <p className="hint">선택된 메뉴, 버튼, 오늘 표시에 쓰입니다. 테마를 바꾸면 그 테마의 기본 강조색으로 돌아갑니다.</p>
+        <p className="hint">선택된 메뉴, 버튼에 쓰입니다. 테마를 바꾸면 그 테마의 기본 강조색으로 돌아갑니다.</p>
         <div className="inline-form">
           <input type="color" value={current.accent} onChange={event => edit({ accent: event.target.value })} />
           <input
@@ -61,6 +63,29 @@ export default function AppearanceView({ data, update }: Props) {
             style={{ width: '7rem', fontFamily: 'ui-monospace, monospace' }}
           />
           <button className="ghost-button" onClick={() => pickTheme(current.themeId)}>기본값으로</button>
+        </div>
+      </div>
+
+      <div className="block">
+        <h2>시간표 색</h2>
+        <p className="hint">
+          과목마다 어떤 색으로 표시할지 정하는 조합입니다. <b>화면 테마와는 무관하게</b> 고를 수 있습니다.
+          누르면 현재 등록된 과목에 이 조합의 색이 순서대로 칠해집니다. 이후 아래에서 과목별로 다시 고를 수 있습니다.
+        </p>
+        <div className="theme-row">
+          {classroomPalettes.map(palette => (
+            <button
+              className={current.timetablePaletteId === palette.id ? 'palette-card on' : 'palette-card'}
+              key={palette.id}
+              onClick={() => applyPalette(palette.id)}
+              title={`${palette.name} 조합 적용`}
+            >
+              <span className="palette-swatches">
+                {palette.colors.map(color => <i key={color} style={{ background: color }} />)}
+              </span>
+              {palette.name}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -81,7 +106,7 @@ export default function AppearanceView({ data, update }: Props) {
               onClick={() => { ensureFontLoaded(font); edit({ fontId: font.id }) }}
             >
               <b>{font.name}</b>
-              <span className="font-sample">음악 수업 진도표 2026</span>
+              <span className="font-sample">티칭플로 수업 진도표</span>
               <small>{font.note}</small>
             </button>
           ))}
@@ -89,7 +114,7 @@ export default function AppearanceView({ data, update }: Props) {
       </div>
 
       <div className="block">
-        <h2>글자 크기</h2>
+        <h2>폰트 크기</h2>
         <div className="inline-form">
           {Object.keys(fontSizes).map(size => (
             <button
@@ -104,7 +129,7 @@ export default function AppearanceView({ data, update }: Props) {
       </div>
 
       <div className="block">
-        <h2>과목 색과 글자색</h2>
+        <h2>과목별 색·글자색 미세 조정</h2>
         <p className="hint">
           시간표 칸의 글자색입니다. <b>자동</b>으로 두면 배경이 밝을 땐 검정, 어두울 땐 흰색이 됩니다.
           직접 정하고 싶을 때만 색을 고르세요.

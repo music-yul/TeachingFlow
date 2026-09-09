@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { AppData, Progress, Session } from '../types'
-import { coverage, formatShort, progressKey, todayKey, weekKeys } from '../schedule'
+import { coverage, formatShort, progressKey, todayKey } from '../schedule'
+import { exportProgressXlsx, printCurrentView } from '../exportPrint'
 
 type Props = {
   data: AppData
@@ -25,7 +26,6 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
 
   const classes = data.classes.filter(item => !item.archived && item.subjectId === subject.id)
   const lessons = data.lessons.filter(item => item.subjectId === subject.id)
-  const week = weekKeys()
   const today = todayKey()
   const stats = coverage(data, sessions)
 
@@ -42,7 +42,11 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
             {usable.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
         </label>
-        <span className="legend"><i className="dot week" /> 이번 주 <i className="dot done" /> 완료</span>
+        <span className="legend"><i className="dot today" /> 오늘 <i className="dot done" /> 완료</span>
+        <div className="toolbar-actions no-print">
+          <button className="ghost-button" onClick={() => exportProgressXlsx(data, sessions, subject.id)}>엑셀로 내보내기</button>
+          <button className="ghost-button" onClick={printCurrentView}>인쇄</button>
+        </div>
       </div>
 
       {!classes.length && <p className="hint">이 과목에 등록된 학급이 없습니다.</p>}
@@ -81,11 +85,9 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
                       )
                       const key = progressKey(classroom.id, lesson.id)
                       const record = data.progress[key] || {}
-                      const inWeek = session ? week.includes(session.date) : false
                       const isToday = session ? session.date === today : false
                       const cellClass = ['progress-cell']
                       if (record.done) cellClass.push('done')
-                      if (inWeek) cellClass.push('week')
                       if (isToday) cellClass.push('today')
                       return (
                         <td className={cellClass.join(' ')} key={classroom.id}>
