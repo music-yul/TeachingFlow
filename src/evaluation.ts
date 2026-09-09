@@ -1,4 +1,5 @@
-import type { AppData, Evaluation, Student } from './types'
+import type { AppData, Evaluation, Session, Student } from './types'
+import { effectiveLessonIds } from './schedule'
 
 export function scoreKey(evaluationId: string, itemId: string, studentId: string) {
   return `${evaluationId}:${itemId}:${studentId}`
@@ -56,4 +57,40 @@ export function evaluationClasses(data: AppData, evaluation: Evaluation) {
 /** 값을 0 이상, 배점 이하로 자른다. */
 export function clampScore(value: number, maxScore: number) {
   return Math.max(0, Math.min(maxScore, value))
+}
+
+export function attendanceKey(evaluationId: string, studentId: string) {
+  return `${evaluationId}:${studentId}`
+}
+
+export type EvalCounts = { total: number; present: number; absent: number; unmarked: number; graded: number }
+
+/** 학급 학생들의 응시 현황 집계. graded 는 "응시로 확정 + 점수도 다 채운" 수. */
+export function evalCounts(data: AppData, evaluation: Evaluation, students: Student[]): EvalCounts {
+  let present = 0
+  let absent = 0
+  let graded = 0
+  students.forEach(student => {
+    const status = data.evalAttendance[attendanceKey(evaluation.id, student.id)]
+    if (status === 'present') {
+      present += 1
+      if (isComplete(data, evaluation, student.id)) graded += 1
+    } else if (status === 'absent') {
+      absent += 1
+    }
+  })
+  return { total: students.length, present, absent, unmarked: students.length - present - absent, graded }
+}
+
+/** 이 세션의 차시가 평가와 연결돼 있으면 그 평가를 돌려준다(이어서 모드도 원래 차시 기준으로 따라간다). */
+export function linkedEvaluation(data: AppData, session: Session): Evaluation | undefined {
+  const lessonIds = effectiveLessonIds(session)
+  for (const lessonId of lessonIds) {
+    const lesson = data.lessons.find(item => item.id === lessonId)
+    if (!lesson?.evaluationId) continue
+    const evaluation = data.evaluations.find(item => item.id === lesson.evaluationId)
+    if (!evaluation) continue
+    if (!evaluation.classIds.length || evaluation.classIds.includes(session.classId)) return evaluation
+  }
+  return undefined
 }

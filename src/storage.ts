@@ -58,6 +58,7 @@ export function emptyData(): AppData {
     evaluations: [],
     scores: {},
     evaluationNotes: {},
+    evalAttendance: {},
   }
 }
 
@@ -85,6 +86,7 @@ function normalize(saved: Partial<AppData>): AppData {
     evaluations: (saved.evaluations || []).map(item => ({ ...item, classIds: item.classIds || [], items: item.items || [] })),
     scores: saved.scores || {},
     evaluationNotes: saved.evaluationNotes || {},
+    evalAttendance: saved.evalAttendance || {},
   }
 }
 

@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import type { AppData, Evaluation, EvaluationItem, Session } from '../types'
 import { makeId } from '../storage'
 import {
+  attendanceKey,
   classFillRate,
   clampScore,
+  evalCounts,
   evaluationClasses,
   hasAnyScore,
   maxTotal,
@@ -269,6 +271,15 @@ function EvaluationEntry({
     update({ evaluationNotes: { ...data.evaluationNotes, [noteKey(evaluation.id, studentId)]: value } })
   }
 
+  const setAttendance = (studentId: string, status: 'present' | 'absent') => {
+    const key = attendanceKey(evaluation.id, studentId)
+    const current = data.evalAttendance[key]
+    const evalAttendance = { ...data.evalAttendance }
+    if (current === status) delete evalAttendance[key]
+    else evalAttendance[key] = status
+    update({ evalAttendance })
+  }
+
   const focusCell = (rowIndex: number, colIndex: number) => {
     const target = inputRefs.current[`${rowIndex}:${colIndex}`]
     target?.focus()
@@ -277,6 +288,13 @@ function EvaluationEntry({
 
   const max = maxTotal(evaluation)
   const students = classroom?.students || []
+  const counts = evalCounts(data, evaluation, students)
+  const [attFilter, setAttFilter] = useState<'all' | 'present' | 'absent'>('all')
+  const visibleStudents = students.filter(student => {
+    if (attFilter === 'all') return true
+    const status = data.evalAttendance[attendanceKey(evaluation.id, student.id)]
+    return attFilter === 'present' ? status === 'present' : status !== 'present'
+  })
 
   return (
     <section className="panel eval-entry">
@@ -317,6 +335,27 @@ function EvaluationEntry({
         </div>
       )}
 
+      {classroom && (
+        <div className="eval-summary-bar">
+          <span>전체 {counts.total}명</span>
+          <span className="on">응시 {counts.present}명</span>
+          <span className="off">미응시 {counts.absent}명</span>
+          {counts.unmarked > 0 && <span className="muted">미확인 {counts.unmarked}명</span>}
+          <span className="muted">채점 완료 {counts.graded}명</span>
+          <div className="eval-att-filter">
+            {(['all', 'present', 'absent'] as const).map(value => (
+              <button
+                className={attFilter === value ? 'subtab active' : 'subtab'}
+                key={value}
+                onClick={() => setAttFilter(value)}
+              >
+                {value === 'all' ? '전체' : value === 'present' ? '응시' : '미응시'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {!evaluation.items.length && (
         <p className="banner">먼저 위에서 평가 요소를 추가해야 점수를 입력할 수 있습니다.</p>
       )}
@@ -329,6 +368,7 @@ function EvaluationEntry({
               <thead>
                 <tr>
                   <th className="sticky-col eval-name-col">번호 · 이름</th>
+                  <th className="eval-att-col">응시</th>
                   {evaluation.items.map(item => (
                     <th key={item.id}>{item.name}<small>{item.maxScore}점</small></th>
                   ))}
@@ -338,13 +378,28 @@ function EvaluationEntry({
                 </tr>
               </thead>
               <tbody>
-                {students.map((student, rowIndex) => {
+                {visibleStudents.map((student, rowIndex) => {
                   const filled = hasAnyScore(data, evaluation, student.id)
+                  const attStatus = data.evalAttendance[attendanceKey(evaluation.id, student.id)]
                   return (
-                    <tr key={student.id}>
+                    <tr className={attStatus === 'absent' ? 'eval-row-absent' : ''} key={student.id}>
                       <th className={filled ? 'sticky-col eval-name-col filled' : 'sticky-col eval-name-col'}>
                         {student.number}. {student.name}
                       </th>
+                      <td className="eval-att-cell">
+                        <button
+                          className={attStatus === 'present' ? 'slot on' : 'slot'}
+                          onClick={() => setAttendance(student.id, 'present')}
+                        >
+                          응시
+                        </button>
+                        <button
+                          className={attStatus === 'absent' ? 'slot on warn' : 'slot'}
+                          onClick={() => setAttendance(student.id, 'absent')}
+                        >
+                          미응시
+                        </button>
+                      </td>
                       {evaluation.items.map((item, colIndex) => {
                         const value = data.scores[scoreKey(evaluation.id, item.id, student.id)]
                         return (
@@ -384,6 +439,7 @@ function EvaluationEntry({
             </table>
           </div>
           {!students.length && <p className="hint">이 학급에 학생 명단이 없습니다.</p>}
+          {students.length > 0 && !visibleStudents.length && <p className="hint">이 조건에 맞는 학생이 없습니다.</p>}
         </>
       )}
     </section>

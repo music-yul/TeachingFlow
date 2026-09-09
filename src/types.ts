@@ -47,6 +47,8 @@ export type Lesson = {
   title: string
   typeId: string
   note: string
+  /** 이 차시가 수행평가라면, 어떤 평가(평가 관리)와 연결되는지. */
+  evaluationId?: string
 }
 
 export type EventType = 'closed' | 'blocked' | 'swap' | 'note'
@@ -136,6 +138,11 @@ export type AppData = {
   scores: Record<string, number>
   /** 학생별 평가 비고. 키는 `${evaluationId}:${studentId}`. */
   evaluationNotes: Record<string, string>
+  /**
+   * 평가 응시 여부. 점수와는 별개다. 키가 아예 없으면 "미확인"(아직 안 봄),
+   * 'present' 면 응시, 'absent' 면 미응시(결석 등)로 교사가 확정한 상태다.
+   */
+  evalAttendance: Record<string, 'present' | 'absent'>
 }
 
 export type EvaluationType = {

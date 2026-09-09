@@ -566,6 +566,33 @@ thead th small { display: block; font-weight: 400; }
 
 .eval-related-sessions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
+.eval-link-row.featured { background: var(--mark); border-color: var(--mark-line); }
+.eval-link-row.featured b { font-size: 1rem; }
+
+.eval-pending-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; width: 100%;
+  text-align: left; background: #fdecec; border: 1px solid #f0c4c2;
+  border-radius: 0.4rem; padding: 0.5rem 0.7rem; margin-bottom: 0.3rem; color: var(--ink);
+}
+.eval-pending-row .eval-link-cta { color: var(--danger) !important; font-weight: 600; white-space: nowrap; }
+
+.eval-summary-bar {
+  display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap;
+  margin: 0.6rem 0; font-size: 0.85rem;
+}
+.eval-summary-bar .on { color: var(--accent); font-weight: 600; }
+.eval-summary-bar .off { color: var(--danger); font-weight: 600; }
+.eval-summary-bar .muted { color: var(--muted); }
+.eval-att-filter { display: flex; gap: 0.25rem; margin-left: auto; }
+
+.eval-att-col { width: 5.5rem; }
+.eval-att-cell { white-space: nowrap; }
+.eval-att-cell .slot { padding: 0.15rem 0.4rem; font-size: 0.72rem; margin-right: 0.2rem; }
+.eval-att-cell .slot.warn.on { background: var(--danger); border-color: var(--danger); }
+.eval-row-absent { opacity: 0.55; }
+.eval-row-absent .eval-score-input { background: var(--ghost); }
+.lesson-eval-pick { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: var(--muted); }
+
 /* ---------- 모바일 전용 규칙 (항상 마지막에 위치해야 우선 적용됨) ---------- */
 
 @media (max-width: 720px) {

@@ -124,30 +124,47 @@ export default function LessonsView({ data, update }: Props) {
         <button className="primary-button" onClick={addLesson}>+ 차시 추가</button>
       </div>
 
-      {lessons.map((lesson, index) => (
-        <div className="lesson-row" key={lesson.id}>
-          <span className="order">{index + 1}</span>
-          <div className="lesson-fields">
-            <div className="lesson-line">
-              <input value={lesson.title} onChange={event => editLesson(lesson.id, { title: event.target.value })} />
-              <select value={lesson.typeId} onChange={event => editLesson(lesson.id, { typeId: event.target.value })}>
-                {data.types.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
-              </select>
+      {lessons.map((lesson, index) => {
+        const type = data.types.find(item => item.id === lesson.typeId)
+        const evaluations = data.evaluations.filter(item => item.subjectId === subject.id)
+        return (
+          <div className="lesson-row" key={lesson.id}>
+            <span className="order">{index + 1}</span>
+            <div className="lesson-fields">
+              <div className="lesson-line">
+                <input value={lesson.title} onChange={event => editLesson(lesson.id, { title: event.target.value })} />
+                <select value={lesson.typeId} onChange={event => editLesson(lesson.id, { typeId: event.target.value })}>
+                  {data.types.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                </select>
+              </div>
+              <input
+                className="note-input"
+                value={lesson.note}
+                placeholder="이 차시 공통 메모 (모든 학급에 함께 표시)"
+                onChange={event => editLesson(lesson.id, { note: event.target.value })}
+              />
+              {type?.emphasis && (
+                <label className="lesson-eval-pick">
+                  평가 선택
+                  <select
+                    value={lesson.evaluationId || ''}
+                    onChange={event => editLesson(lesson.id, { evaluationId: event.target.value || undefined })}
+                  >
+                    <option value="">연결 안 함</option>
+                    {evaluations.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  </select>
+                  {!evaluations.length && <small className="hint">평가 관리에서 평가를 먼저 만들면 여기서 고를 수 있습니다.</small>}
+                </label>
+              )}
             </div>
-            <input
-              className="note-input"
-              value={lesson.note}
-              placeholder="이 차시 공통 메모 (모든 학급에 함께 표시)"
-              onChange={event => editLesson(lesson.id, { note: event.target.value })}
-            />
+            <div className="row-actions">
+              <button className="ghost-button" onClick={() => move(index, -1)}>▲</button>
+              <button className="ghost-button" onClick={() => move(index, 1)}>▼</button>
+              <button className="danger-button" onClick={() => removeLesson(lesson.id)}>삭제</button>
+            </div>
           </div>
-          <div className="row-actions">
-            <button className="ghost-button" onClick={() => move(index, -1)}>▲</button>
-            <button className="ghost-button" onClick={() => move(index, 1)}>▼</button>
-            <button className="danger-button" onClick={() => removeLesson(lesson.id)}>삭제</button>
-          </div>
-        </div>
-      ))}
+        )
+      })}
       {!lessons.length && <p className="hint">등록된 차시가 없습니다.</p>}
     </section>
   )

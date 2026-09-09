@@ -1,5 +1,6 @@
 import type { AppData, AttendanceStatus, Session, SessionMode } from '../types'
 import { effectiveLessonIds, progressKey, sessionLabel } from '../schedule'
+import { evalCounts, linkedEvaluation } from '../evaluation'
 
 type Props = {
   data: AppData
@@ -22,11 +23,24 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
   const classroom = data.classes.find(item => item.id === session.classId)
   if (!classroom) return null
 
-  const relatedEvaluations = data.evaluations.filter(item =>
-    item.subjectId === session.subjectId
+  const linked = linkedEvaluation(data, session)
+  const dateMatched = data.evaluations.filter(item =>
+    item.id !== linked?.id
+    && item.subjectId === session.subjectId
     && item.date === session.date
     && (!item.classIds.length || item.classIds.includes(session.classId)),
   )
+
+  /** 이 반·이 과목의 지난 평가 중, 응시 확정이 안 된 학생이 남아있는 평가. */
+  const pendingEvaluations = data.evaluations
+    .filter(item =>
+      item.subjectId === session.subjectId
+      && item.date
+      && item.date < session.date
+      && (!item.classIds.length || item.classIds.includes(session.classId)),
+    )
+    .map(item => ({ evaluation: item, counts: evalCounts(data, item, classroom.students) }))
+    .filter(item => item.counts.absent + item.counts.unmarked > 0)
 
   const override = data.overrides[session.id] || {}
   const lessons = effectiveLessonIds(session).map(id => data.lessons.find(item => item.id === id)).filter(Boolean)
@@ -113,11 +127,22 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
             </div>
           )}
 
-          {relatedEvaluations.length > 0 && (
+          {linked && (
+            <div className="block">
+              <h3>수행평가</h3>
+              <button className="eval-link-row featured" onClick={() => onOpenEvaluation(linked.id, session.classId)}>
+                <b>🎯 {linked.name}</b>
+                <span>{linked.weight}% 반영</span>
+                <span className="eval-link-cta">수행평가 채점하기 ›</span>
+              </button>
+            </div>
+          )}
+
+          {!linked && dateMatched.length > 0 && (
             <div className="block">
               <h3>평가</h3>
               <p className="hint">이 날짜·이 반과 연결된 평가입니다.</p>
-              {relatedEvaluations.map(evaluation => {
+              {dateMatched.map(evaluation => {
                 const type = data.evaluationTypes.find(item => item.id === evaluation.typeId)
                 return (
                   <button
@@ -134,12 +159,28 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
             </div>
           )}
 
+          {pendingEvaluations.length > 0 && (
+            <div className="block">
+              <h3>이전 수행평가 미응시 학생</h3>
+              {pendingEvaluations.map(({ evaluation, counts }) => (
+                <button
+                  className="eval-pending-row"
+                  key={evaluation.id}
+                  onClick={() => onOpenEvaluation(evaluation.id, session.classId)}
+                >
+                  <span>⚠️ {evaluation.date} {evaluation.name}</span>
+                  <span className="eval-link-cta">미응시 {counts.absent + counts.unmarked}명 확인 ›</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {classroom.students.length > 0 && (
             <div className="block">
               <h3>출석</h3>
               {classroom.students.map(student => {
-                const attendanceKey = `${session.id}:${student.id}`
-                const current = data.attendance[attendanceKey]
+                const attKey = `${session.id}:${student.id}`
+                const current = data.attendance[attKey]
                 return (
                   <div className="attendance-row" key={student.id}>
                     <span>{student.number}. {student.name}</span>
@@ -149,8 +190,8 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
                         key={status}
                         onClick={() => {
                           const attendance = { ...data.attendance }
-                          if (current === status) delete attendance[attendanceKey]
-                          else attendance[attendanceKey] = status
+                          if (current === status) delete attendance[attKey]
+                          else attendance[attKey] = status
                           update({ attendance })
                         }}
                       >
@@ -160,8 +201,8 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
                     <input
                       className="activity-input"
                       placeholder="활동·태도 기록"
-                      value={data.activities[attendanceKey] || ''}
-                      onChange={event => update({ activities: { ...data.activities, [attendanceKey]: event.target.value } })}
+                      value={data.activities[attKey] || ''}
+                      onChange={event => update({ activities: { ...data.activities, [attKey]: event.target.value } })}
                     />
                   </div>
                 )

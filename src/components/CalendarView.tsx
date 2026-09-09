@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { AppData, Session } from '../types'
 import { coversDate, dateKey, effectiveLessonIds, sessionLabel, todayKey } from '../schedule'
+import { linkedEvaluation } from '../evaluation'
 import { holidayName } from '../holidays'
 import { makeId } from '../storage'
 import { exportCalendarXlsx, printCurrentView } from '../exportPrint'
@@ -89,6 +90,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                   .filter(Boolean)
                 const type = data.types.find(value => value.id === lessons[0]?.typeId)
                 const marked = lessons.some(lesson => data.types.find(value => value.id === lesson!.typeId)?.emphasis)
+                const hasEvaluation = Boolean(linkedEvaluation(data, item))
                 // 진도표를 쓰지 않는 과목(CA·HR 등)은 체크할 진도 자체가 없다.
                 // 지난 날짜는 자동으로 완료(회색)처럼 보이게 한다.
                 const done = subject?.usesProgress === false
@@ -105,7 +107,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                       {item.period}교시 {classroom?.name}
                       {item.swappedFrom && <em className="swap-tag">대체</em>}
                     </span>
-                    <span className="cl-right">{sessionLabel(data, item)}</span>
+                    <span className="cl-right">{hasEvaluation && '🎯 '}{sessionLabel(data, item)}</span>
                   </button>
                 )
               })}
