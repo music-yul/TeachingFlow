@@ -365,7 +365,10 @@ thead th small { display: block; font-weight: 400; }
   .event-row { flex-direction: column; align-items: stretch; }
   .event-row > input, .event-row > select { width: 100%; }
 
-  .calendar-day { min-height: 5rem; }
+  .calendar-day { min-height: 5.2rem; }
+  .calendar-lesson { flex-direction: column; align-items: flex-start; gap: 0; padding: 0.08rem 0.2rem; }
+  .cl-left { flex: none; width: 100%; font-size: 0.56rem; }
+  .cl-right { flex: none; width: 100%; font-size: 0.62rem; }
 
   .mode-picker { grid-template-columns: 1fr; }
   .mode { flex-direction: column; align-items: flex-start; gap: 0.1rem; }
@@ -484,6 +487,8 @@ thead th small { display: block; font-weight: 400; }
 .attendance-table .status-cell { white-space: nowrap; }
 .attendance-table .status-cell .slot { width: auto; padding: 0 0.35rem; margin-right: 0.1rem; }
 .attendance-table td input { width: 100%; }
+.attendance-table td:first-child, .attendance-table td:nth-child(2),
+.attendance-table th:first-child, .attendance-table th:nth-child(2) { white-space: nowrap; }
 .tally { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
 .tally span { margin-right: 0.3rem; }
 
