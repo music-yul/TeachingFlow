@@ -1,0 +1,47 @@
+From 388b2c465648995df9a00620893d73f7f252ca44 Mon Sep 17 00:00:00 2001
+From: claude <a@b>
+Date: Wed, 9 Sep 2026 06:40:38 +0000
+Subject: [PATCH] =?UTF-8?q?v25:=20=EB=8B=AC=EB=A0=A5=20=EC=B9=B8=20?=
+ =?UTF-8?q?=EA=B8=B0=EB=B3=B8=20=EB=86=92=EC=9D=B4=EB=A5=BC=204=EA=B0=9C?=
+ =?UTF-8?q?=20=ED=95=AD=EB=AA=A9=EC=9D=B4=20=EC=95=8C=EB=A7=9E=EA=B2=8C=20?=
+ =?UTF-8?q?=EB=93=A4=EC=96=B4=EA=B0=80=EB=8A=94=20=ED=81=AC=EA=B8=B0?=
+ =?UTF-8?q?=EB=A1=9C=20=ED=99=95=EB=8C=80(=EB=82=B4=EC=9A=A9=20=EB=A7=8E?=
+ =?UTF-8?q?=EC=9C=BC=EB=A9=B4=20=EA=B3=84=EC=86=8D=20=EC=95=84=EB=9E=98?=
+ =?UTF-8?q?=EB=A1=9C=20=EB=8A=98=EC=96=B4=EB=82=A8),=20=EB=AA=A8=EB=B0=94?=
+ =?UTF-8?q?=EC=9D=BC=20=EC=A0=84=EC=9A=A9=20=EB=82=A1=EC=9D=80=20=EC=84=A0?=
+ =?UTF-8?q?=ED=83=9D=EC=9E=90=20=EC=A0=95=EB=A6=AC?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ src/App.css | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/src/App.css b/src/App.css
+index db075ae..519a7ec 100644
+--- a/src/App.css
++++ b/src/App.css
+@@ -164,7 +164,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
+ .weekday-row { margin-bottom: 1px; }
+ .weekday-row b { background: var(--subtle); text-align: center; padding: 0.2rem 0; font-size: 0.74rem; color: var(--muted); }
+ 
+-.calendar-day { background: var(--card); min-height: 4rem; padding: 0.2rem; display: flex; flex-direction: column; gap: 0.1rem; }
++.calendar-day { background: var(--card); min-height: 5.8rem; padding: 0.2rem; display: flex; flex-direction: column; gap: 0.1rem; }
+ .calendar-day.outside { background: var(--subtle); color: #b6bcc7; }
+ .calendar-day.today { background: var(--today); }
+ .calendar-day-head { display: flex; align-items: center; justify-content: space-between; }
+@@ -352,9 +352,7 @@ thead th small { display: block; font-weight: 400; }
+   .event-row { flex-direction: column; align-items: stretch; }
+   .event-row > input, .event-row > select { width: 100%; }
+ 
+-  .calendar-day { min-height: 4.2rem; }
+-  .calendar-lesson b { font-size: 0.66rem; }
+-  .calendar-lesson span { font-size: 0.7rem; }
++  .calendar-day { min-height: 5rem; }
+ 
+   .mode-picker { grid-template-columns: 1fr; }
+   .mode { flex-direction: column; align-items: flex-start; gap: 0.1rem; }
+-- 
+2.43.0
+

@@ -1,0 +1,365 @@
+From 5b9fd4fd3e346a19b1de7628863897970d59c29d Mon Sep 17 00:00:00 2001
+From: claude <a@b>
+Date: Wed, 9 Sep 2026 10:36:09 +0000
+Subject: [PATCH] =?UTF-8?q?v28:=20=EC=A7=84=EB=8F=84=ED=91=9C=EB=A5=BC=20?=
+ =?UTF-8?q?=ED=8F=AC=ED=95=A8=ED=95=9C=20=EB=AA=A8=EB=B0=94=EC=9D=BC=20CSS?=
+ =?UTF-8?q?=20=EC=BA=90=EC=8A=A4=EC=BC=80=EC=9D=B4=EB=93=9C=20=EB=B2=84?=
+ =?UTF-8?q?=EA=B7=B8=206=EA=B1=B4=20=EC=9D=BC=EA=B4=84=20=EC=88=98?=
+ =?UTF-8?q?=EC=A0=95=20-=20=EB=AA=A8=EB=B0=94=EC=9D=BC=20=EB=AF=B8?=
+ =?UTF-8?q?=EB=94=94=EC=96=B4=EC=BF=BC=EB=A6=AC=EB=A5=BC=20=ED=8C=8C?=
+ =?UTF-8?q?=EC=9D=BC=20=EB=A7=A8=20=EB=92=A4=EB=A1=9C=20=EC=9E=AC=EB=B0=B0?=
+ =?UTF-8?q?=EC=B9=98=ED=95=B4=20=EB=AC=B4=EC=A1=B0=EA=B1=B4=20=EA=B7=9C?=
+ =?UTF-8?q?=EC=B9=99=EC=9D=B4=20=EB=8D=AE=EC=96=B4=EC=93=B0=EC=A7=80=20?=
+ =?UTF-8?q?=EB=AA=BB=ED=95=98=EA=B2=8C=20=EA=B5=AC=EC=A1=B0=20=EB=B3=80?=
+ =?UTF-8?q?=EA=B2=BD?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ src/App.css | 317 +++++++++++++++++++++++++++-------------------------
+ 1 file changed, 162 insertions(+), 155 deletions(-)
+
+diff --git a/src/App.css b/src/App.css
+index c6f5d96..272844f 100644
+--- a/src/App.css
++++ b/src/App.css
+@@ -267,159 +267,7 @@ thead th small { display: block; font-weight: 400; }
+ 
+ .class-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; margin-top: 0.5rem; align-items: start; }
+ .class-block { border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.6rem; min-width: 0; }
+-@media (max-width: 720px) {
+-  .class-grid { grid-template-columns: 1fr; }
+-}
+-.class-head { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+-.class-head input { width: 6rem; }
+-.class-head small { color: var(--muted); font-size: 0.8rem; margin-right: auto; }
+-
+-.slot-grid { display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap; }
+-.day-column { display: flex; flex-direction: column; gap: 0.15rem; align-items: center; }
+-.day-column b { font-size: 0.78rem; color: var(--muted); }
+-.slot { width: 1.9rem; height: 1.7rem; border: 1px solid var(--line); background: var(--card); font-size: 0.78rem; padding: 0; }
+-.slot.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+-
+-.students { margin-top: 0.6rem; border-top: 1px dashed var(--line); padding-top: 0.5rem; }
+-.student-row { display: flex; gap: 0.3rem; margin-bottom: 0.25rem; }
+-.student-row input[type='number'] { width: 4rem; }
+-.student-row input:not([type='number']) { width: 9rem; }
+-
+-.lesson-row { display: flex; gap: 0.5rem; align-items: flex-start; border-bottom: 1px solid var(--line); padding: 0.4rem 0; flex-wrap: wrap; min-width: 0; }
+-.order { flex: 0 0 1.6rem; text-align: center; color: var(--muted); font-size: 0.85rem; padding-top: 0.4rem; }
+-.lesson-fields { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+-.lesson-line { display: flex; gap: 0.35rem; min-width: 0; flex-wrap: wrap; }
+-.lesson-line input { flex: 1 1 9rem; min-width: 0; }
+-.lesson-line select { flex: 0 1 auto; min-width: 0; }
+-.note-input { font-size: 0.82rem; }
+-.row-actions { display: flex; gap: 0.2rem; }
+-
+-.event-input-box {
+-  background: var(--accent-soft);
+-  border: 1px solid var(--accent);
+-  border-radius: 0.5rem;
+-  padding: 0.7rem 0.8rem;
+-  margin-bottom: 0.9rem;
+-}
+-.event-input-label { margin: 0 0 0.4rem; font-size: 0.78rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.02em; }
+-.event-form { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+-.event-list-label { margin: 0 0 0.4rem; font-size: 0.82rem; font-weight: 600; color: var(--muted); }
+-.event-row {
+-  display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center;
+-  padding: 0.5rem 0.6rem; margin-bottom: 0.4rem;
+-  background: var(--card); border: 1px solid var(--line); border-radius: 0.4rem;
+-}
+-.period-picker { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; margin-bottom: 0.5rem; font-size: 0.82rem; color: var(--muted); }
+-.period-picker.compact { margin: 0; }
+ 
+-/* ---------- modal ---------- */
+-
+-.modal-backdrop {
+-  position: fixed; inset: 0; background: rgba(24, 30, 40, 0.45);
+-  display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 20;
+-}
+-.modal { background: var(--card); border-radius: 0.6rem; width: min(46rem, 100%); max-height: 88vh; display: flex; flex-direction: column; }
+-.modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 0.9rem 1rem; border-bottom: 1px solid var(--line); }
+-.modal-head h2 { margin: 0.1rem 0 0; font-size: 1.15rem; }
+-.modal-body { padding: 0.9rem 1rem; overflow-y: auto; }
+-.modal-foot { display: flex; justify-content: flex-end; gap: 0.4rem; padding: 0.75rem 1rem; border-top: 1px solid var(--line); }
+-
+-.attendance-row { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; padding: 0.25rem 0; border-bottom: 1px solid var(--chip); }
+-.attendance-row > span { flex: 0 0 7rem; font-size: 0.85rem; }
+-.attendance-row .slot { width: auto; padding: 0 0.4rem; }
+-.activity-input { flex: 1; min-width: 10rem; font-size: 0.82rem; }
+-
+-@media (max-width: 900px) {
+-  .workspace { flex-direction: column; gap: 0.6rem; padding: 0.6rem 0.7rem 3rem; }
+-
+-  /* 사이드바를 없애고 메뉴·본문·시간표를 워크스페이스의 직계 자식으로 만든다 */
+-  .sidebar { display: contents; }
+-  .sidebar nav {
+-    order: 0;
+-    flex-direction: row;
+-    overflow-x: auto;
+-    gap: 0.25rem;
+-    padding-bottom: 0.2rem;
+-    position: sticky;
+-    top: 0;
+-    z-index: 5;
+-    background: var(--bg);
+-  }
+-  .nav-item { flex: 0 0 auto; padding: 0.35rem 0.7rem; font-size: 0.88rem; }
+-  .nav-index { display: none; }
+-  .content { order: 1; }
+-  .mini-timetable { order: 2; margin-top: 0; }
+-  .sidebar-foot { order: 3; }
+-
+-  .topbar { padding: 0.5rem 0.7rem; gap: 0.4rem; }
+-  .brand-mark { width: 1.9rem; height: 1.9rem; font-size: 1.1rem; }
+-  .brand-text strong { font-size: 0.95rem; }
+-  .brand-text small { font-size: 0.68rem; }
+-  .topbar-right { margin-left: 0; width: 100%; justify-content: flex-end; }
+-
+-  .panel { padding: 0.7rem; border-radius: 0.5rem; }
+-
+-  .field-grid { grid-template-columns: 1fr; }
+-  .event-form, .inline-form { gap: 0.35rem; }
+-  .event-form > input, .event-form > select { flex: 1 1 100%; min-width: 0; }
+-  .event-row { flex-direction: column; align-items: stretch; }
+-  .event-row > input, .event-row > select { width: 100%; }
+-
+-  .calendar-day { min-height: 5.2rem; }
+-  .calendar-lesson { flex-direction: column; align-items: flex-start; gap: 0; padding: 0.08rem 0.2rem; }
+-  .cl-left { flex: none; width: 100%; font-size: 0.56rem; }
+-  .cl-right { flex: none; width: 100%; font-size: 0.62rem; }
+-
+-  .mode-picker { grid-template-columns: 1fr; }
+-  .mode { flex-direction: column; align-items: flex-start; gap: 0.1rem; }
+-  .mode b { flex: none; }
+-  .modal { max-height: 92vh; }
+-  .modal-body { padding: 0.7rem; }
+-
+-  .attendance-table td input { min-width: 8rem; }
+-
+-  /* 가로로 삐져나가지 않도록 입력 줄을 세로로 접는다 */
+-  .inline-form > input:not([type='number']):not([type='color']) { flex: 1 1 100%; min-width: 0; }
+-  .inline-form input[type='number'] { flex: 0 0 4.5rem; }
+-  .inline-form > select, .inline-form > button, .inline-form > label { flex: 1 1 auto; min-width: 0; }
+-  .inline-form input[type='text'], .inline-form input:not([type]) { min-width: 0; }
+-
+-  .lesson-fields { flex: 1 1 100%; }
+-  .lesson-line input { flex: 1 1 100%; }
+-  .lesson-line select { flex: 1 1 auto; }
+-  .row-actions { margin-left: auto; }
+-
+-  .subject-list { grid-template-columns: 1fr; }
+-
+-  .student-row { flex-wrap: wrap; }
+-  .student-row input:not([type='number']) { flex: 1 1 6rem; width: auto; min-width: 0; }
+-
+-  .slot-text input { width: 100%; }
+-  .slot-text { flex: 1 1 100%; }
+-  .class-head { gap: 0.3rem; }
+-  .class-head input { width: 5rem; }
+-  .slot-row { gap: 0.5rem; }
+-  .help-body { max-width: none; }
+-
+-  .toolbar-actions { margin-left: 0; width: 100%; }
+-  .class-filter { margin-left: 0; }
+-  .day-note-add { opacity: 0.6; font-size: 1rem; padding: 0 0.3rem; }
+-  .class-grid { grid-template-columns: 1fr; }
+-  .theme-card, .font-card { min-width: 0; flex: 1 1 45%; }
+-}
+-
+-@media (max-width: 560px) {
+-  .slot { width: 1.7rem; height: 1.5rem; font-size: 0.72rem; }
+-  .progress-table .sticky-col { width: 10rem; }
+-  .progress-table thead th:not(.sticky-col) { width: 8rem; }
+-  .progress-cell { width: 8rem; max-width: 8rem; }
+-  .subtabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 0.2rem; }
+-  .subtab { flex: 0 0 auto; }
+-  .help-nav { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 0.2rem; }
+-  .help-nav .subtab { flex: 0 0 auto; }
+-  .digest-row { flex-wrap: wrap; }
+-  .digest-lesson { flex: 0 0 auto; }
+-}
+ 
+ /* ---------- sub tabs ---------- */
+ 
+@@ -516,9 +364,12 @@ thead th small { display: block; font-weight: 400; }
+ /* ---------- progress table width ---------- */
+ 
+ .progress-table { table-layout: fixed; }
+-.progress-table .sticky-col { width: 15rem; }
+-.progress-table thead th:not(.sticky-col) { width: 9.5rem; }
+-.progress-cell { width: 9.5rem; max-width: 9.5rem; }
++
++@media (min-width: 561px) {
++  .progress-table .sticky-col { width: 15rem; }
++  .progress-table thead th:not(.sticky-col) { width: 9.5rem; }
++  .progress-cell { width: 9.5rem; max-width: 9.5rem; }
++}
+ .memo-button {
+   display: block; width: 100%; text-align: left;
+   background: none; border: 1px dashed var(--line); color: var(--muted);
+@@ -679,3 +530,159 @@ thead th small { display: block; font-weight: 400; }
+   padding: 0.1rem 0.3rem; border-radius: 999px; font-size: 0.82rem;
+ }
+ .type-chip-name:focus { background: var(--card); outline: 1px solid var(--accent); }
++
++/* ---------- 모바일 전용 규칙 (항상 마지막에 위치해야 우선 적용됨) ---------- */
++
++@media (max-width: 720px) {
++  .class-grid { grid-template-columns: 1fr; }
++}
++.class-head { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
++.class-head input { width: 6rem; }
++.class-head small { color: var(--muted); font-size: 0.8rem; margin-right: auto; }
++
++.slot-grid { display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap; }
++.day-column { display: flex; flex-direction: column; gap: 0.15rem; align-items: center; }
++.day-column b { font-size: 0.78rem; color: var(--muted); }
++.slot { width: 1.9rem; height: 1.7rem; border: 1px solid var(--line); background: var(--card); font-size: 0.78rem; padding: 0; }
++.slot.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
++
++.students { margin-top: 0.6rem; border-top: 1px dashed var(--line); padding-top: 0.5rem; }
++.student-row { display: flex; gap: 0.3rem; margin-bottom: 0.25rem; }
++.student-row input[type='number'] { width: 4rem; }
++.student-row input:not([type='number']) { width: 9rem; }
++
++.lesson-row { display: flex; gap: 0.5rem; align-items: flex-start; border-bottom: 1px solid var(--line); padding: 0.4rem 0; flex-wrap: wrap; min-width: 0; }
++.order { flex: 0 0 1.6rem; text-align: center; color: var(--muted); font-size: 0.85rem; padding-top: 0.4rem; }
++.lesson-fields { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
++.lesson-line { display: flex; gap: 0.35rem; min-width: 0; flex-wrap: wrap; }
++.lesson-line input { flex: 1 1 9rem; min-width: 0; }
++.lesson-line select { flex: 0 1 auto; min-width: 0; }
++.note-input { font-size: 0.82rem; }
++.row-actions { display: flex; gap: 0.2rem; }
++
++.event-input-box {
++  background: var(--accent-soft);
++  border: 1px solid var(--accent);
++  border-radius: 0.5rem;
++  padding: 0.7rem 0.8rem;
++  margin-bottom: 0.9rem;
++}
++.event-input-label { margin: 0 0 0.4rem; font-size: 0.78rem; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.02em; }
++.event-form { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
++.event-list-label { margin: 0 0 0.4rem; font-size: 0.82rem; font-weight: 600; color: var(--muted); }
++.event-row {
++  display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center;
++  padding: 0.5rem 0.6rem; margin-bottom: 0.4rem;
++  background: var(--card); border: 1px solid var(--line); border-radius: 0.4rem;
++}
++.period-picker { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; margin-bottom: 0.5rem; font-size: 0.82rem; color: var(--muted); }
++.period-picker.compact { margin: 0; }
++
++/* ---------- modal ---------- */
++
++.modal-backdrop {
++  position: fixed; inset: 0; background: rgba(24, 30, 40, 0.45);
++  display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 20;
++}
++.modal { background: var(--card); border-radius: 0.6rem; width: min(46rem, 100%); max-height: 88vh; display: flex; flex-direction: column; }
++.modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 0.9rem 1rem; border-bottom: 1px solid var(--line); }
++.modal-head h2 { margin: 0.1rem 0 0; font-size: 1.15rem; }
++.modal-body { padding: 0.9rem 1rem; overflow-y: auto; }
++.modal-foot { display: flex; justify-content: flex-end; gap: 0.4rem; padding: 0.75rem 1rem; border-top: 1px solid var(--line); }
++
++.attendance-row { display: flex; align-items: center; gap: 0.25rem; flex-wrap: wrap; padding: 0.25rem 0; border-bottom: 1px solid var(--chip); }
++.attendance-row > span { flex: 0 0 7rem; font-size: 0.85rem; }
++.attendance-row .slot { width: auto; padding: 0 0.4rem; }
++.activity-input { flex: 1; min-width: 10rem; font-size: 0.82rem; }
++
++@media (max-width: 900px) {
++  .workspace { flex-direction: column; gap: 0.6rem; padding: 0.6rem 0.7rem 3rem; }
++
++  /* 사이드바를 없애고 메뉴·본문·시간표를 워크스페이스의 직계 자식으로 만든다 */
++  .sidebar { display: contents; }
++  .sidebar nav {
++    order: 0;
++    flex-direction: row;
++    overflow-x: auto;
++    gap: 0.25rem;
++    padding-bottom: 0.2rem;
++    position: sticky;
++    top: 0;
++    z-index: 5;
++    background: var(--bg);
++  }
++  .nav-item { flex: 0 0 auto; padding: 0.35rem 0.7rem; font-size: 0.88rem; }
++  .nav-index { display: none; }
++  .content { order: 1; }
++  .mini-timetable { order: 2; margin-top: 0; }
++  .sidebar-foot { order: 3; }
++
++  .topbar { padding: 0.5rem 0.7rem; gap: 0.4rem; }
++  .brand-mark { width: 1.9rem; height: 1.9rem; font-size: 1.1rem; }
++  .brand-text strong { font-size: 0.95rem; }
++  .brand-text small { font-size: 0.68rem; }
++  .topbar-right { margin-left: 0; width: 100%; justify-content: flex-end; }
++
++  .panel { padding: 0.7rem; border-radius: 0.5rem; }
++
++  .field-grid { grid-template-columns: 1fr; }
++  .event-form, .inline-form { gap: 0.35rem; }
++  .event-form > input, .event-form > select { flex: 1 1 100%; min-width: 0; }
++  .event-row { flex-direction: column; align-items: stretch; }
++  .event-row > input, .event-row > select { width: 100%; }
++
++  .calendar-day { min-height: 5.2rem; }
++  .calendar-lesson { flex-direction: column; align-items: flex-start; gap: 0; padding: 0.08rem 0.2rem; }
++  .cl-left { flex: none; width: 100%; font-size: 0.56rem; }
++  .cl-right { flex: none; width: 100%; font-size: 0.62rem; }
++
++  .mode-picker { grid-template-columns: 1fr; }
++  .mode { flex-direction: column; align-items: flex-start; gap: 0.1rem; }
++  .mode b { flex: none; }
++  .modal { max-height: 92vh; }
++  .modal-body { padding: 0.7rem; }
++
++  .attendance-table td input { min-width: 8rem; }
++
++  /* 가로로 삐져나가지 않도록 입력 줄을 세로로 접는다 */
++  .inline-form > input:not([type='number']):not([type='color']) { flex: 1 1 100%; min-width: 0; }
++  .inline-form input[type='number'] { flex: 0 0 4.5rem; }
++  .inline-form > select, .inline-form > button, .inline-form > label { flex: 1 1 auto; min-width: 0; }
++  .inline-form input[type='text'], .inline-form input:not([type]) { min-width: 0; }
++
++  .lesson-fields { flex: 1 1 100%; }
++  .lesson-line input { flex: 1 1 100%; }
++  .lesson-line select { flex: 1 1 auto; }
++  .row-actions { margin-left: auto; }
++
++  .subject-list { grid-template-columns: 1fr; }
++
++  .student-row { flex-wrap: wrap; }
++  .student-row input:not([type='number']) { flex: 1 1 6rem; width: auto; min-width: 0; }
++
++  .slot-text input { width: 100%; }
++  .slot-text { flex: 1 1 100%; }
++  .class-head { gap: 0.3rem; }
++  .class-head input { width: 5rem; }
++  .slot-row { gap: 0.5rem; }
++  .help-body { max-width: none; }
++
++  .toolbar-actions { margin-left: 0; width: 100%; }
++  .class-filter { margin-left: 0; }
++  .day-note-add { opacity: 0.6; font-size: 1rem; padding: 0 0.3rem; }
++  .class-grid { grid-template-columns: 1fr; }
++  .theme-card, .font-card { min-width: 0; flex: 1 1 45%; }
++}
++
++@media (max-width: 560px) {
++  .slot { width: 1.7rem; height: 1.5rem; font-size: 0.72rem; }
++  .progress-table .sticky-col { width: 10rem; }
++  .progress-table thead th:not(.sticky-col) { width: 8rem; }
++  .progress-cell { width: 8rem; max-width: 8rem; }
++  .subtabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 0.2rem; }
++  .subtab { flex: 0 0 auto; }
++  .help-nav { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 0.2rem; }
++  .help-nav .subtab { flex: 0 0 auto; }
++  .digest-row { flex-wrap: wrap; }
++  .digest-lesson { flex: 0 0 auto; }
++}
+-- 
+2.43.0
+

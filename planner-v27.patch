@@ -1,0 +1,48 @@
+From 81a1bdc49bc44e3101693731cca8414b7192db6c Mon Sep 17 00:00:00 2001
+From: claude <a@b>
+Date: Wed, 9 Sep 2026 10:02:08 +0000
+Subject: [PATCH] =?UTF-8?q?v27:=20=EB=AA=A8=EB=B0=94=EC=9D=BC=20=EB=8B=AC?=
+ =?UTF-8?q?=EB=A0=A5=20=ED=95=AD=EB=AA=A9=EC=9D=B4=20=EC=A2=81=EC=9D=80=20?=
+ =?UTF-8?q?=EC=B9=B8=20=ED=8F=AD=20=EB=95=8C=EB=AC=B8=EC=97=90=20=EA=B9=A8?=
+ =?UTF-8?q?=EC=A7=80=EB=8D=98=20=EB=AC=B8=EC=A0=9C=20=EC=88=98=EC=A0=95(?=
+ =?UTF-8?q?=EB=B0=98=EC=9D=B4=EB=A6=84/=EB=82=B4=EC=9A=A9=EC=9D=84=20?=
+ =?UTF-8?q?=EC=9C=84=EC=95=84=EB=9E=98=EB=A1=9C),=20=EB=B0=98=EB=B3=84=20?=
+ =?UTF-8?q?=EC=B6=9C=EC=84=9D=EB=B6=80=20=EB=B2=88=ED=98=B8=C2=B7=EC=9D=B4?=
+ =?UTF-8?q?=EB=A6=84=20=EC=B9=B8=20=EC=84=B8=EB=A1=9C=20=EC=A4=84=EB=B0=94?=
+ =?UTF-8?q?=EA=BF=88=20=EB=B0=A9=EC=A7=80?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ src/App.css | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/src/App.css b/src/App.css
+index b7d9649..c6f5d96 100644
+--- a/src/App.css
++++ b/src/App.css
+@@ -365,7 +365,10 @@ thead th small { display: block; font-weight: 400; }
+   .event-row { flex-direction: column; align-items: stretch; }
+   .event-row > input, .event-row > select { width: 100%; }
+ 
+-  .calendar-day { min-height: 5rem; }
++  .calendar-day { min-height: 5.2rem; }
++  .calendar-lesson { flex-direction: column; align-items: flex-start; gap: 0; padding: 0.08rem 0.2rem; }
++  .cl-left { flex: none; width: 100%; font-size: 0.56rem; }
++  .cl-right { flex: none; width: 100%; font-size: 0.62rem; }
+ 
+   .mode-picker { grid-template-columns: 1fr; }
+   .mode { flex-direction: column; align-items: flex-start; gap: 0.1rem; }
+@@ -484,6 +487,8 @@ thead th small { display: block; font-weight: 400; }
+ .attendance-table .status-cell { white-space: nowrap; }
+ .attendance-table .status-cell .slot { width: auto; padding: 0 0.35rem; margin-right: 0.1rem; }
+ .attendance-table td input { width: 100%; }
++.attendance-table td:first-child, .attendance-table td:nth-child(2),
++.attendance-table th:first-child, .attendance-table th:nth-child(2) { white-space: nowrap; }
+ .tally { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+ .tally span { margin-right: 0.3rem; }
+ 
+-- 
+2.43.0
+

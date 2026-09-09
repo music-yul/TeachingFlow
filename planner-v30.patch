@@ -1,0 +1,93 @@
+From 9bf64a1cfdbb5a46075df563314057d951d4b5ae Mon Sep 17 00:00:00 2001
+From: claude <a@b>
+Date: Wed, 9 Sep 2026 10:44:21 +0000
+Subject: [PATCH] =?UTF-8?q?v30:=20=EC=A7=84=EB=8F=84=ED=91=9C=EC=97=90=20?=
+ =?UTF-8?q?=ED=95=99=EA=B8=89=20=ED=95=84=ED=84=B0=20=EC=B6=94=EA=B0=80=20?=
+ =?UTF-8?q?-=20=ED=8A=B9=EC=A0=95=20=EB=B0=98=EB=A7=8C=20=EA=B3=A8?=
+ =?UTF-8?q?=EB=9D=BC=20=EA=B0=80=EB=A1=9C=20=EC=8A=A4=ED=81=AC=EB=A1=A4=20?=
+ =?UTF-8?q?=EC=97=86=EC=9D=B4=20=EB=B3=BC=20=EC=88=98=20=EC=9E=88=EC=9D=8C?=
+ =?UTF-8?q?(=EB=AA=A8=EB=B0=94=EC=9D=BC=20=EB=8C=80=EC=9D=91)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ src/components/HelpView.tsx     |  4 ++++
+ src/components/ProgressView.tsx | 15 ++++++++++++---
+ 2 files changed, 16 insertions(+), 3 deletions(-)
+
+diff --git a/src/components/HelpView.tsx b/src/components/HelpView.tsx
+index 4a644be..01d2530 100644
+--- a/src/components/HelpView.tsx
++++ b/src/components/HelpView.tsx
+@@ -150,6 +150,10 @@ export default function HelpView() {
+             아래 <b>수업 시간 대비 진도 분량</b> 표에서 반별로 시간이 남는지 부족한지 확인할 수 있습니다.
+             학기 계획을 세울 때 쓰세요.
+           </p>
++          <p className="callout">
++            휴대폰처럼 화면이 좁으면 반이 여러 개일 때 가로 스크롤이 생깁니다. 표 위쪽 <b>학급</b> 선택에서
++            특정 반만 골라두면 스크롤 없이 그 반만 꽉 차게 볼 수 있습니다.
++          </p>
+ 
+           <h3>화면 바꾸기</h3>
+           <p><b>설정 › 화면</b>에서 아래 네 가지를 각각 따로 정합니다.</p>
+diff --git a/src/components/ProgressView.tsx b/src/components/ProgressView.tsx
+index b76cffc..c899210 100644
+--- a/src/components/ProgressView.tsx
++++ b/src/components/ProgressView.tsx
+@@ -13,6 +13,7 @@ type Props = {
+ export default function ProgressView({ data, sessions, update, onSelect }: Props) {
+   const usable = data.subjects.filter(item => item.usesProgress !== false)
+   const [subjectId, setSubjectId] = useState(usable[0]?.id || '')
++  const [classFilter, setClassFilter] = useState('')
+   const [memoTarget, setMemoTarget] = useState<{ key: string; title: string } | null>(null)
+ 
+   const subject = usable.find(item => item.id === subjectId) || usable[0]
+@@ -25,6 +26,7 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
+   }
+ 
+   const classes = data.classes.filter(item => !item.archived && item.subjectId === subject.id)
++  const shownClasses = classFilter ? classes.filter(item => item.id === classFilter) : classes
+   const lessons = data.lessons.filter(item => item.subjectId === subject.id)
+   const today = todayKey()
+   const stats = coverage(data, sessions)
+@@ -38,10 +40,17 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
+       <div className="toolbar">
+         <label>
+           과목{' '}
+-          <select value={subject.id} onChange={event => setSubjectId(event.target.value)}>
++          <select value={subject.id} onChange={event => { setSubjectId(event.target.value); setClassFilter('') }}>
+             {usable.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+           </select>
+         </label>
++        <label className="class-filter">
++          학급
++          <select value={classFilter} onChange={event => setClassFilter(event.target.value)}>
++            <option value="">전체 (가로 스크롤)</option>
++            {classes.map(item => <option key={item.id} value={item.id}>{item.name}만 보기</option>)}
++          </select>
++        </label>
+         <span className="legend"><i className="dot today" /> 오늘 <i className="dot done" /> 완료</span>
+         <div className="toolbar-actions no-print">
+           <button className="ghost-button" onClick={() => exportProgressXlsx(data, sessions, subject.id)}>엑셀로 내보내기</button>
+@@ -58,7 +67,7 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
+             <thead>
+               <tr>
+                 <th className="sticky-col">차시 / 수업 내용</th>
+-                {classes.map(item => {
++                {shownClasses.map(item => {
+                   const stat = stats.find(value => value.classId === item.id)
+                   return (
+                     <th key={item.id}>
+@@ -79,7 +88,7 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
+                       <b>{index + 1}. {lesson.title}</b>
+                       {lesson.note && <small className="lesson-note">{lesson.note}</small>}
+                     </th>
+-                    {classes.map(classroom => {
++                    {shownClasses.map(classroom => {
+                       const session = sessions.find(
+                         item => item.classId === classroom.id && item.lessonIds.includes(lesson.id),
+                       )
+-- 
+2.43.0
+

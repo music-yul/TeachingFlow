@@ -1,0 +1,158 @@
+From fdf9b8fd5c186d0ee0daa6e1e6b4ea285e0bfc6e Mon Sep 17 00:00:00 2001
+From: claude <a@b>
+Date: Wed, 9 Sep 2026 06:21:33 +0000
+Subject: [PATCH] =?UTF-8?q?v22:=20=ED=99=94=EB=A9=B4=20=ED=85=8C=EB=A7=88?=
+ =?UTF-8?q?=206=EC=A2=85=EC=9C=BC=EB=A1=9C=20=EC=B6=95=EC=86=8C(=EA=B7=B8?=
+ =?UTF-8?q?=EB=A0=88=EC=9D=B4=C2=B7=ED=95=91=ED=81=AC=C2=B7=EC=98=90?=
+ =?UTF-8?q?=EB=A1=9C=EC=9A=B0=20=EC=A0=9C=EA=B1=B0),=20=EC=8B=9C=EA=B0=84?=
+ =?UTF-8?q?=ED=91=9C=20=EC=83=89=20=ED=8C=94=EB=A0=88=ED=8A=B8=208?=
+ =?UTF-8?q?=EC=A2=85=20=EC=9E=AC=EC=84=A4=EA=B3=84=20-=20=EB=AA=85?=
+ =?UTF-8?q?=EB=8F=84=C2=B7=EC=B1=84=EB=8F=84=20=EB=8C=80=EB=B9=84=20?=
+ =?UTF-8?q?=EA=B0=95=ED=99=94=EB=A1=9C=20=ED=9D=B0=20=EA=B8=80=EC=94=A8=20?=
+ =?UTF-8?q?=EA=B8=B0=EB=B3=B8=20=EC=A0=81=EC=9A=A9=20=EB=B0=8F=20=ED=8C=94?=
+ =?UTF-8?q?=EB=A0=88=ED=8A=B8=20=EB=82=B4=20=EA=B5=AC=EB=B6=84=EC=84=B1=20?=
+ =?UTF-8?q?=EA=B0=9C=EC=84=A0?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ src/components/HelpView.tsx |  4 +-
+ src/storage.ts              |  2 +-
+ src/theme.ts                | 83 ++++---------------------------------
+ 3 files changed, 12 insertions(+), 77 deletions(-)
+
+diff --git a/src/components/HelpView.tsx b/src/components/HelpView.tsx
+index 6235243..fd5e4fc 100644
+--- a/src/components/HelpView.tsx
++++ b/src/components/HelpView.tsx
+@@ -151,8 +151,8 @@ export default function HelpView() {
+           <table>
+             <thead><tr><th>항목</th><th>내용</th></tr></thead>
+             <tbody>
+-              <tr><td>화면 테마</td><td>배경·글자색. 9가지 (기본은 무채색)</td></tr>
+-              <tr><td>시간표 색</td><td>과목마다 칠해질 색 조합. 8가지. <b>화면 테마와 무관하게</b> 고릅니다</td></tr>
++              <tr><td>화면 테마</td><td>배경·글자색. 6가지 (기본은 무채색)</td></tr>
++              <tr><td>시간표 색</td><td>과목마다 칠해질 색 조합. 8가지. <b>화면 테마와 무관하게</b> 고릅니다. 배경이 진해서 글자는 기본적으로 흰색으로 잘 보입니다</td></tr>
+               <tr><td>글꼴</td><td>6가지. 고른 것만 인터넷에서 내려받고, 인터넷이 없으면 기기 글꼴로 대체됩니다</td></tr>
+               <tr><td>폰트 크기</td><td>4단계</td></tr>
+             </tbody>
+diff --git a/src/storage.ts b/src/storage.ts
+index 34bdaa1..1f09745 100644
+--- a/src/storage.ts
++++ b/src/storage.ts
+@@ -14,7 +14,7 @@ export const defaultTypes: LessonType[] = [
+   { id: 'assessment', name: '수행평가', color: '#d04f5d', emphasis: true },
+ ]
+ 
+-export const subjectColors = ['#86AEB8', '#9AA6B8', '#A3AF91', '#BDA18C', '#C49B9D', '#A895A8']
++export const subjectColors = ['#3B839B', '#4772AE', '#699B46', '#B06C3B', '#8D3544', '#743D8F']
+ 
+ export function makeId(prefix: string) {
+   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
+diff --git a/src/theme.ts b/src/theme.ts
+index d936f7f..c8ffa7c 100644
+--- a/src/theme.ts
++++ b/src/theme.ts
+@@ -97,72 +97,6 @@ export const themes: Theme[] = [
+       '--today': '#fdf1d8',
+     },
+   },
+-  {
+-    id: 'pink',
+-    name: '핑크',
+-    swatch: '#c4708a',
+-    vars: {
+-      '--ink': '#332027',
+-      '--muted': '#836973',
+-      '--line': '#ecd8de',
+-      '--bg': '#fbf3f5',
+-      '--card': '#ffffff',
+-      '--subtle': '#fdf8f9',
+-      '--chip': '#f5e6ea',
+-      '--ghost': '#f8edf0',
+-      '--on-accent': '#ffffff',
+-      '--accent-soft': '#f6e2e8',
+-      '--done': '#f0e9ea',
+-      '--done-ink': '#ab97a0',
+-      '--mark': '#fbe8ee',
+-      '--mark-line': '#dba7b8',
+-      '--today': '#fdeecd',
+-    },
+-  },
+-  {
+-    id: 'gray',
+-    name: '그레이',
+-    swatch: '#78838c',
+-    vars: {
+-      '--ink': '#252a2e',
+-      '--muted': '#6c757d',
+-      '--line': '#dde1e4',
+-      '--bg': '#f4f5f6',
+-      '--card': '#ffffff',
+-      '--subtle': '#fafbfb',
+-      '--chip': '#eef0f1',
+-      '--ghost': '#f2f4f4',
+-      '--on-accent': '#ffffff',
+-      '--accent-soft': '#e6e9eb',
+-      '--done': '#eceef1',
+-      '--done-ink': '#96a0ae',
+-      '--mark': '#eef1f2',
+-      '--mark-line': '#b3bcc2',
+-      '--today': '#fbeed2',
+-    },
+-  },
+-  {
+-    id: 'yellow',
+-    name: '옐로우',
+-    swatch: '#c99a2e',
+-    vars: {
+-      '--ink': '#332c1a',
+-      '--muted': '#83743f',
+-      '--line': '#ece0bd',
+-      '--bg': '#fbf7ea',
+-      '--card': '#fffdf6',
+-      '--subtle': '#fdfaee',
+-      '--chip': '#f5edd2',
+-      '--ghost': '#f8f1dc',
+-      '--on-accent': '#3a2f0c',
+-      '--accent-soft': '#f6ecc9',
+-      '--done': '#f0ede0',
+-      '--done-ink': '#ab9f7c',
+-      '--mark': '#fdf0d3',
+-      '--mark-line': '#dbbf7b',
+-      '--today': '#ffe9a8',
+-    },
+-  },
+   {
+     id: 'purple',
+     name: '퍼플',
+@@ -217,16 +151,17 @@ export type ClassroomPalette = {
+ 
+ /** 시간표(과목) 색 조합. 화면 테마와 완전히 독립적으로 고를 수 있다. */
+ export const classroomPalettes: ClassroomPalette[] = [
+-  { id: 'default', name: '기본', colors: ['#86AEB8', '#9AA6B8', '#A3AF91', '#BDA18C', '#C49B9D', '#A895A8'] },
+-  { id: 'beige', name: '베이지', colors: ['#C9B89F', '#D0C3B2', '#B7C1A1', '#D1A68E', '#C9A7A3', '#B9A8C0'] },
+-  { id: 'blue', name: '블루', colors: ['#8DBCC7', '#A7BCD4', '#B7D1C7', '#C5D6E8', '#B8C4DC', '#C6B8D8'] },
+-  { id: 'green', name: '그린', colors: ['#A7C4B0', '#C1D5BD', '#9FBE9E', '#BFD5C8', '#C9D9A7', '#B7C9D6'] },
+-  { id: 'pink', name: '핑크', colors: ['#F0B7C3', '#E5C1D0', '#D6C3E1', '#F4D0B8', '#E7C3C3', '#D1BED8'] },
+-  { id: 'gray', name: '그레이', colors: ['#B7C0C6', '#C7CCD4', '#C9D3C7', '#D4CFC6', '#D7C6C8', '#C7C0D1'] },
+-  { id: 'yellow', name: '옐로우', colors: ['#F6D88B', '#F4E4A6', '#DDE3A7', '#F2C9A1', '#EAC7B8', '#D9C5E0'] },
+-  { id: 'purple', name: '퍼플', colors: ['#B7B0D6', '#C8B8D9', '#D1C4E5', '#CBB4C8', '#D9C3D1', '#B8A7C4'] },
++  { id: 'default', name: '기본', colors: ['#3B839B', '#4772AE', '#699B46', '#B06C3B', '#8D3544', '#743D8F'] },
++  { id: 'beige', name: '베이지', colors: ['#AE7F3D', '#945738', '#789146', '#914930', '#96405D', '#8A4272'] },
++  { id: 'blue', name: '블루', colors: ['#3B9CB0', '#356E97', '#324785', '#3E3E98', '#4D388A', '#69439D'] },
++  { id: 'green', name: '그린', colors: ['#307E57', '#419F60', '#61863C', '#37907A', '#467D3B', '#3B918A'] },
++  { id: 'pink', name: '핑크', colors: ['#A63A5E', '#8D3544', '#964096', '#8F4A32', '#AA417E', '#733F8D'] },
++  { id: 'gray', name: '그레이', colors: ['#4F6172', '#887563', '#567666', '#705E82', '#6D5555', '#5C7E84'] },
++  { id: 'yellow', name: '옐로우', colors: ['#836521', '#917C27', '#775422', '#867E27', '#8A8A2E', '#71521E'] },
++  { id: 'purple', name: '퍼플', colors: ['#5B3B9B', '#7E44A7', '#7B3A88', '#453597', '#9D4396', '#353582'] },
+ ]
+ 
++
+ export type FontOption = {
+   id: string
+   name: string
+-- 
+2.43.0
+

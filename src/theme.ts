@@ -35,7 +35,7 @@ export const themes: Theme[] = [
     id: 'beige',
     name: '베이지',
     // 시간표 기본 팔레트의 탠/베이지(#BDA18C, H26) 와 같은 색상(Hue)으로 맞췄다.
-    swatch: '#ab7a54',
+    swatch: '#9e8470',
     vars: {
       '--ink': '#3b322b',
       '--muted': '#81746a',
@@ -104,7 +104,7 @@ export const themes: Theme[] = [
     id: 'purple',
     name: '퍼플',
     // 시간표 기본 팔레트의 모브/퍼플(#A895A8, H300) 과 같은 색상으로 맞췄다.
-    swatch: '#ab54ab',
+    swatch: '#866986',
     vars: {
       '--ink': '#3b2b3b',
       '--muted': '#816a81',
