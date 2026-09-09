@@ -68,7 +68,7 @@ export default function SettingsHub({ data, update, onFiles, onImport, onReset }
                 checked={data.settings.useHolidays !== false}
                 onChange={event => edit({ useHolidays: event.target.checked })}
               />
-              대한민국 공휴일을 달력에 표시하고 그날 수업을 자동으로 뺍니다 (2028년까지)
+              대한민국 공휴일을 달력에 표시하고 그날 수업을 자동으로 뺍니다
             </label>
           </div>
 
