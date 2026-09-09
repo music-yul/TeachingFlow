@@ -13,6 +13,7 @@ type Props = {
 export default function ProgressView({ data, sessions, update, onSelect }: Props) {
   const usable = data.subjects.filter(item => item.usesProgress !== false)
   const [subjectId, setSubjectId] = useState(usable[0]?.id || '')
+  const [classFilter, setClassFilter] = useState('')
   const [memoTarget, setMemoTarget] = useState<{ key: string; title: string } | null>(null)
 
   const subject = usable.find(item => item.id === subjectId) || usable[0]
@@ -25,6 +26,7 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
   }
 
   const classes = data.classes.filter(item => !item.archived && item.subjectId === subject.id)
+  const shownClasses = classFilter ? classes.filter(item => item.id === classFilter) : classes
   const lessons = data.lessons.filter(item => item.subjectId === subject.id)
   const today = todayKey()
   const stats = coverage(data, sessions)
@@ -38,8 +40,15 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
       <div className="toolbar">
         <label>
           과목{' '}
-          <select value={subject.id} onChange={event => setSubjectId(event.target.value)}>
+          <select value={subject.id} onChange={event => { setSubjectId(event.target.value); setClassFilter('') }}>
             {usable.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+        </label>
+        <label className="class-filter">
+          학급
+          <select value={classFilter} onChange={event => setClassFilter(event.target.value)}>
+            <option value="">전체 (가로 스크롤)</option>
+            {classes.map(item => <option key={item.id} value={item.id}>{item.name}만 보기</option>)}
           </select>
         </label>
         <span className="legend"><i className="dot today" /> 오늘 <i className="dot done" /> 완료</span>
@@ -58,7 +67,7 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
             <thead>
               <tr>
                 <th className="sticky-col">차시 / 수업 내용</th>
-                {classes.map(item => {
+                {shownClasses.map(item => {
                   const stat = stats.find(value => value.classId === item.id)
                   return (
                     <th key={item.id}>
@@ -79,7 +88,7 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
                       <b>{index + 1}. {lesson.title}</b>
                       {lesson.note && <small className="lesson-note">{lesson.note}</small>}
                     </th>
-                    {classes.map(classroom => {
+                    {shownClasses.map(classroom => {
                       const session = sessions.find(
                         item => item.classId === classroom.id && item.lessonIds.includes(lesson.id),
                       )
