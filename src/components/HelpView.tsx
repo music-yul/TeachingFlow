@@ -152,7 +152,7 @@ export default function HelpView() {
             <thead><tr><th>항목</th><th>내용</th></tr></thead>
             <tbody>
               <tr><td>화면 테마</td><td>배경·글자색. 6가지 (기본은 무채색)</td></tr>
-              <tr><td>시간표 색</td><td>과목마다 칠해질 색 조합. 8가지. <b>화면 테마와 무관하게</b> 고릅니다. 배경이 진해서 글자는 기본적으로 흰색으로 잘 보입니다</td></tr>
+              <tr><td>시간표 색</td><td>과목마다 칠해질 기본 색 조합. <b>화면 테마와 무관하게</b> 적용됩니다</td></tr>
               <tr><td>글꼴</td><td>6가지. 고른 것만 인터넷에서 내려받고, 인터넷이 없으면 기기 글꼴로 대체됩니다</td></tr>
               <tr><td>폰트 크기</td><td>4단계</td></tr>
             </tbody>

@@ -14,7 +14,7 @@ export const defaultTypes: LessonType[] = [
   { id: 'assessment', name: '수행평가', color: '#d04f5d', emphasis: true },
 ]
 
-export const subjectColors = ['#3B839B', '#4772AE', '#699B46', '#B06C3B', '#8D3544', '#743D8F']
+export const subjectColors = ['#86AEB8', '#9AA6B8', '#A3AF91', '#BDA18C', '#C49B9D', '#A895A8']
 
 export function makeId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`

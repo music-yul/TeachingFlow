@@ -151,15 +151,9 @@ export type ClassroomPalette = {
 
 /** 시간표(과목) 색 조합. 화면 테마와 완전히 독립적으로 고를 수 있다. */
 export const classroomPalettes: ClassroomPalette[] = [
-  { id: 'default', name: '기본', colors: ['#3B839B', '#4772AE', '#699B46', '#B06C3B', '#8D3544', '#743D8F'] },
-  { id: 'beige', name: '베이지', colors: ['#AE7F3D', '#945738', '#789146', '#914930', '#96405D', '#8A4272'] },
-  { id: 'blue', name: '블루', colors: ['#3B9CB0', '#356E97', '#324785', '#3E3E98', '#4D388A', '#69439D'] },
-  { id: 'green', name: '그린', colors: ['#307E57', '#419F60', '#61863C', '#37907A', '#467D3B', '#3B918A'] },
-  { id: 'pink', name: '핑크', colors: ['#A63A5E', '#8D3544', '#964096', '#8F4A32', '#AA417E', '#733F8D'] },
-  { id: 'gray', name: '그레이', colors: ['#4F6172', '#887563', '#567666', '#705E82', '#6D5555', '#5C7E84'] },
-  { id: 'yellow', name: '옐로우', colors: ['#836521', '#917C27', '#775422', '#867E27', '#8A8A2E', '#71521E'] },
-  { id: 'purple', name: '퍼플', colors: ['#5B3B9B', '#7E44A7', '#7B3A88', '#453597', '#9D4396', '#353582'] },
+  { id: 'default', name: '기본', colors: ['#86AEB8', '#9AA6B8', '#A3AF91', '#BDA18C', '#C49B9D', '#A895A8'] },
 ]
+
 
 
 export type FontOption = {
