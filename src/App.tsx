@@ -131,10 +131,13 @@ export default function App() {
     <div className="app-shell">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark">TF</span>
+          <span className="brand-mark" role="img" aria-label="티칭플로">🧑‍🏫</span>
           <div className="brand-text">
-            <strong>티칭플로</strong>
-            <small>{APP_VERSION} · TEACHING FLOW · 수업의 흐름을 한눈에 · © 2026 율쌤 ｜ 무단 배포 및 수정 금지</small>
+            <span className="brand-title">
+              <strong>티칭플로</strong>
+              <span className="version-badge">{APP_VERSION}</span>
+            </span>
+            <small>TEACHING FLOW ― 수업의 흐름을 한눈에</small>
           </div>
         </div>
         <div className="topbar-right">
@@ -165,6 +168,7 @@ export default function App() {
             ))}
           </nav>
           <MiniTimetable data={data} />
+          <p className="sidebar-foot">© 2026 율쌤 ｜ 무단 배포 및 수정 금지</p>
         </aside>
 
         <section className="content">

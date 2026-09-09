@@ -83,17 +83,19 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .brand { display: flex; align-items: center; gap: 0.6rem; }
 
 .brand-mark {
-  color: var(--on-accent);
   width: 2.25rem; height: 2.25rem;
   display: grid; place-items: center;
   border-radius: 0.5rem;
-  background: var(--accent); color: var(--card);
-  font-weight: 700; font-size: 0.85rem;
+  background: var(--accent-soft);
+  font-size: 1.35rem; line-height: 1;
 }
 
 .brand-text { display: flex; flex-direction: column; line-height: 1.25; }
+.brand-title { display: flex; align-items: baseline; gap: 0.4rem; }
 .brand-text strong { font-size: 1.05rem; }
 .brand-text small { color: var(--muted); font-size: 0.75rem; }
+.version-badge { font-size: 0.68rem; color: var(--muted); background: var(--chip); padding: 0.05rem 0.4rem; border-radius: 999px; }
+.sidebar-foot { margin-top: 0.6rem; text-align: center; color: var(--muted); font-size: 0.7rem; }
 
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
 .font-control { display: flex; align-items: center; gap: 0.35rem; color: var(--muted); font-size: 0.85rem; }
@@ -105,6 +107,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   display: flex; flex-direction: column; gap: 0.25rem;
   position: sticky; top: 1rem;
 }
+.sidebar nav { display: flex; flex-direction: column; gap: 0.25rem; }
 
 .nav-item {
   text-align: left;
@@ -333,10 +336,10 @@ thead th small { display: block; font-weight: 400; }
   .nav-index { display: none; }
   .content { order: 1; }
   .mini-timetable { order: 2; margin-top: 0; }
+  .sidebar-foot { order: 3; }
 
   .topbar { padding: 0.5rem 0.7rem; gap: 0.4rem; }
-  .brand-mark {
-  color: var(--on-accent); width: 1.9rem; height: 1.9rem; font-size: 0.75rem; }
+  .brand-mark { width: 1.9rem; height: 1.9rem; font-size: 1.1rem; }
   .brand-text strong { font-size: 0.95rem; }
   .brand-text small { font-size: 0.68rem; }
   .topbar-right { margin-left: 0; width: 100%; justify-content: flex-end; }
@@ -409,8 +412,6 @@ thead th small { display: block; font-weight: 400; }
 .subtabs { display: flex; gap: 0.25rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
 .subtab { background: var(--card); border: 1px solid var(--line); padding: 0.35rem 0.7rem; font-size: 0.88rem; }
 .subtab.active { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-
-.sidebar nav { display: flex; flex-direction: column; gap: 0.25rem; }
 
 /* ---------- mini timetable ---------- */
 

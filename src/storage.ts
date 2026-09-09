@@ -2,7 +2,7 @@ import type { AppData, LessonType, Subject } from './types'
 
 export const APP_VERSION = 'v4.0'
 export const APP_NAME = '티칭플로'
-export const APP_TAGLINE = 'TEACHING FLOW · 수업의 흐름을 한눈에'
+export const APP_TAGLINE = 'TEACHING FLOW ― 수업의 흐름을 한눈에'
 export const STORAGE_KEY = 'class-schedule-planner-data'
 
 export const defaultTypes: LessonType[] = [
