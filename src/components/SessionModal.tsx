@@ -6,6 +6,7 @@ type Props = {
   session: Session
   update: (change: Partial<AppData>) => void
   onClose: () => void
+  onOpenEvaluation: (evaluationId: string, classId: string) => void
 }
 
 const statuses: AttendanceStatus[] = ['출석', '지각', '조퇴', '결석', '기타']
@@ -17,9 +18,15 @@ const modeInfo: { id: SessionMode; label: string; help: string }[] = [
   { id: 'none', label: '수업 없음', help: '행사·자습 등. 진도를 쓰지 않아 뒤 차시가 한 칸 밀립니다.' },
 ]
 
-export default function SessionModal({ data, session, update, onClose }: Props) {
+export default function SessionModal({ data, session, update, onClose, onOpenEvaluation }: Props) {
   const classroom = data.classes.find(item => item.id === session.classId)
   if (!classroom) return null
+
+  const relatedEvaluations = data.evaluations.filter(item =>
+    item.subjectId === session.subjectId
+    && item.date === session.date
+    && (!item.classIds.length || item.classIds.includes(session.classId)),
+  )
 
   const override = data.overrides[session.id] || {}
   const lessons = effectiveLessonIds(session).map(id => data.lessons.find(item => item.id === id)).filter(Boolean)
@@ -101,6 +108,27 @@ export default function SessionModal({ data, session, update, onClose }: Props) 
                       onChange={event => setProgress(lesson!.id, { memo: event.target.value })}
                     />
                   </div>
+                )
+              })}
+            </div>
+          )}
+
+          {relatedEvaluations.length > 0 && (
+            <div className="block">
+              <h3>평가</h3>
+              <p className="hint">이 날짜·이 반과 연결된 평가입니다.</p>
+              {relatedEvaluations.map(evaluation => {
+                const type = data.evaluationTypes.find(item => item.id === evaluation.typeId)
+                return (
+                  <button
+                    className="eval-link-row"
+                    key={evaluation.id}
+                    onClick={() => onOpenEvaluation(evaluation.id, session.classId)}
+                  >
+                    <b>{evaluation.name}</b>
+                    <span>{type?.name} · {evaluation.weight}%</span>
+                    <span className="eval-link-cta">평가 입력 ›</span>
+                  </button>
                 )
               })}
             </div>

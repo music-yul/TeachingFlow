@@ -20,6 +20,7 @@ type Tab = (typeof tabs)[number]
 export default function App() {
   const [data, setData] = useState<AppData>(readData)
   const [tab, setTab] = useState<Tab>('달력')
+  const [evalJump, setEvalJump] = useState<{ evaluationId: string; classId: string } | null>(null)
   const [month, setMonth] = useState(() => new Date())
   const [selected, setSelected] = useState<string | null>(null)
   const [pending, setPending] = useState<{ classes: ImportedClass[]; failed: string[] } | null>(null)
@@ -179,14 +180,35 @@ export default function App() {
           )}
           {tab === '진도표' && <ProgressView data={data} sessions={sessions} update={update} onSelect={setSelected} />}
           {tab === '반별 출석부' && <AttendanceView data={data} sessions={sessions} update={update} />}
-          {tab === '평가 관리' && <EvaluationsView data={data} update={update} />}
+          {tab === '평가 관리' && (
+            <EvaluationsView
+              data={data}
+              update={update}
+              sessions={sessions}
+              jumpTo={evalJump}
+              onJumpHandled={() => setEvalJump(null)}
+              onOpenSession={setSelected}
+            />
+          )}
           {tab === '설정' && (
             <SettingsHub data={data} update={update} onFiles={openFiles} onImport={loadBackup} onReset={reset} />
           )}
         </section>
       </main>
 
-      {session && <SessionModal data={data} session={session} update={update} onClose={() => setSelected(null)} />}
+      {session && (
+        <SessionModal
+          data={data}
+          session={session}
+          update={update}
+          onClose={() => setSelected(null)}
+          onOpenEvaluation={(evaluationId, classId) => {
+            setSelected(null)
+            setEvalJump({ evaluationId, classId })
+            setTab('평가 관리')
+          }}
+        />
+      )}
       {pending && (
         <ImportModal
           initial={pending.classes}

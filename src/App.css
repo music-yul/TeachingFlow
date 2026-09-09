@@ -555,6 +555,17 @@ thead th small { display: block; font-weight: 400; }
 .eval-note-input { width: 100%; font-size: 0.82rem; }
 .eval-total { font-weight: 600; background: var(--subtle); }
 
+.eval-link-row {
+  display: flex; align-items: center; gap: 0.5rem; width: 100%;
+  text-align: left; background: var(--mark); border: 1px solid var(--mark-line);
+  border-radius: 0.4rem; padding: 0.5rem 0.7rem; margin-bottom: 0.3rem;
+}
+.eval-link-row b { flex: 1 1 auto; }
+.eval-link-row span { color: var(--muted); font-size: 0.82rem; }
+.eval-link-cta { color: var(--accent) !important; font-weight: 600; white-space: nowrap; }
+
+.eval-related-sessions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
 /* ---------- 모바일 전용 규칙 (항상 마지막에 위치해야 우선 적용됨) ---------- */
 
 @media (max-width: 720px) {

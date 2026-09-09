@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react'
-import type { AppData, Evaluation, EvaluationItem } from '../types'
+import { useEffect, useRef, useState } from 'react'
+import type { AppData, Evaluation, EvaluationItem, Session } from '../types'
 import { makeId } from '../storage'
 import {
   classFillRate,
@@ -17,13 +17,30 @@ import { exportEvaluationXlsx, printCurrentView } from '../exportPrint'
 type Props = {
   data: AppData
   update: (change: Partial<AppData>) => void
+  sessions: Session[]
+  jumpTo: { evaluationId: string; classId: string } | null
+  onJumpHandled: () => void
+  onOpenSession: (sessionId: string) => void
 }
 
-export default function EvaluationsView({ data, update }: Props) {
+export default function EvaluationsView({ data, update, sessions, jumpTo, onJumpHandled, onOpenSession }: Props) {
   const usable = data.subjects.filter(item => item.usesProgress !== false)
   const [subjectId, setSubjectId] = useState(usable[0]?.id || '')
   const [openId, setOpenId] = useState<string | null>(null)
+  const [jumpClassId, setJumpClassId] = useState<string | undefined>(undefined)
   const [creating, setCreating] = useState(false)
+
+  useEffect(() => {
+    if (!jumpTo) return
+    const target = data.evaluations.find(item => item.id === jumpTo.evaluationId)
+    if (target) {
+      setSubjectId(target.subjectId)
+      setOpenId(target.id)
+      setJumpClassId(jumpTo.classId)
+    }
+    onJumpHandled()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jumpTo])
 
   const subject = usable.find(item => item.id === subjectId) || usable[0]
   if (!subject) {
@@ -40,9 +57,13 @@ export default function EvaluationsView({ data, update }: Props) {
   if (openEvaluation) {
     return (
       <EvaluationEntry
+        key={openEvaluation.id}
         data={data}
         evaluation={openEvaluation}
         update={update}
+        sessions={sessions}
+        initialClassId={jumpClassId}
+        onOpenSession={onOpenSession}
         onBack={() => setOpenId(null)}
       />
     )
@@ -201,17 +222,30 @@ function EvaluationEntry({
   data,
   evaluation,
   update,
+  sessions,
+  initialClassId,
+  onOpenSession,
   onBack,
 }: {
   data: AppData
   evaluation: Evaluation
   update: (change: Partial<AppData>) => void
+  sessions: Session[]
+  initialClassId?: string
+  onOpenSession: (sessionId: string) => void
   onBack: () => void
 }) {
   const classes = evaluationClasses(data, evaluation)
-  const [classId, setClassId] = useState(classes[0]?.id || '')
+  const [classId, setClassId] = useState(initialClassId || classes[0]?.id || '')
   const classroom = classes.find(item => item.id === classId) || classes[0]
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+
+  const relatedSessions = sessions.filter(item =>
+    item.subjectId === evaluation.subjectId
+    && item.date === evaluation.date
+    && !item.cancelled
+    && (!evaluation.classIds.length || evaluation.classIds.includes(item.classId)),
+  )
 
   const updateEvaluation = (change: Partial<Evaluation>) => {
     update({ evaluations: data.evaluations.map(item => (item.id === evaluation.id ? { ...item, ...change } : item)) })
@@ -256,6 +290,22 @@ function EvaluationEntry({
       </div>
 
       <EvaluationSettings data={data} evaluation={evaluation} update={updateEvaluation} />
+
+      {relatedSessions.length > 0 && (
+        <div className="block">
+          <h3>관련 수업 일정</h3>
+          <div className="eval-related-sessions">
+            {relatedSessions.map(item => {
+              const cls = data.classes.find(value => value.id === item.classId)
+              return (
+                <button className="ghost-button" key={item.id} onClick={() => onOpenSession(item.id)}>
+                  {item.date} · {item.period}교시 · {cls?.name}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {classes.length > 1 && (
         <div className="eval-class-tabs">
