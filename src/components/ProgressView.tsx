@@ -8,9 +8,10 @@ type Props = {
   sessions: Session[]
   update: (change: Partial<AppData>) => void
   onSelect: (id: string) => void
+  onOpenEvaluation: (evaluationId: string, classId: string) => void
 }
 
-export default function ProgressView({ data, sessions, update, onSelect }: Props) {
+export default function ProgressView({ data, sessions, update, onSelect, onOpenEvaluation }: Props) {
   const usable = data.subjects.filter(item => item.usesProgress !== false)
   const [subjectId, setSubjectId] = useState(usable[0]?.id || '')
   const [classFilter, setClassFilter] = useState('')
@@ -85,6 +86,7 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
                   <tr className={type?.emphasis ? 'marked-row' : ''} key={lesson.id}>
                     <th className="sticky-col">
                       <span className="type-chip" style={{ background: type?.color || '#8b93a2' }}>{type?.name || '기타'}</span>
+                      {lesson.evaluationId && <span className="progress-eval-badge" title="평가와 연결된 차시">🎯</span>}
                       <b>{index + 1}. {lesson.title}</b>
                       {lesson.note && <small className="lesson-note">{lesson.note}</small>}
                     </th>
@@ -122,6 +124,14 @@ export default function ProgressView({ data, sessions, update, onSelect }: Props
                               >
                                 {record.memo || '+ 메모'}
                               </button>
+                              {lesson.evaluationId && (
+                                <button
+                                  className="progress-eval-link"
+                                  onClick={() => onOpenEvaluation(lesson.evaluationId!, classroom.id)}
+                                >
+                                  🎯 채점표
+                                </button>
+                              )}
                             </>
                           ) : (
                             <span className="cell-empty">시간 부족</span>

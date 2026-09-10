@@ -537,23 +537,27 @@ thead th small { display: block; font-weight: 400; }
 .class-check input { margin: 0; }
 .class-check.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
 
-.eval-settings-head { display: flex; align-items: center; justify-content: space-between; }
-.eval-settings-head h3 { margin: 0; }
 .eval-item-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0; }
 .eval-item-row input:first-child { flex: 1 1 auto; min-width: 0; }
 .eval-item-row input[type='number'] { width: 4.5rem; }
 
 .eval-class-tabs { display: flex; gap: 0.3rem; flex-wrap: wrap; margin: 0.6rem 0; }
 
-.eval-table { table-layout: fixed; }
-.eval-table .eval-name-col { width: 8rem; text-align: left; }
-.eval-table .eval-name-col.filled { background: var(--done); }
-.eval-table th, .eval-table td { text-align: center; }
-.eval-table thead th small { display: block; color: var(--muted); font-weight: 400; font-size: 0.7rem; }
-.eval-table .eval-note-col { width: 10rem; }
 .eval-score-input { width: 100%; text-align: center; padding: 0.2rem; }
 .eval-note-input { width: 100%; font-size: 0.82rem; }
 .eval-total { font-weight: 600; background: var(--subtle); }
+
+.eval-mode-tabs { display: flex; gap: 0.3rem; }
+.eval-roster-table { table-layout: auto; }
+.eval-name-col { text-align: left; white-space: nowrap; }
+.eval-note-col { width: 10rem; }
+.eval-only-absent { display: flex; align-items: center; gap: 0.3rem; margin-left: auto; font-size: 0.82rem; color: var(--muted); cursor: pointer; }
+.eval-only-absent input { margin: 0; }
+
+.eval-absent-tag { background: var(--danger); color: #fff; font-size: 0.72rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 999px; margin-right: 0.4rem; }
+.eval-att-undo { background: none; border: none; color: var(--accent); font-size: 0.75rem; text-decoration: underline; cursor: pointer; padding: 0; margin-right: 0.5rem; }
+.eval-att-mark { background: none; border: none; color: var(--muted); font-size: 0.75rem; text-decoration: underline; cursor: pointer; padding: 0; }
+
 
 .eval-link-row {
   display: flex; align-items: center; gap: 0.5rem; width: 100%;
@@ -583,28 +587,35 @@ thead th small { display: block; font-weight: 400; }
 .eval-summary-bar .on { color: var(--accent); font-weight: 600; }
 .eval-summary-bar .off { color: var(--danger); font-weight: 600; }
 .eval-summary-bar .muted { color: var(--muted); }
-.eval-att-filter { display: flex; gap: 0.25rem; margin-left: auto; }
-
-.eval-att-col { width: 5.5rem; }
 .eval-att-cell { white-space: nowrap; }
-.eval-att-cell .slot { padding: 0.15rem 0.4rem; font-size: 0.72rem; margin-right: 0.2rem; }
-.eval-att-cell .slot.warn.on { background: var(--danger); border-color: var(--danger); }
 .eval-row-absent { opacity: 0.55; }
 .eval-row-absent .eval-score-input { background: var(--ghost); }
 .lesson-eval-pick { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: var(--muted); }
 
 /* ---------- 채점기준(레벨) ---------- */
 
-.eval-crit-toggle {
-  display: block; background: none; border: none; color: var(--accent);
-  font-size: 0.68rem; padding: 0.1rem 0; margin-top: 0.1rem; cursor: pointer;
-}
-.eval-criteria-row td, .eval-criteria-row th { border-top: none; background: var(--subtle); vertical-align: top; padding-top: 0; }
-.eval-criteria-list { margin: 0; padding-left: 1rem; font-size: 0.72rem; color: var(--ink); }
+.eval-criteria-list { margin: 0.4rem 0 0; padding-left: 1.1rem; font-size: 0.8rem; color: var(--ink); }
 .eval-criteria-list li { margin-bottom: 0.3rem; }
-.eval-criteria-list b { color: var(--accent); }
+.eval-criteria-list b { color: var(--accent); margin-right: 0.2rem; }
 
-.eval-level-picker { display: flex; flex-wrap: wrap; gap: 0.2rem; justify-content: center; }
+.eval-item-block {
+  display: flex; gap: 1rem; align-items: flex-start;
+  border: 1px solid var(--line); border-radius: 0.5rem;
+  padding: 0.8rem; margin-bottom: 0.7rem; background: var(--card);
+}
+.eval-item-block-crit { flex: 0 0 16rem; min-width: 0; }
+.eval-item-block-crit b { font-size: 0.95rem; }
+.eval-item-block-crit small { display: block; color: var(--muted); font-size: 0.78rem; margin-top: 0.1rem; }
+.eval-item-block-scores {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; flex-direction: column; gap: 0.3rem;
+  border-left: 1px dashed var(--line); padding-left: 1rem;
+}
+.eval-score-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.eval-score-row-name { flex: 0 0 8rem; font-size: 0.85rem; }
+.eval-item-block-scores .eval-score-input { width: 4.5rem; }
+
+.eval-level-picker { display: flex; flex-wrap: wrap; gap: 0.25rem; justify-content: flex-start; }
 .eval-level-btn {
   background: var(--chip); border: 1px solid var(--line); border-radius: 0.3rem;
   padding: 0.2rem 0.4rem; font-size: 0.78rem; font-weight: 600; min-width: 1.8rem;
@@ -692,6 +703,11 @@ thead th small { display: block; font-weight: 400; }
 
 @media (max-width: 900px) {
   .workspace { flex-direction: column; gap: 0.6rem; padding: 0.6rem 0.7rem 3rem; }
+
+  .eval-item-block { flex-direction: column; }
+  .eval-item-block-crit { flex: none; width: 100%; }
+  .eval-item-block-scores { border-left: none; padding-left: 0; border-top: 1px dashed var(--line); padding-top: 0.6rem; margin-top: 0.3rem; }
+  .eval-score-row-name { flex: 0 0 auto; width: 100%; }
 
   /* 사이드바를 없애고 메뉴·본문·시간표를 워크스페이스의 직계 자식으로 만든다 */
   .sidebar { display: contents; }

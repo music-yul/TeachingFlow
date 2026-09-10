@@ -7,7 +7,6 @@ import {
   clampScore,
   evalCounts,
   evaluationClasses,
-  hasAnyScore,
   maxTotal,
   noteKey,
   rawTotal,
@@ -297,12 +296,12 @@ function EvaluationEntry({
   const max = maxTotal(evaluation)
   const students = classroom?.students || []
   const counts = evalCounts(data, evaluation, students)
-  const [attFilter, setAttFilter] = useState<'all' | 'present' | 'absent'>('all')
-  const [expandedItem, setExpandedItem] = useState<string | null>(null)
+  const [mode, setMode] = useState<'score' | 'settings'>('score')
+  const [onlyAbsent, setOnlyAbsent] = useState(false)
   const visibleStudents = students.filter(student => {
-    if (attFilter === 'all') return true
+    if (!onlyAbsent) return true
     const status = data.evalAttendance[attendanceKey(evaluation.id, student.id)]
-    return attFilter === 'present' ? status === 'present' : status !== 'present'
+    return status !== 'present'
   })
 
   return (
@@ -310,195 +309,192 @@ function EvaluationEntry({
       <div className="toolbar">
         <button className="ghost-button" onClick={onBack}>‹ 평가 목록</button>
         <h2>{evaluation.name}</h2>
-        <div className="toolbar-actions no-print">
-          <button className="ghost-button" onClick={() => exportEvaluationXlsx(data, evaluation)}>엑셀로 내보내기</button>
-          <button className="ghost-button" onClick={printCurrentView}>인쇄</button>
+        <div className="eval-mode-tabs">
+          <button className={mode === 'score' ? 'subtab active' : 'subtab'} onClick={() => setMode('score')}>채점표</button>
+          <button className={mode === 'settings' ? 'subtab active' : 'subtab'} onClick={() => setMode('settings')}>평가 설정</button>
         </div>
+        {mode === 'score' && (
+          <div className="toolbar-actions no-print">
+            <button className="ghost-button" onClick={() => exportEvaluationXlsx(data, evaluation)}>엑셀로 내보내기</button>
+            <button className="ghost-button" onClick={printCurrentView}>인쇄</button>
+          </div>
+        )}
       </div>
 
-      <EvaluationSettings data={data} evaluation={evaluation} update={updateEvaluation} />
-
-      {relatedSessions.length > 0 && (
-        <div className="block">
-          <h3>관련 수업 일정</h3>
-          <div className="eval-related-sessions">
-            {relatedSessions.map(item => {
-              const cls = data.classes.find(value => value.id === item.classId)
-              return (
-                <button className="ghost-button" key={item.id} onClick={() => onOpenSession(item.id)}>
-                  {item.date} · {item.period}교시 · {cls?.name}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {classes.length > 1 && (
-        <div className="eval-class-tabs">
-          {classes.map(item => (
-            <button className={classId === item.id ? 'period-tab on' : 'period-tab'} key={item.id} onClick={() => setClassId(item.id)}>
-              {item.name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {classroom && (
-        <div className="eval-summary-bar">
-          <span>전체 {counts.total}명</span>
-          <span className="on">응시 {counts.present}명</span>
-          <span className="off">미응시 {counts.absent}명</span>
-          {counts.unmarked > 0 && <span className="muted">미확인 {counts.unmarked}명</span>}
-          <span className="muted">채점 완료 {counts.graded}명</span>
-          <div className="eval-att-filter">
-            {(['all', 'present', 'absent'] as const).map(value => (
-              <button
-                className={attFilter === value ? 'subtab active' : 'subtab'}
-                key={value}
-                onClick={() => setAttFilter(value)}
-              >
-                {value === 'all' ? '전체' : value === 'present' ? '응시' : '미응시'}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {!evaluation.items.length && (
-        <p className="banner">먼저 위에서 평가 요소를 추가해야 점수를 입력할 수 있습니다.</p>
-      )}
-
-      {evaluation.items.length > 0 && classroom && (
+      {mode === 'settings' && (
         <>
-          <p className="hint">셀을 클릭해 입력하세요. <b>Enter</b>로 다음 학생, <b>Tab</b>으로 다음 요소로 이동합니다.</p>
-          <div className="table-wrap">
-            <table className="eval-table">
-              <thead>
-                <tr>
-                  <th className="sticky-col eval-name-col">번호 · 이름</th>
-                  <th className="eval-att-col">응시</th>
-                  {evaluation.items.map(item => (
-                    <th key={item.id}>
-                      {item.name}<small>{item.maxScore}점</small>
-                      {item.levels?.length ? (
-                        <button className="eval-crit-toggle" onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}>
-                          {expandedItem === item.id ? '기준 닫기' : 'ⓘ 기준'}
-                        </button>
-                      ) : null}
-                    </th>
-                  ))}
-                  <th>원점수<small>/{max}</small></th>
-                  <th>반영점수<small>/{evaluation.weight}</small></th>
-                  <th className="eval-note-col">비고</th>
-                </tr>
-                {expandedItem && (
-                  <tr className="eval-criteria-row">
-                    <th className="sticky-col eval-name-col" />
-                    <th />
-                    {evaluation.items.map(item => (
-                      <td key={item.id}>
-                        {item.id === expandedItem && item.levels?.length ? (
-                          <ul className="eval-criteria-list">
-                            {item.levels.map(level => (
-                              <li key={level.id}><b>{level.score}점</b> {level.description}</li>
-                            ))}
-                          </ul>
-                        ) : null}
-                      </td>
-                    ))}
-                    <td /><td /><td />
-                  </tr>
-                )}
-              </thead>
-              <tbody>
-                {visibleStudents.map((student, rowIndex) => {
-                  const filled = hasAnyScore(data, evaluation, student.id)
-                  const attStatus = data.evalAttendance[attendanceKey(evaluation.id, student.id)]
+          <EvaluationSettings data={data} evaluation={evaluation} update={updateEvaluation} />
+
+          {relatedSessions.length > 0 && (
+            <div className="block">
+              <h3>관련 수업 일정</h3>
+              <div className="eval-related-sessions">
+                {relatedSessions.map(item => {
+                  const cls = data.classes.find(value => value.id === item.classId)
                   return (
-                    <tr className={attStatus === 'absent' ? 'eval-row-absent' : ''} key={student.id}>
-                      <th className={filled ? 'sticky-col eval-name-col filled' : 'sticky-col eval-name-col'}>
-                        {student.number}. {student.name}
-                      </th>
-                      <td className="eval-att-cell">
-                        <button
-                          className={attStatus === 'present' ? 'slot on' : 'slot'}
-                          onClick={() => setAttendance(student.id, 'present')}
-                        >
-                          응시
-                        </button>
-                        <button
-                          className={attStatus === 'absent' ? 'slot on warn' : 'slot'}
-                          onClick={() => setAttendance(student.id, 'absent')}
-                        >
-                          미응시
-                        </button>
-                        {evaluation.items.some(item => item.basicScore !== undefined) && (
-                          <button className="eval-basic-apply" title="등록해둔 기본점수를 이 학생의 모든 요소에 채웁니다" onClick={() => applyBasicScores(student.id)}>
-                            기본점수 적용
-                          </button>
-                        )}
-                      </td>
-                      {evaluation.items.map((item, colIndex) => {
-                        const value = data.scores[scoreKey(evaluation.id, item.id, student.id)]
-                        return (
-                          <td key={item.id}>
-                            {item.levels?.length ? (
-                              <div className="eval-level-picker">
-                                {item.levels.map(level => (
-                                  <button
-                                    key={level.id}
-                                    className={value === level.score ? 'eval-level-btn on' : 'eval-level-btn'}
-                                    title={level.description}
-                                    onClick={() => setScore(item.id, student.id, String(level.score))}
-                                  >
-                                    {level.score}
-                                  </button>
-                                ))}
-                              </div>
-                            ) : (
-                              <input
-                                ref={element => { inputRefs.current[`${rowIndex}:${colIndex}`] = element }}
-                                type="number"
-                                className="eval-score-input"
-                                min={0}
-                                max={item.maxScore}
-                                value={value ?? ''}
-                                onChange={event => setScore(item.id, student.id, event.target.value)}
-                                onKeyDown={event => {
-                                  if (event.key === 'Enter') {
-                                    event.preventDefault()
-                                    focusCell(rowIndex + 1, colIndex)
-                                  }
-                                }}
-                              />
-                            )}
-                          </td>
-                        )
-                      })}
-                      <td className="eval-total">{rawTotal(data, evaluation, student.id)}</td>
-                      <td className="eval-total">{Math.round(weightedScore(data, evaluation, student.id) * 10) / 10}</td>
-                      <td>
-                        <input
-                          className="eval-note-input"
-                          value={data.evaluationNotes[noteKey(evaluation.id, student.id)] || ''}
-                          placeholder="예: 9/8 리코더X"
-                          onChange={event => setNote(student.id, event.target.value)}
-                        />
-                      </td>
-                    </tr>
+                    <button className="ghost-button" key={item.id} onClick={() => onOpenSession(item.id)}>
+                      {item.date} · {item.period}교시 · {cls?.name}
+                    </button>
                   )
                 })}
-              </tbody>
-            </table>
-          </div>
-          {!students.length && <p className="hint">이 학급에 학생 명단이 없습니다.</p>}
-          {students.length > 0 && !visibleStudents.length && <p className="hint">이 조건에 맞는 학생이 없습니다.</p>}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {mode === 'score' && (
+        <>
+          {classes.length > 1 && (
+            <div className="eval-class-tabs">
+              {classes.map(item => (
+                <button className={classId === item.id ? 'period-tab on' : 'period-tab'} key={item.id} onClick={() => setClassId(item.id)}>
+                  {item.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {classroom && (
+            <div className="eval-summary-bar">
+              <span>전체 {counts.total}명</span>
+              <span className="on">응시 {counts.present}명</span>
+              <span className="off">미응시 {counts.absent}명</span>
+              {counts.unmarked > 0 && <span className="muted">미확인 {counts.unmarked}명</span>}
+              <span className="muted">채점 완료 {counts.graded}명</span>
+              <label className="eval-only-absent">
+                <input type="checkbox" checked={onlyAbsent} onChange={event => setOnlyAbsent(event.target.checked)} />
+                미응시만 보기
+              </label>
+            </div>
+          )}
+
+          {!evaluation.items.length && (
+            <p className="banner">
+              아직 평가 요소가 없습니다. 위 <b>평가 설정</b> 탭에서 요소를 먼저 추가해 주세요.
+            </p>
+          )}
+
+          {evaluation.items.length > 0 && classroom && (
+            <>
+              <div className="table-wrap">
+                <table className="eval-roster-table">
+                  <thead>
+                    <tr>
+                      <th className="eval-name-col">번호 · 이름</th>
+                      <th>응시</th>
+                      <th>원점수<small>/{max}</small></th>
+                      <th>반영점수<small>/{evaluation.weight}</small></th>
+                      <th className="eval-note-col">비고</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleStudents.map(student => {
+                      const attStatus = data.evalAttendance[attendanceKey(evaluation.id, student.id)]
+                      return (
+                        <tr className={attStatus === 'absent' ? 'eval-row-absent' : ''} key={student.id}>
+                          <th className="eval-name-col">{student.number}. {student.name}</th>
+                          <td className="eval-att-cell">
+                            {attStatus === 'absent' ? (
+                              <>
+                                <span className="eval-absent-tag">미응시</span>
+                                <button className="eval-att-undo" onClick={() => setAttendance(student.id, 'present')}>응시로 변경</button>
+                                {evaluation.items.some(item => item.basicScore !== undefined) && (
+                                  <button className="eval-basic-apply" title="등록해둔 기본점수를 이 학생의 모든 요소에 채웁니다" onClick={() => applyBasicScores(student.id)}>
+                                    기본점수 적용
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <button className="eval-att-mark" onClick={() => setAttendance(student.id, 'absent')}>미응시로 표시</button>
+                            )}
+                          </td>
+                          <td className="eval-total">{rawTotal(data, evaluation, student.id)}</td>
+                          <td className="eval-total">{Math.round(weightedScore(data, evaluation, student.id) * 10) / 10}</td>
+                          <td>
+                            <input
+                              className="eval-note-input"
+                              value={data.evaluationNotes[noteKey(evaluation.id, student.id)] || ''}
+                              placeholder="예: 9/8 리코더X"
+                              onChange={event => setNote(student.id, event.target.value)}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="hint">아래에서 요소마다 점수를 매깁니다. 채점기준이 있으면 버튼을, 없으면 숫자 칸을 씁니다.</p>
+
+              {evaluation.items.map((item, itemIndex) => (
+                <div className="eval-item-block" key={item.id}>
+                  <div className="eval-item-block-crit">
+                    <b>{itemIndex + 1}. {item.name}</b>
+                    <small>{item.maxScore}점 만점</small>
+                    {item.levels?.length ? (
+                      <ul className="eval-criteria-list">
+                        {item.levels.map(level => (
+                          <li key={level.id}><b>{level.score}점</b> {level.description}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="hint">등록된 채점기준이 없습니다. 오른쪽에 숫자를 직접 입력하세요.</p>
+                    )}
+                  </div>
+                  <div className="eval-item-block-scores">
+                    {visibleStudents.map((student, rowIndex) => {
+                      const value = data.scores[scoreKey(evaluation.id, item.id, student.id)]
+                      return (
+                        <div className="eval-score-row" key={student.id}>
+                          <span className="eval-score-row-name">{student.number}. {student.name}</span>
+                          {item.levels?.length ? (
+                            <div className="eval-level-picker">
+                              {item.levels.map(level => (
+                                <button
+                                  key={level.id}
+                                  className={value === level.score ? 'eval-level-btn on' : 'eval-level-btn'}
+                                  title={level.description}
+                                  onClick={() => setScore(item.id, student.id, String(level.score))}
+                                >
+                                  {level.score}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <input
+                              ref={element => { inputRefs.current[`${rowIndex}:${itemIndex}`] = element }}
+                              type="number"
+                              className="eval-score-input"
+                              min={0}
+                              max={item.maxScore}
+                              value={value ?? ''}
+                              onChange={event => setScore(item.id, student.id, event.target.value)}
+                              onKeyDown={event => {
+                                if (event.key === 'Enter') {
+                                  event.preventDefault()
+                                  focusCell(rowIndex + 1, itemIndex)
+                                }
+                              }}
+                            />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+          {classroom && !students.length && <p className="hint">이 학급에 학생 명단이 없습니다.</p>}
+          {classroom && students.length > 0 && !visibleStudents.length && <p className="hint">미응시로 표시된 학생이 없습니다.</p>}
         </>
       )}
     </section>
   )
 }
+
 
 function EvaluationSettings({
   data,
@@ -509,7 +505,6 @@ function EvaluationSettings({
   evaluation: Evaluation
   update: (change: Partial<Evaluation>) => void
 }) {
-  const [open, setOpen] = useState(!evaluation.items.length)
   const [itemName, setItemName] = useState('')
   const [itemMax, setItemMax] = useState(10)
 
@@ -530,13 +525,8 @@ function EvaluationSettings({
 
   return (
     <div className="block">
-      <div className="eval-settings-head">
-        <h3>평가 정보 · 평가 요소</h3>
-        <button className="ghost-button" onClick={() => setOpen(!open)}>{open ? '접기' : '요소·채점기준 펼치기'}</button>
-      </div>
-
-      {open && (
-        <>
+      <h3>평가 정보 · 평가 요소</h3>
+      <>
           <div className="field-grid">
             <label>평가명<input value={evaluation.name} onChange={event => update({ name: event.target.value })} /></label>
             <label>
@@ -569,7 +559,6 @@ function EvaluationSettings({
           ))}
           {!evaluation.items.length && <p className="hint">요소를 하나 이상 추가해야 점수를 입력할 수 있습니다.</p>}
         </>
-      )}
     </div>
   )
 }

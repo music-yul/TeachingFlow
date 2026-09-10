@@ -21,6 +21,11 @@ export default function App() {
   const [data, setData] = useState<AppData>(readData)
   const [tab, setTab] = useState<Tab>('달력')
   const [evalJump, setEvalJump] = useState<{ evaluationId: string; classId: string } | null>(null)
+  const openEvaluation = (evaluationId: string, classId: string) => {
+    setSelected(null)
+    setEvalJump({ evaluationId, classId })
+    setTab('평가 관리')
+  }
   const [month, setMonth] = useState(() => new Date())
   const [selected, setSelected] = useState<string | null>(null)
   const [pending, setPending] = useState<{ classes: ImportedClass[]; failed: string[] } | null>(null)
@@ -178,7 +183,7 @@ export default function App() {
           {tab === '달력' && (
             <CalendarView data={data} sessions={sessions} month={month} setMonth={setMonth} onSelect={setSelected} update={update} />
           )}
-          {tab === '진도표' && <ProgressView data={data} sessions={sessions} update={update} onSelect={setSelected} />}
+          {tab === '진도표' && <ProgressView data={data} sessions={sessions} update={update} onSelect={setSelected} onOpenEvaluation={openEvaluation} />}
           {tab === '반별 출석부' && <AttendanceView data={data} sessions={sessions} update={update} />}
           {tab === '평가 관리' && (
             <EvaluationsView
@@ -202,11 +207,7 @@ export default function App() {
           session={session}
           update={update}
           onClose={() => setSelected(null)}
-          onOpenEvaluation={(evaluationId, classId) => {
-            setSelected(null)
-            setEvalJump({ evaluationId, classId })
-            setTab('평가 관리')
-          }}
+          onOpenEvaluation={openEvaluation}
         />
       )}
       {pending && (

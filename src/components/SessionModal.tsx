@@ -1,6 +1,11 @@
 import type { AppData, AttendanceStatus, Session, SessionMode } from '../types'
-import { effectiveLessonIds, progressKey, sessionLabel } from '../schedule'
+import { effectiveLessonIds, parseDate, progressKey, sessionLabel } from '../schedule'
 import { evalCounts, linkedEvaluation } from '../evaluation'
+
+function dateDistance(a: string, b: string) {
+  if (!a || !b) return Infinity
+  return Math.abs(parseDate(a).getTime() - parseDate(b).getTime())
+}
 
 type Props = {
   data: AppData
@@ -24,12 +29,17 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
   if (!classroom) return null
 
   const linked = linkedEvaluation(data, session)
-  const dateMatched = data.evaluations.filter(item =>
-    item.id !== linked?.id
-    && item.subjectId === session.subjectId
-    && item.date === session.date
-    && (!item.classIds.length || item.classIds.includes(session.classId)),
-  )
+  const lessons = effectiveLessonIds(session).map(id => data.lessons.find(item => item.id === id)).filter(Boolean)
+  const isEmphasisSession = lessons.some(lesson => data.types.find(t => t.id === lesson!.typeId)?.emphasis)
+
+  /** 명시적으로 연결되지 않았어도, 수행평가 유형 수업이면 이 반을 대상으로 하는 평가를 전부 후보로 보여준다. */
+  const candidateEvaluations = (isEmphasisSession ? data.evaluations : data.evaluations.filter(item => item.date === session.date))
+    .filter(item =>
+      item.id !== linked?.id
+      && item.subjectId === session.subjectId
+      && (!item.classIds.length || item.classIds.includes(session.classId)),
+    )
+    .sort((a, b) => dateDistance(a.date, session.date) - dateDistance(b.date, session.date))
 
   /** 이 반·이 과목의 지난 평가 중, 응시 확정이 안 된 학생이 남아있는 평가. */
   const pendingEvaluations = data.evaluations
@@ -43,7 +53,6 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
     .filter(item => item.counts.absent + item.counts.unmarked > 0)
 
   const override = data.overrides[session.id] || {}
-  const lessons = effectiveLessonIds(session).map(id => data.lessons.find(item => item.id === id)).filter(Boolean)
 
   const setOverride = (change: { mode?: SessionMode; label?: string }) => {
     update({ overrides: { ...data.overrides, [session.id]: { ...override, ...change } } })
@@ -138,11 +147,15 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
             </div>
           )}
 
-          {!linked && dateMatched.length > 0 && (
+          {!linked && candidateEvaluations.length > 0 && (
             <div className="block">
               <h3>평가</h3>
-              <p className="hint">이 날짜·이 반과 연결된 평가입니다.</p>
-              {dateMatched.map(evaluation => {
+              <p className="hint">
+                {isEmphasisSession
+                  ? '수행평가 유형 수업입니다. 이 반이 대상인 평가입니다.'
+                  : '이 날짜·이 반과 연결된 평가입니다.'}
+              </p>
+              {candidateEvaluations.map(evaluation => {
                 const type = data.evaluationTypes.find(item => item.id === evaluation.typeId)
                 return (
                   <button
@@ -151,7 +164,7 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
                     onClick={() => onOpenEvaluation(evaluation.id, session.classId)}
                   >
                     <b>{evaluation.name}</b>
-                    <span>{type?.name} · {evaluation.weight}%</span>
+                    <span>{type?.name} · {evaluation.weight}%{evaluation.date && ` · ${evaluation.date}`}</span>
                     <span className="eval-link-cta">평가 입력 ›</span>
                   </button>
                 )
