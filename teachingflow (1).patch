@@ -1,0 +1,676 @@
+diff --git a/src/App.css b/src/App.css
+index 6ad8239..e54a3a8 100644
+--- a/src/App.css
++++ b/src/App.css
+@@ -537,8 +537,8 @@ thead th small { display: block; font-weight: 400; }
+ .class-check input { margin: 0; }
+ .class-check.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+ 
+-.eval-item-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0; }
+-.eval-item-row input:first-child { flex: 1 1 auto; min-width: 0; }
++.eval-item-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0; flex-wrap: wrap; }
++.eval-item-row > input:first-child { flex: 1 1 9rem; min-width: 7rem; font-weight: 600; }
+ .eval-item-row input[type='number'] { width: 4.5rem; }
+ 
+ .eval-class-tabs { display: flex; gap: 0.3rem; flex-wrap: wrap; margin: 0.6rem 0; }
+@@ -764,6 +764,24 @@ thead th small { display: block; font-weight: 400; }
+ .attendance-name { font-variant-numeric: tabular-nums; }
+ .attendance-table .att-no { font-variant-numeric: tabular-nums; white-space: nowrap; }
+ 
++/* ---------- 미응시 체크 · 평가 목록 구조 ---------- */
++
++.eg-absent-check { width: 1.05rem; height: 1.05rem; margin: 0; cursor: pointer; accent-color: var(--danger); }
++.eval-grid .eg-status { min-width: 3.2rem; }
++
++.eval-row { align-items: flex-start; }
++.eval-row-title { display: flex; flex-direction: column; gap: 0.15rem; }
++.eval-tree { display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.45rem; }
++.eval-tree-task { display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; font-size: 0.78rem; }
++.eval-tree-task-name { flex: 0 0 auto; font-weight: 600; color: var(--ink); }
++.eval-tree-task-name em { font-style: normal; color: var(--muted); font-weight: 400; margin-left: 0.2rem; }
++.eval-tree-items { display: flex; flex-wrap: wrap; gap: 0.25rem; min-width: 0; }
++.eval-tree-item { background: var(--chip); color: var(--muted); border-radius: 0.25rem; padding: 0.02rem 0.35rem; white-space: nowrap; }
++.eval-tree-item em { font-style: normal; margin-left: 0.2rem; opacity: 0.7; }
++.eval-tree-empty { color: var(--muted); font-size: 0.78rem; }
++
++.danger-button { color: var(--danger); }
++
+ @media (max-width: 900px) {
+   .workspace { flex-direction: column; gap: 0.6rem; padding: 0.6rem 0.7rem 3rem; }
+ 
+diff --git a/src/components/EvaluationsView.tsx b/src/components/EvaluationsView.tsx
+index 07e1f31..9004c61 100644
+--- a/src/components/EvaluationsView.tsx
++++ b/src/components/EvaluationsView.tsx
+@@ -7,7 +7,8 @@ import {
+   evalCounts,
+   evaluationClasses,
+   evaluationTasks,
+-  isLockedStatus,
++  isAbsent,
++  isAbsentAnywhere,
+   maxTotal,
+   noteKey,
+   rawTotal,
+@@ -15,7 +16,6 @@ import {
+   taskMax,
+   taskScore,
+   taskStatusKey,
+-  taskStatusOf,
+   weightedScore,
+ } from '../evaluation'
+ import { linkedEvaluation } from '../evaluation'
+@@ -30,8 +30,6 @@ type Props = {
+   onOpenSession: (sessionId: string) => void
+ }
+ 
+-const statusLabel: Record<TaskStatus, string> = { present: '응시', absent: '미응시', missing: '미제출' }
+-
+ export default function EvaluationsView({ data, update, sessions, jumpTo, onJumpHandled, onOpenSession }: Props) {
+   const usable = data.subjects.filter(item => item.usesProgress !== false)
+   const [subjectId, setSubjectId] = useState(usable[0]?.id || '')
+@@ -103,11 +101,28 @@ export default function EvaluationsView({ data, update, sessions, jumpTo, onJump
+           return (
+             <button className="eval-row" key={evaluation.id} onClick={() => setOpenId(evaluation.id)}>
+               <div className="eval-row-main">
+-                <b>{evaluation.name}</b>
+-                <span className="eval-meta">
+-                  {type?.name} · {evaluation.weight}% · 과제 {tasks.length}개 / {maxTotal(evaluation)}점 ·{' '}
+-                  {classes.length ? classes.map(c => c.name).join(', ') : '대상 없음'}
+-                </span>
++                <div className="eval-row-title">
++                  <b>{evaluation.name}</b>
++                  <span className="eval-meta">
++                    {type?.name} · {evaluation.weight}% · {maxTotal(evaluation)}점 ·{' '}
++                    {classes.length ? classes.map(c => c.name).join(', ') : '대상 없음'}
++                  </span>
++                </div>
++                <div className="eval-tree">
++                  {tasks.map(task => (
++                    <div className="eval-tree-task" key={task.id}>
++                      <span className="eval-tree-task-name">{task.name}<em>{taskMax(task)}점</em></span>
++                      <span className="eval-tree-items">
++                        {task.items.length
++                          ? task.items.map(item => (
++                              <span className="eval-tree-item" key={item.id}>{item.name}<em>{item.maxScore}</em></span>
++                            ))
++                          : <span className="eval-tree-empty">요소 없음</span>}
++                      </span>
++                    </div>
++                  ))}
++                  {!tasks.length && <span className="eval-tree-empty">평가 과제 없음</span>}
++                </div>
+               </div>
+               <div className="eval-row-fill">
+                 <div className="eval-fill-bar"><span style={{ width: `${overallFill}%` }} /></div>
+@@ -149,20 +164,11 @@ function EvaluationCreateModal({
+   const [typeId, setTypeId] = useState(data.evaluationTypes[0]?.id || '')
+   const [weight, setWeight] = useState(30)
+   const [classIds, setClassIds] = useState<string[]>([])
+-  const [newTypeName, setNewTypeName] = useState('')
+ 
+   const toggleClass = (id: string) => {
+     setClassIds(current => (current.includes(id) ? current.filter(item => item !== id) : [...current, id]))
+   }
+ 
+-  const addType = () => {
+-    if (!newTypeName.trim()) return
+-    const type = { id: makeId('evtype'), name: newTypeName.trim() }
+-    update({ evaluationTypes: [...data.evaluationTypes, type] })
+-    setTypeId(type.id)
+-    setNewTypeName('')
+-  }
+-
+   const create = () => {
+     if (!name.trim()) return
+     const evaluation: Evaluation = {
+@@ -201,11 +207,6 @@ function EvaluationCreateModal({
+             <label>반영 비율(%)<input type="number" min={0} max={100} value={weight} onChange={event => setWeight(Number(event.target.value))} /></label>
+           </div>
+ 
+-          <div className="inline-form">
+-            <input value={newTypeName} placeholder="유형 직접 추가 (예: 자기평가)" onChange={event => setNewTypeName(event.target.value)} />
+-            <button className="ghost-button" onClick={addType}>+ 유형 추가</button>
+-          </div>
+-
+           <div className="block">
+             <h3>대상 학급</h3>
+             <p className="hint">아무것도 안 고르면 이 과목의 모든 학급이 대상입니다.</p>
+@@ -250,7 +251,7 @@ function EvaluationEntry({
+   const [classId, setClassId] = useState(initialClassId || classes[0]?.id || '')
+   const [mode, setMode] = useState<'score' | 'settings'>('score')
+   const [showRubric, setShowRubric] = useState(false)
+-  const [onlyRemaining, setOnlyRemaining] = useState(false)
++  const [onlyAbsent, setOnlyAbsent] = useState(false)
+   const classroom = classes.find(item => item.id === classId) || classes[0]
+   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+ 
+@@ -295,12 +296,24 @@ function EvaluationEntry({
+     update({ evaluationNotes: { ...data.evaluationNotes, [noteKey(evaluation.id, studentId)]: value } })
+   }
+ 
+-  const setStatus = (taskId: string, studentId: string, next: string) => {
++  /**
++   * 미응시 표시를 켜고 끈다. 기본은 응시이므로 미응시만 관리하면 된다.
++   * 미응시로 바꿀 때는 이미 넣어둔 요소 점수를 지운다(과제 점수로 대체되므로 남겨두면 헷갈린다).
++   */
++  const toggleAbsent = (taskId: string, studentId: string) => {
+     const key = taskStatusKey(evaluation.id, taskId, studentId)
+     const taskStatus = { ...data.taskStatus }
+-    if (!next) delete taskStatus[key]
+-    else taskStatus[key] = next as TaskStatus
+-    update({ taskStatus })
++    if (taskStatus[key]) {
++      delete taskStatus[key]
++      update({ taskStatus })
++      return
++    }
++    taskStatus[key] = 'absent' as TaskStatus
++    const scores = { ...data.scores }
++    tasks.find(task => task.id === taskId)?.items.forEach(item => {
++      delete scores[scoreKey(evaluation.id, item.id, studentId)]
++    })
++    update({ taskStatus, scores })
+   }
+ 
+   const focusCell = (rowIndex: number, colIndex: number) => {
+@@ -309,13 +322,9 @@ function EvaluationEntry({
+     target?.select()
+   }
+ 
+-  const visibleStudents = students.filter(student => {
+-    if (!onlyRemaining) return true
+-    return !tasks.every(task => {
+-      if (isLockedStatus(taskStatusOf(data, evaluation.id, task.id, student.id))) return true
+-      return task.items.length > 0 && task.items.every(item => data.scores[scoreKey(evaluation.id, item.id, student.id)] !== undefined)
+-    })
+-  })
++  const visibleStudents = students.filter(student => (
++    onlyAbsent ? isAbsentAnywhere(data, evaluation, student.id) : true
++  ))
+ 
+   // 요소 칸에 몇 번째 열인지 붙여 키보드 이동을 만든다.
+   let columnCursor = 0
+@@ -378,15 +387,14 @@ function EvaluationEntry({
+             <div className="eval-summary-bar">
+               <span>전체 {counts.total}명</span>
+               <span className="on">채점 완료 {counts.graded}명</span>
+-              {counts.remaining > 0 && <span className="muted">남음 {counts.remaining}명</span>}
+-              {counts.absent > 0 && <span className="off">미응시 {counts.absent}명</span>}
+-              {counts.missing > 0 && <span className="off">미제출 {counts.missing}명</span>}
++              {counts.remaining > 0 && <span className="muted">미채점 {counts.remaining}명</span>}
++              <span className={counts.absent > 0 ? 'off' : 'muted'}>미응시 {counts.absent}명</span>
+               <button className="ghost-button eval-rubric-toggle" onClick={() => setShowRubric(!showRubric)}>
+                 {showRubric ? '채점기준 접기' : '채점기준 보기'}
+               </button>
+               <label className="eval-only-absent">
+-                <input type="checkbox" checked={onlyRemaining} onChange={event => setOnlyRemaining(event.target.checked)} />
+-                남은 학생만
++                <input type="checkbox" checked={onlyAbsent} onChange={event => setOnlyAbsent(event.target.checked)} />
++                미응시자 보기
+               </label>
+             </div>
+           )}
+@@ -440,7 +448,7 @@ function EvaluationEntry({
+                   <tr>
+                     {tasks.map(task => (
+                       <Fragment key={task.id}>
+-                        <th className="eg-status">응시</th>
++                        <th className="eg-status">미응시</th>
+                         {task.items.map(item => (
+                           <th key={item.id}>{item.name}<small>{item.maxScore}</small></th>
+                         ))}
+@@ -454,25 +462,21 @@ function EvaluationEntry({
+                       <td className="eg-sticky eg-no">{student.number}</td>
+                       <td className="eg-sticky eg-name">{student.name}</td>
+                       {tasks.map(task => {
+-                        const status = taskStatusOf(data, evaluation.id, task.id, student.id)
+-                        const locked = isLockedStatus(status)
++                        const absent = isAbsent(data, evaluation.id, task.id, student.id)
+                         return (
+                           <Fragment key={task.id}>
+                             <td className="eg-status">
+-                              <select
+-                                className={locked ? 'eg-status-select off' : 'eg-status-select'}
+-                                value={status || ''}
+-                                onChange={event => setStatus(task.id, student.id, event.target.value)}
+-                              >
+-                                <option value="">–</option>
+-                                <option value="present">응시</option>
+-                                <option value="absent">미응시</option>
+-                                <option value="missing">미제출</option>
+-                              </select>
++                              <input
++                                type="checkbox"
++                                className="eg-absent-check"
++                                checked={absent}
++                                title={absent ? '응시로 되돌리기' : '미응시로 표시'}
++                                onChange={() => toggleAbsent(task.id, student.id)}
++                              />
+                             </td>
+-                            {locked ? (
++                            {absent ? (
+                               <td className="eg-locked" colSpan={task.items.length}>
+-                                {statusLabel[status as TaskStatus]} 처리 · {taskScore(data, evaluation, task, student.id)}점 자동 부여
++                                미응시 · {taskScore(data, evaluation, task, student.id)}점 자동 부여
+                               </td>
+                             ) : (
+                               task.items.map(item => {
+@@ -578,14 +582,6 @@ function EvaluationSettings({
+           </select>
+         </label>
+         <label>반영 비율(%)<input type="number" min={0} max={100} value={evaluation.weight} onChange={event => update({ weight: Number(event.target.value) })} /></label>
+-        <label>
+-          출제 계획표 파일명(참고용)
+-          <input
+-            value={evaluation.sourceFileName || ''}
+-            placeholder="예: 2026 음악연주 수행평가 계획표.pdf"
+-            onChange={event => update({ sourceFileName: event.target.value || undefined })}
+-          />
+-        </label>
+       </div>
+ 
+       <h3 className="eval-task-heading">평가 과제 <small>배점 합 {maxTotal(evaluation)}점</small></h3>
+@@ -671,17 +667,7 @@ function TaskEditor({
+             onChange={event => editTask(task.id, { absentScore: event.target.value === '' ? undefined : Number(event.target.value) })}
+           />
+         </label>
+-        <label>
+-          미제출 점수
+-          <input
+-            type="number"
+-            min={0}
+-            value={task.missingScore ?? ''}
+-            placeholder="0"
+-            onChange={event => editTask(task.id, { missingScore: event.target.value === '' ? undefined : Number(event.target.value) })}
+-          />
+-        </label>
+-        <span className="hint">채점표에서 미응시·미제출로 표시하면 이 과제 점수가 자동으로 이 값이 됩니다.</span>
++        <span className="hint">채점표에서 미응시로 표시하면 이 과제 점수가 자동으로 이 값이 됩니다. 미제출도 미응시로 처리합니다.</span>
+       </div>
+ 
+       {task.items.map(item => (
+@@ -743,7 +729,15 @@ function EvalItemEditor({
+         <button className="ghost-button" onClick={() => setOpen(!open)}>
+           {open ? '기준 접기' : `기준 ${levels.length}개 쓰기`}
+         </button>
+-        <button className="ghost-button" onClick={() => removeItem(item.id)}>삭제</button>
++        <button
++          className="ghost-button danger-button"
++          title="이 평가 요소와 채점기준을 지웁니다"
++          onClick={() => {
++            if (window.confirm(`평가 요소 "${item.name}"과 채점기준을 지웁니다. 계속할까요?`)) removeItem(item.id)
++          }}
++        >
++          요소 삭제
++        </button>
+       </div>
+ 
+       {warn && (
+diff --git a/src/components/SessionModal.tsx b/src/components/SessionModal.tsx
+index 177f28b..b419a31 100644
+--- a/src/components/SessionModal.tsx
++++ b/src/components/SessionModal.tsx
+@@ -118,9 +118,8 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
+                 >
+                   <span>⚠️ {evaluation.name}</span>
+                   <span className="eval-link-cta">
+-                    남은 학생 {counts.remaining}명
+-                    {counts.absent > 0 && ` · 미응시 ${counts.absent}명`}
+-                    {counts.missing > 0 && ` · 미제출 ${counts.missing}명`} 확인 ›
++                    미채점 {counts.remaining}명
++                    {counts.absent > 0 && ` · 미응시 ${counts.absent}명`} 확인 ›
+                   </span>
+                 </button>
+               ))}
+diff --git a/src/evaluation.ts b/src/evaluation.ts
+index 274f266..0b5b336 100644
+--- a/src/evaluation.ts
++++ b/src/evaluation.ts
+@@ -50,16 +50,19 @@ export function taskStatusOf(
+   return data.taskStatus[taskStatusKey(evaluationId, taskId, studentId)]
+ }
+ 
+-/** 미응시·미제출이면 채점을 막고 과제 단위 대체 점수를 쓴다. */
+-export function isLockedStatus(status: TaskStatus | undefined) {
+-  return status === 'absent' || status === 'missing'
++/** 미응시면 채점을 막고 과제 단위 대체 점수를 쓴다. */
++export function isAbsent(data: AppData, evaluationId: string, taskId: string, studentId: string) {
++  return taskStatusOf(data, evaluationId, taskId, studentId) === 'absent'
+ }
+ 
+-/** 과제 하나에서 학생이 받는 점수. 미응시·미제출이면 과제에 등록해둔 대체 점수. */
++/** 학생이 이 평가에서 한 과제라도 미응시로 표시됐는지. */
++export function isAbsentAnywhere(data: AppData, evaluation: Evaluation, studentId: string) {
++  return evaluationTasks(evaluation).some(task => isAbsent(data, evaluation.id, task.id, studentId))
++}
++
++/** 과제 하나에서 학생이 받는 점수. 미응시면 과제에 등록해둔 대체 점수. */
+ export function taskScore(data: AppData, evaluation: Evaluation, task: EvaluationTask, studentId: string) {
+-  const status = taskStatusOf(data, evaluation.id, task.id, studentId)
+-  if (status === 'absent') return task.absentScore ?? 0
+-  if (status === 'missing') return task.missingScore ?? 0
++  if (isAbsent(data, evaluation.id, task.id, studentId)) return task.absentScore ?? 0
+   return task.items.reduce((sum, item) => {
+     const value = data.scores[scoreKey(evaluation.id, item.id, studentId)]
+     return sum + (typeof value === 'number' ? value : 0)
+@@ -78,17 +81,17 @@ export function weightedScore(data: AppData, evaluation: Evaluation, studentId:
+   return (rawTotal(data, evaluation, studentId) / max) * evaluation.weight
+ }
+ 
+-/** 이 평가에서 학생이 뭐라도 입력됐는지(상태 표시 포함). */
++/** 이 평가에서 학생이 뭐라도 입력됐는지(미응시 표시 포함). */
+ export function hasAnyScore(data: AppData, evaluation: Evaluation, studentId: string) {
+   return evaluationTasks(evaluation).some(task => {
+-    if (isLockedStatus(taskStatusOf(data, evaluation.id, task.id, studentId))) return true
++    if (isAbsent(data, evaluation.id, task.id, studentId)) return true
+     return task.items.some(item => data.scores[scoreKey(evaluation.id, item.id, studentId)] !== undefined)
+   })
+ }
+ 
+-/** 과제 하나가 마감됐는지. 미응시·미제출이거나, 요소가 전부 채워졌으면 완료. */
++/** 과제 하나가 마감됐는지. 미응시이거나, 요소가 전부 채워졌으면 완료. */
+ export function isTaskComplete(data: AppData, evaluation: Evaluation, task: EvaluationTask, studentId: string) {
+-  if (isLockedStatus(taskStatusOf(data, evaluation.id, task.id, studentId))) return true
++  if (isAbsent(data, evaluation.id, task.id, studentId)) return true
+   if (!task.items.length) return false
+   return task.items.every(item => data.scores[scoreKey(evaluation.id, item.id, studentId)] !== undefined)
+ }
+@@ -127,25 +130,20 @@ export type EvalCounts = {
+   remaining: number
+   /** 한 과제라도 미응시로 표시된 학생 수 */
+   absent: number
+-  /** 한 과제라도 미제출로 표시된 학생 수 */
+-  missing: number
+   /** 채점이 시작됐는지(누구 하나라도 입력이 있는지) */
+   started: boolean
+ }
+ 
+ export function evalCounts(data: AppData, evaluation: Evaluation, students: Student[]): EvalCounts {
+-  const tasks = evaluationTasks(evaluation)
+   let graded = 0
+   let absent = 0
+-  let missing = 0
+   let started = false
+   students.forEach(student => {
+     if (isComplete(data, evaluation, student.id)) graded += 1
+     if (hasAnyScore(data, evaluation, student.id)) started = true
+-    if (tasks.some(task => taskStatusOf(data, evaluation.id, task.id, student.id) === 'absent')) absent += 1
+-    if (tasks.some(task => taskStatusOf(data, evaluation.id, task.id, student.id) === 'missing')) missing += 1
++    if (isAbsentAnywhere(data, evaluation, student.id)) absent += 1
+   })
+-  return { total: students.length, graded, remaining: students.length - graded, absent, missing, started }
++  return { total: students.length, graded, remaining: students.length - graded, absent, started }
+ }
+ 
+ /** 이 세션의 차시가 평가와 연결돼 있으면 그 평가를 돌려준다(이어서 모드도 원래 차시 기준으로 따라간다). */
+diff --git a/src/exportPrint.ts b/src/exportPrint.ts
+index 6ae5dac..1228424 100644
+--- a/src/exportPrint.ts
++++ b/src/exportPrint.ts
+@@ -4,12 +4,11 @@ import { coverage, sessionLabel } from './schedule'
+ import {
+   evaluationClasses,
+   evaluationTasks,
+-  isLockedStatus,
++  isAbsent,
+   noteKey,
+   rawTotal,
+   scoreKey,
+   taskScore,
+-  taskStatusOf,
+   weightedScore,
+ } from './evaluation'
+ 
+@@ -118,7 +117,7 @@ export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
+     const itemRow: (string | number)[] = ['학번', '성명']
+     tasks.forEach(task => {
+       taskRow.push(task.name, ...task.items.map(() => ''))
+-      itemRow.push('응시', ...task.items.map(item => `${item.name}(${item.maxScore})`))
++      itemRow.push('미응시', ...task.items.map(item => `${item.name}(${item.maxScore})`))
+     })
+     taskRow.push('', '', '')
+     itemRow.push('원점수', '반영점수', '비고')
+@@ -131,10 +130,10 @@ export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
+     classroom.students.forEach(student => {
+       const row: (string | number)[] = [student.number, student.name]
+       tasks.forEach(task => {
+-        const status = taskStatusOf(data, evaluation.id, task.id, student.id)
+-        row.push(status === 'absent' ? '미응시' : status === 'missing' ? '미제출' : status === 'present' ? '응시' : '')
+-        if (isLockedStatus(status)) {
+-          // 미응시·미제출이면 요소별 칸은 비우고 과제 점수만 첫 칸에 적는다.
++        const absent = isAbsent(data, evaluation.id, task.id, student.id)
++        row.push(absent ? '미응시' : '')
++        if (absent) {
++          // 미응시면 요소별 칸은 비우고 과제 점수만 첫 칸에 적는다.
+           task.items.forEach((_, index) => row.push(index === 0 ? taskScore(data, evaluation, task, student.id) : ''))
+         } else {
+           task.items.forEach(item => row.push(data.scores[scoreKey(evaluation.id, item.id, student.id)] ?? ''))
+diff --git a/src/naesAttendanceParser.ts b/src/naesAttendanceParser.ts
+index 09e2f4e..5a3c898 100644
+--- a/src/naesAttendanceParser.ts
++++ b/src/naesAttendanceParser.ts
+@@ -61,23 +61,31 @@ function readTeacher(value: string) {
+   return matched ? matched[1].trim() : ''
+ }
+ 
+-/** 1순위: `번호` / `성명` 머리글을 찾는다. */
++/**
++ * 1순위: `학번`/`번호`/`No.` + `성명`/`이름` 머리글을 찾는다.
++ * NEIS 출석부는 열이 'No.'(반 출석번호)와 '학번'(전체 학번)으로 나뉘어 있는 경우가 많다.
++ * 동명이인 구분에는 학번이 필요하므로 '학번' 열이 있으면 그쪽을 우선한다.
++ */
+ function findHeaderColumns(rows: Row[]) {
+   const index = rows.findIndex(row => {
+     const values = row.map(text)
+-    return values.some(value => /번호/.test(value)) && values.some(value => /성\s*명|이름/.test(value))
++    return values.some(value => /번호|^No\.?$/i.test(value)) && values.some(value => /성\s*명|이름/.test(value))
+   })
+   if (index < 0) return null
+   const header = rows[index].map(text)
+-  const numberIndex = header.findIndex(value => /^번호$|출석\s*번호|학생\s*번호/.test(value))
+   const nameIndex = header.findIndex(value => /^성\s*명$|^이름$|성명/.test(value))
+-  if (numberIndex < 0 || nameIndex < 0) return null
++  if (nameIndex < 0) return null
++  const studentNoIndex = header.findIndex(value => /^학번$|학생\s*번호/.test(value))
++  const classNoIndex = header.findIndex(value => /^No\.?$|^번호$|출석\s*번호/i.test(value))
++  const numberIndex = studentNoIndex >= 0 ? studentNoIndex : classNoIndex
++  if (numberIndex < 0) return null
+   return { index, numberIndex, nameIndex }
+ }
+ 
+ /**
+  * 2순위: 머리글이 없거나 형식이 달라도, 한글 이름이 가장 많이 모인 열을 명단으로 본다.
+- * 번호는 바로 왼쪽의 숫자 열에서 찾고, 없으면 순서대로 매긴다.
++ * 번호 열은 이름 왼쪽 몇 칸 안에서 찾는데, 학번(보통 4~5자리)이 있으면 그 열을 우선한다.
++ * 반 출석번호(1~2자리)뿐이면 그걸 대신 쓴다.
+  */
+ function guessColumns(rows: Row[]) {
+   const score: Record<number, number> = {}
+@@ -90,17 +98,18 @@ function guessColumns(rows: Row[]) {
+   if (!best || Number(best[1]) < 3) return null
+   const nameIndex = Number(best[0])
+ 
+-  let numberIndex = -1
+-  for (let column = nameIndex - 1; column >= 0 && column >= nameIndex - 4; column -= 1) {
+-    const numeric = rows.filter(row => {
+-      const value = text(row[column])
+-      return value !== '' && /^\d{1,2}$/.test(value.replace(/\.0$/, ''))
+-    }).length
+-    if (numeric >= 3) {
+-      numberIndex = column
+-      break
+-    }
+-  }
++  const countMatching = (column: number, pattern: RegExp) => rows.filter(row => {
++    const value = text(row[column]).replace(/\.0$/, '')
++    return value !== '' && pattern.test(value)
++  }).length
++
++  const candidates: number[] = []
++  for (let column = nameIndex - 1; column >= 0 && column >= nameIndex - 4; column -= 1) candidates.push(column)
++
++  const studentNoColumn = candidates.find(column => countMatching(column, /^\d{4,5}$/) >= 3)
++  const classNoColumn = candidates.find(column => countMatching(column, /^\d{1,3}$/) >= 3)
++  const numberIndex = studentNoColumn ?? classNoColumn ?? -1
++
+   const firstNameRow = rows.findIndex(row => isHangulName(text(row[nameIndex])))
+   return { index: firstNameRow - 1, numberIndex, nameIndex }
+ }
+@@ -219,7 +228,11 @@ export async function parseWorkbooks(files: File[]): Promise<{ classes: Imported
+   return classes.length || failed.length ? { classes, failed } : { classes: [], failed: files.map(file => file.name) }
+ }
+ 
+-/** 아무 표에서나 복사해 붙여넣은 명단을 읽는다. `1 홍길동` / `1<tab>홍길동` / `홍길동` 모두 허용. */
++/**
++ * 아무 표에서나 복사해 붙여넣은 명단을 읽는다.
++ * `2104 홍길동` / `1<tab>홍길동` / `홍길동` 모두 허용한다.
++ * 앞 칸이 숫자면 학번으로 본다(선택과목 반은 원적반 학번 2104 같은 4자리를 쓴다).
++ */
+ export function parsePastedRoster(input: string): ImportedStudent[] {
+   const students: ImportedStudent[] = []
+   input.split(/\r?\n/).forEach(line => {
+@@ -228,7 +241,7 @@ export function parsePastedRoster(input: string): ImportedStudent[] {
+     const parts = trimmed.split(/[\t,;]+|\s{1,}/).filter(Boolean)
+     let number = 0
+     let name = ''
+-    if (parts.length >= 2 && /^\d{1,2}$/.test(parts[0])) {
++    if (parts.length >= 2 && /^\d{1,5}$/.test(parts[0])) {
+       number = Number(parts[0])
+       name = parts.slice(1).join(' ')
+     } else {
+diff --git a/src/storage.ts b/src/storage.ts
+index a137c27..449f3c7 100644
+--- a/src/storage.ts
++++ b/src/storage.ts
+@@ -15,11 +15,10 @@ export const defaultTypes: LessonType[] = [
+   { id: 'assessment', name: '수행평가', color: '#d04f5d', emphasis: true },
+ ]
+ 
++/** 평가 유형은 학교 평가계획과 맞춰 수행평가·지필평가 둘로 고정한다. 직접 추가하지 않는다. */
+ export const defaultEvaluationTypes: EvaluationType[] = [
+   { id: 'performance', name: '수행평가' },
+   { id: 'written', name: '지필평가' },
+-  { id: 'observation', name: '관찰평가' },
+-  { id: 'etc', name: '기타' },
+ ]
+ 
+ 
+@@ -90,6 +89,9 @@ function migrateItem(item: EvaluationItem): EvaluationItem {
+ 
+ /** 평가 바로 아래 items 만 있던 예전 데이터를 "평가 과제" 한 개로 감싼다. */
+ function migrateEvaluation(evaluation: Evaluation): Evaluation {
++  // 예전엔 관찰평가·기타 등 커스텀 유형도 있었다. 지금은 수행평가·지필평가 둘뿐이므로,
++  // 둘 중 하나가 아니면 수행평가로 본다(실제로 거의 다 수행평가였다).
++  const typeId = defaultEvaluationTypes.some(item => item.id === evaluation.typeId) ? evaluation.typeId : 'performance'
+   const rawTasks: EvaluationTask[] = evaluation.tasks?.length
+     ? evaluation.tasks
+     : [{
+@@ -101,21 +103,35 @@ function migrateEvaluation(evaluation: Evaluation): Evaluation {
+       }]
+   return {
+     ...evaluation,
++    typeId,
+     classIds: evaluation.classIds || [],
+-    tasks: rawTasks.map(task => ({ ...task, items: (task.items || []).map(migrateItem) })),
++    tasks: rawTasks.map(task => ({
++      ...task,
++      // 미제출 점수는 미응시로 합쳤다.
++      absentScore: task.absentScore ?? task.missingScore,
++      missingScore: undefined,
++      items: (task.items || []).map(migrateItem),
++    })),
+     items: undefined,
+   }
+ }
+ 
+-/** 평가 단위였던 응시 여부를 과제 단위로 펼친다. */
++/**
++ * 응시 상태를 미응시 표시 하나로 정리한다.
++ * 기본이 응시이므로 'present' 는 버리고, 'missing'(미제출) 은 'absent' 로 합친다.
++ * 평가 단위였던 예전 응시 여부는 과제 단위로 펼친다.
++ */
+ function migrateTaskStatus(
+   evaluations: Evaluation[],
+-  saved: Record<string, TaskStatus> | undefined,
+-  legacy: Record<string, 'present' | 'absent'> | undefined,
++  saved: Record<string, string> | undefined,
++  legacy: Record<string, string> | undefined,
+ ): Record<string, TaskStatus> {
+-  const next: Record<string, TaskStatus> = { ...(saved || {}) }
+-  if (!legacy) return next
+-  Object.entries(legacy).forEach(([key, status]) => {
++  const next: Record<string, TaskStatus> = {}
++  Object.entries(saved || {}).forEach(([key, status]) => {
++    if (status === 'absent' || status === 'missing') next[key] = 'absent'
++  })
++  Object.entries(legacy || {}).forEach(([key, status]) => {
++    if (status !== 'absent' && status !== 'missing') return
+     const divider = key.indexOf(':')
+     if (divider < 0) return
+     const evaluationId = key.slice(0, divider)
+@@ -124,7 +140,7 @@ function migrateTaskStatus(
+     if (!evaluation) return
+     evaluation.tasks.forEach(task => {
+       const nextKey = `${evaluationId}:${task.id}:${studentId}`
+-      if (next[nextKey] === undefined) next[nextKey] = status
++      if (next[nextKey] === undefined) next[nextKey] = 'absent'
+     })
+   })
+   return next
+@@ -151,7 +167,7 @@ function normalize(saved: Partial<AppData>): AppData {
+     attendance: saved.attendance || {},
+     activities: saved.activities || {},
+     dayNotes: saved.dayNotes || {},
+-    evaluationTypes: saved.evaluationTypes?.length ? saved.evaluationTypes : defaultEvaluationTypes,
++    evaluationTypes: defaultEvaluationTypes,
+     evaluations,
+     scores: saved.scores || {},
+     evaluationNotes: saved.evaluationNotes || {},
+diff --git a/src/types.ts b/src/types.ts
+index c6c53c4..5be42ef 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -140,8 +140,8 @@ export type AppData = {
+   /** 학생별 평가 비고. 키는 `${evaluationId}:${studentId}`. */
+   evaluationNotes: Record<string, string>
+   /**
+-   * 평가 과제별 응시 상태. 키는 `${evaluationId}:${taskId}:${studentId}`.
+-   * 키가 없으면 "미확인", 'present' 응시, 'absent' 미응시, 'missing' 미제출.
++   * 평가 과제별 미응시 표시. 키는 `${evaluationId}:${taskId}:${studentId}`.
++   * 키가 없으면 응시(기본). 점수를 넣으면 자동으로 응시로 본다.
+    */
+   taskStatus: Record<string, TaskStatus>
+   /** @deprecated taskStatus 로 옮겼다. 예전 데이터를 읽을 때만 쓴다. */
+@@ -183,15 +183,18 @@ export type EvaluationItem = {
+ export type EvaluationTask = {
+   id: string
+   name: string
+-  /** 미응시로 표시했을 때 이 과제에 자동으로 넣을 점수. 비우면 0점. */
++  /** 미응시(=미제출)로 표시했을 때 이 과제에 자동으로 넣을 점수. 비우면 0점. */
+   absentScore?: number
+-  /** 미제출로 표시했을 때 이 과제에 자동으로 넣을 점수. 비우면 0점. */
++  /** @deprecated 미응시로 합쳤다. 예전 데이터를 읽을 때만 쓴다. */
+   missingScore?: number
+   items: EvaluationItem[]
+ }
+ 
+-/** 과제별 응시 상태. 키가 없으면 "미확인"(아직 안 봄)이다. */
+-export type TaskStatus = 'present' | 'absent' | 'missing'
++/**
++ * 과제별 응시 상태.
++ * 기본이 응시이므로 따로 표시하지 않는다. 키가 있으면 미응시(=미제출)다.
++ */
++export type TaskStatus = 'absent'
+ 
+ export type Evaluation = {
+   id: string
+@@ -208,8 +211,6 @@ export type Evaluation = {
+   tasks: EvaluationTask[]
+   /** @deprecated tasks 로 옮겨졌다. 예전 데이터를 읽을 때만 쓴다. */
+   items?: EvaluationItem[]
+-  /** 이 채점기준을 만든 원본 파일 이름(참고용 표시만, 파일 자체는 저장하지 않는다). */
+-  sourceFileName?: string
+ }
+ 
+ /** 자동 배정된 한 번의 수업 시간 */
