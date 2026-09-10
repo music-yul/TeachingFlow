@@ -12,7 +12,7 @@ index 79668e8..3cd1907 100644
                onKeyDown={event => { if (event.key === 'Enter') add() }}
              />
 diff --git a/src/components/ClassesView.tsx b/src/components/ClassesView.tsx
-index d7b8823..3676ac4 100644
+index d7b8823..ecd0932 100644
 --- a/src/components/ClassesView.tsx
 +++ b/src/components/ClassesView.tsx
 @@ -125,7 +125,7 @@ export default function ClassesView({ data, update, onFiles }: Props) {
@@ -24,7 +24,73 @@ index d7b8823..3676ac4 100644
            <button className="primary-button" onClick={addClass} disabled={!data.subjects.length}>+ 학급 추가</button>
          </div>
  
-@@ -251,7 +251,7 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
+@@ -153,6 +153,8 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
+   const [name, setName] = useState('')
+   const [paste, setPaste] = useState('')
+   const [showPaste, setShowPaste] = useState(false)
++  const [fixText, setFixText] = useState('')
++  const [showFix, setShowFix] = useState(false)
+   const [slotText, setSlotText] = useState(formatSlots(classroom.slots))
+ 
+   const toggleSlot = (day: Day, period: number) => {
+@@ -193,6 +195,46 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
+     setShowPaste(false)
+   }
+ 
++  /**
++   * 명단 붙여넣기와 달리 학생을 새로 만들지 않는다. 이름으로 기존 학생을 찾아 번호만 고쳐 쓴다.
++   * id가 그대로 유지되므로 점수·출결 등 기존에 입력해둔 기록이 전혀 끊기지 않는다.
++   */
++  const applyFix = () => {
++    const parsed = parsePastedRoster(fixText)
++    if (!parsed.length) {
++      window.alert('내용을 읽지 못했습니다. 한 줄에 한 명씩, 학번과 이름 순으로 넣어 주세요.')
++      return
++    }
++    const matched: { id: string; number: number; name: string }[] = []
++    const noMatch: string[] = []
++    const ambiguous: string[] = []
++    parsed.forEach(entry => {
++      const hits = classroom.students.filter(student => student.name.trim() === entry.name.trim())
++      if (hits.length === 1) matched.push({ id: hits[0].id, number: entry.number, name: entry.name })
++      else if (hits.length === 0) noMatch.push(entry.name)
++      else ambiguous.push(entry.name)
++    })
++    if (!matched.length) {
++      window.alert('이름이 일치하는 학생을 찾지 못했습니다. 이 반 학생 이름과 붙여넣은 이름이 정확히 같아야 매칭됩니다.')
++      return
++    }
++    let message = `${matched.length}명의 학번이 수정됩니다.`
++    if (noMatch.length) message += `\n이름이 안 맞아 건너뛰는 학생 ${noMatch.length}명: ${noMatch.join(', ')}`
++    if (ambiguous.length) message += `\n같은 이름이 이 반에 여러 명 있어 건너뛰는 학생 ${ambiguous.length}명: ${ambiguous.join(', ')} (직접 한 명씩 고쳐주세요)`
++    message += '\n\n기존 학생 기록(점수·출결·메모)은 그대로 유지됩니다. 계속할까요?'
++    if (!window.confirm(message)) return
++    editClass(classroom.id, {
++      students: classroom.students
++        .map(student => {
++          const fix = matched.find(item => item.id === student.id)
++          return fix ? { ...student, number: fix.number } : student
++        })
++        .sort((left, right) => left.number - right.number),
++    })
++    setFixText('')
++    setShowFix(false)
++  }
++
+   return (
+     <div className="class-block">
+       <div className="class-head">
+@@ -242,6 +284,9 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
+             <button className="ghost-button" onClick={() => setShowPaste(!showPaste)}>
+               {showPaste ? '붙여넣기 닫기' : '명단 붙여넣기'}
+             </button>
++            <button className="ghost-button" onClick={() => setShowFix(!showFix)} title="학생을 새로 만들지 않고 번호만 고칩니다. 기존 점수·출결 기록이 유지됩니다.">
++              {showFix ? '학번 수정 닫기' : '학번만 일괄 수정'}
++            </button>
+           </div>
+ 
+           {showPaste && (
+@@ -251,13 +296,29 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
                </p>
                <textarea
                  value={paste}
@@ -33,6 +99,28 @@ index d7b8823..3676ac4 100644
                  onChange={event => setPaste(event.target.value)}
                />
                <button className="primary-button" onClick={applyPaste}>명단으로 넣기</button>
+             </div>
+           )}
+ 
++          {showFix && (
++            <div className="paste-box">
++              <p className="hint">
++                <b>이미 입력해둔 점수·출결을 그대로 둔 채</b> 번호만 고칠 때 씁니다. 학생을 새로 만들지 않고,
++                아래 붙여넣은 <b>이름과 정확히 같은</b> 기존 학생을 찾아 번호만 바꿔 씁니다.
++                동명이인이 이 반에 있으면 그 학생은 자동으로 건너뛰니 직접 고쳐주세요.
++              </p>
++              <textarea
++                value={fixText}
++                placeholder={'1101\t도레미\n1102\t라솔파'}
++                onChange={event => setFixText(event.target.value)}
++              />
++              <button className="primary-button" onClick={applyFix}>학번만 수정하기</button>
++            </div>
++          )}
++
+           {classroom.students.map(student => (
+             <div className="student-row" key={student.id}>
+               <input
 diff --git a/src/components/EvaluationsView.tsx b/src/components/EvaluationsView.tsx
 index 9004c61..612d702 100644
 --- a/src/components/EvaluationsView.tsx
