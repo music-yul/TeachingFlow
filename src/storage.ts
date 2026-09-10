@@ -15,11 +15,10 @@ export const defaultTypes: LessonType[] = [
   { id: 'assessment', name: '수행평가', color: '#d04f5d', emphasis: true },
 ]
 
+/** 평가 유형은 학교 평가계획과 맞춰 수행평가·지필평가 둘로 고정한다. 직접 추가하지 않는다. */
 export const defaultEvaluationTypes: EvaluationType[] = [
   { id: 'performance', name: '수행평가' },
   { id: 'written', name: '지필평가' },
-  { id: 'observation', name: '관찰평가' },
-  { id: 'etc', name: '기타' },
 ]
 
 
@@ -90,6 +89,9 @@ function migrateItem(item: EvaluationItem): EvaluationItem {
 
 /** 평가 바로 아래 items 만 있던 예전 데이터를 "평가 과제" 한 개로 감싼다. */
 function migrateEvaluation(evaluation: Evaluation): Evaluation {
+  // 예전엔 관찰평가·기타 등 커스텀 유형도 있었다. 지금은 수행평가·지필평가 둘뿐이므로,
+  // 둘 중 하나가 아니면 수행평가로 본다(실제로 거의 다 수행평가였다).
+  const typeId = defaultEvaluationTypes.some(item => item.id === evaluation.typeId) ? evaluation.typeId : 'performance'
   const rawTasks: EvaluationTask[] = evaluation.tasks?.length
     ? evaluation.tasks
     : [{
@@ -101,21 +103,35 @@ function migrateEvaluation(evaluation: Evaluation): Evaluation {
       }]
   return {
     ...evaluation,
+    typeId,
     classIds: evaluation.classIds || [],
-    tasks: rawTasks.map(task => ({ ...task, items: (task.items || []).map(migrateItem) })),
+    tasks: rawTasks.map(task => ({
+      ...task,
+      // 미제출 점수는 미응시로 합쳤다.
+      absentScore: task.absentScore ?? task.missingScore,
+      missingScore: undefined,
+      items: (task.items || []).map(migrateItem),
+    })),
     items: undefined,
   }
 }
 
-/** 평가 단위였던 응시 여부를 과제 단위로 펼친다. */
+/**
+ * 응시 상태를 미응시 표시 하나로 정리한다.
+ * 기본이 응시이므로 'present' 는 버리고, 'missing'(미제출) 은 'absent' 로 합친다.
+ * 평가 단위였던 예전 응시 여부는 과제 단위로 펼친다.
+ */
 function migrateTaskStatus(
   evaluations: Evaluation[],
-  saved: Record<string, TaskStatus> | undefined,
-  legacy: Record<string, 'present' | 'absent'> | undefined,
+  saved: Record<string, string> | undefined,
+  legacy: Record<string, string> | undefined,
 ): Record<string, TaskStatus> {
-  const next: Record<string, TaskStatus> = { ...(saved || {}) }
-  if (!legacy) return next
-  Object.entries(legacy).forEach(([key, status]) => {
+  const next: Record<string, TaskStatus> = {}
+  Object.entries(saved || {}).forEach(([key, status]) => {
+    if (status === 'absent' || status === 'missing') next[key] = 'absent'
+  })
+  Object.entries(legacy || {}).forEach(([key, status]) => {
+    if (status !== 'absent' && status !== 'missing') return
     const divider = key.indexOf(':')
     if (divider < 0) return
     const evaluationId = key.slice(0, divider)
@@ -124,7 +140,7 @@ function migrateTaskStatus(
     if (!evaluation) return
     evaluation.tasks.forEach(task => {
       const nextKey = `${evaluationId}:${task.id}:${studentId}`
-      if (next[nextKey] === undefined) next[nextKey] = status
+      if (next[nextKey] === undefined) next[nextKey] = 'absent'
     })
   })
   return next
@@ -151,7 +167,7 @@ function normalize(saved: Partial<AppData>): AppData {
     attendance: saved.attendance || {},
     activities: saved.activities || {},
     dayNotes: saved.dayNotes || {},
-    evaluationTypes: saved.evaluationTypes?.length ? saved.evaluationTypes : defaultEvaluationTypes,
+    evaluationTypes: defaultEvaluationTypes,
     evaluations,
     scores: saved.scores || {},
     evaluationNotes: saved.evaluationNotes || {},

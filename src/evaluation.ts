@@ -50,16 +50,19 @@ export function taskStatusOf(
   return data.taskStatus[taskStatusKey(evaluationId, taskId, studentId)]
 }
 
-/** 미응시·미제출이면 채점을 막고 과제 단위 대체 점수를 쓴다. */
-export function isLockedStatus(status: TaskStatus | undefined) {
-  return status === 'absent' || status === 'missing'
+/** 미응시면 채점을 막고 과제 단위 대체 점수를 쓴다. */
+export function isAbsent(data: AppData, evaluationId: string, taskId: string, studentId: string) {
+  return taskStatusOf(data, evaluationId, taskId, studentId) === 'absent'
 }
 
-/** 과제 하나에서 학생이 받는 점수. 미응시·미제출이면 과제에 등록해둔 대체 점수. */
+/** 학생이 이 평가에서 한 과제라도 미응시로 표시됐는지. */
+export function isAbsentAnywhere(data: AppData, evaluation: Evaluation, studentId: string) {
+  return evaluationTasks(evaluation).some(task => isAbsent(data, evaluation.id, task.id, studentId))
+}
+
+/** 과제 하나에서 학생이 받는 점수. 미응시면 과제에 등록해둔 대체 점수. */
 export function taskScore(data: AppData, evaluation: Evaluation, task: EvaluationTask, studentId: string) {
-  const status = taskStatusOf(data, evaluation.id, task.id, studentId)
-  if (status === 'absent') return task.absentScore ?? 0
-  if (status === 'missing') return task.missingScore ?? 0
+  if (isAbsent(data, evaluation.id, task.id, studentId)) return task.absentScore ?? 0
   return task.items.reduce((sum, item) => {
     const value = data.scores[scoreKey(evaluation.id, item.id, studentId)]
     return sum + (typeof value === 'number' ? value : 0)
@@ -78,17 +81,17 @@ export function weightedScore(data: AppData, evaluation: Evaluation, studentId: 
   return (rawTotal(data, evaluation, studentId) / max) * evaluation.weight
 }
 
-/** 이 평가에서 학생이 뭐라도 입력됐는지(상태 표시 포함). */
+/** 이 평가에서 학생이 뭐라도 입력됐는지(미응시 표시 포함). */
 export function hasAnyScore(data: AppData, evaluation: Evaluation, studentId: string) {
   return evaluationTasks(evaluation).some(task => {
-    if (isLockedStatus(taskStatusOf(data, evaluation.id, task.id, studentId))) return true
+    if (isAbsent(data, evaluation.id, task.id, studentId)) return true
     return task.items.some(item => data.scores[scoreKey(evaluation.id, item.id, studentId)] !== undefined)
   })
 }
 
-/** 과제 하나가 마감됐는지. 미응시·미제출이거나, 요소가 전부 채워졌으면 완료. */
+/** 과제 하나가 마감됐는지. 미응시이거나, 요소가 전부 채워졌으면 완료. */
 export function isTaskComplete(data: AppData, evaluation: Evaluation, task: EvaluationTask, studentId: string) {
-  if (isLockedStatus(taskStatusOf(data, evaluation.id, task.id, studentId))) return true
+  if (isAbsent(data, evaluation.id, task.id, studentId)) return true
   if (!task.items.length) return false
   return task.items.every(item => data.scores[scoreKey(evaluation.id, item.id, studentId)] !== undefined)
 }
@@ -127,25 +130,20 @@ export type EvalCounts = {
   remaining: number
   /** 한 과제라도 미응시로 표시된 학생 수 */
   absent: number
-  /** 한 과제라도 미제출로 표시된 학생 수 */
-  missing: number
   /** 채점이 시작됐는지(누구 하나라도 입력이 있는지) */
   started: boolean
 }
 
 export function evalCounts(data: AppData, evaluation: Evaluation, students: Student[]): EvalCounts {
-  const tasks = evaluationTasks(evaluation)
   let graded = 0
   let absent = 0
-  let missing = 0
   let started = false
   students.forEach(student => {
     if (isComplete(data, evaluation, student.id)) graded += 1
     if (hasAnyScore(data, evaluation, student.id)) started = true
-    if (tasks.some(task => taskStatusOf(data, evaluation.id, task.id, student.id) === 'absent')) absent += 1
-    if (tasks.some(task => taskStatusOf(data, evaluation.id, task.id, student.id) === 'missing')) missing += 1
+    if (isAbsentAnywhere(data, evaluation, student.id)) absent += 1
   })
-  return { total: students.length, graded, remaining: students.length - graded, absent, missing, started }
+  return { total: students.length, graded, remaining: students.length - graded, absent, started }
 }
 
 /** 이 세션의 차시가 평가와 연결돼 있으면 그 평가를 돌려준다(이어서 모드도 원래 차시 기준으로 따라간다). */

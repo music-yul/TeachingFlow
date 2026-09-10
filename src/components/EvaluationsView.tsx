@@ -7,7 +7,8 @@ import {
   evalCounts,
   evaluationClasses,
   evaluationTasks,
-  isLockedStatus,
+  isAbsent,
+  isAbsentAnywhere,
   maxTotal,
   noteKey,
   rawTotal,
@@ -15,7 +16,6 @@ import {
   taskMax,
   taskScore,
   taskStatusKey,
-  taskStatusOf,
   weightedScore,
 } from '../evaluation'
 import { linkedEvaluation } from '../evaluation'
@@ -29,8 +29,6 @@ type Props = {
   onJumpHandled: () => void
   onOpenSession: (sessionId: string) => void
 }
-
-const statusLabel: Record<TaskStatus, string> = { present: '응시', absent: '미응시', missing: '미제출' }
 
 export default function EvaluationsView({ data, update, sessions, jumpTo, onJumpHandled, onOpenSession }: Props) {
   const usable = data.subjects.filter(item => item.usesProgress !== false)
@@ -103,11 +101,28 @@ export default function EvaluationsView({ data, update, sessions, jumpTo, onJump
           return (
             <button className="eval-row" key={evaluation.id} onClick={() => setOpenId(evaluation.id)}>
               <div className="eval-row-main">
-                <b>{evaluation.name}</b>
-                <span className="eval-meta">
-                  {type?.name} · {evaluation.weight}% · 과제 {tasks.length}개 / {maxTotal(evaluation)}점 ·{' '}
-                  {classes.length ? classes.map(c => c.name).join(', ') : '대상 없음'}
-                </span>
+                <div className="eval-row-title">
+                  <b>{evaluation.name}</b>
+                  <span className="eval-meta">
+                    {type?.name} · {evaluation.weight}% · {maxTotal(evaluation)}점 ·{' '}
+                    {classes.length ? classes.map(c => c.name).join(', ') : '대상 없음'}
+                  </span>
+                </div>
+                <div className="eval-tree">
+                  {tasks.map(task => (
+                    <div className="eval-tree-task" key={task.id}>
+                      <span className="eval-tree-task-name">{task.name}<em>{taskMax(task)}점</em></span>
+                      <span className="eval-tree-items">
+                        {task.items.length
+                          ? task.items.map(item => (
+                              <span className="eval-tree-item" key={item.id}>{item.name}<em>{item.maxScore}</em></span>
+                            ))
+                          : <span className="eval-tree-empty">요소 없음</span>}
+                      </span>
+                    </div>
+                  ))}
+                  {!tasks.length && <span className="eval-tree-empty">평가 과제 없음</span>}
+                </div>
               </div>
               <div className="eval-row-fill">
                 <div className="eval-fill-bar"><span style={{ width: `${overallFill}%` }} /></div>
@@ -149,18 +164,9 @@ function EvaluationCreateModal({
   const [typeId, setTypeId] = useState(data.evaluationTypes[0]?.id || '')
   const [weight, setWeight] = useState(30)
   const [classIds, setClassIds] = useState<string[]>([])
-  const [newTypeName, setNewTypeName] = useState('')
 
   const toggleClass = (id: string) => {
     setClassIds(current => (current.includes(id) ? current.filter(item => item !== id) : [...current, id]))
-  }
-
-  const addType = () => {
-    if (!newTypeName.trim()) return
-    const type = { id: makeId('evtype'), name: newTypeName.trim() }
-    update({ evaluationTypes: [...data.evaluationTypes, type] })
-    setTypeId(type.id)
-    setNewTypeName('')
   }
 
   const create = () => {
@@ -199,11 +205,6 @@ function EvaluationCreateModal({
               </select>
             </label>
             <label>반영 비율(%)<input type="number" min={0} max={100} value={weight} onChange={event => setWeight(Number(event.target.value))} /></label>
-          </div>
-
-          <div className="inline-form">
-            <input value={newTypeName} placeholder="유형 직접 추가 (예: 자기평가)" onChange={event => setNewTypeName(event.target.value)} />
-            <button className="ghost-button" onClick={addType}>+ 유형 추가</button>
           </div>
 
           <div className="block">
@@ -250,7 +251,7 @@ function EvaluationEntry({
   const [classId, setClassId] = useState(initialClassId || classes[0]?.id || '')
   const [mode, setMode] = useState<'score' | 'settings'>('score')
   const [showRubric, setShowRubric] = useState(false)
-  const [onlyRemaining, setOnlyRemaining] = useState(false)
+  const [onlyAbsent, setOnlyAbsent] = useState(false)
   const classroom = classes.find(item => item.id === classId) || classes[0]
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
@@ -295,12 +296,24 @@ function EvaluationEntry({
     update({ evaluationNotes: { ...data.evaluationNotes, [noteKey(evaluation.id, studentId)]: value } })
   }
 
-  const setStatus = (taskId: string, studentId: string, next: string) => {
+  /**
+   * 미응시 표시를 켜고 끈다. 기본은 응시이므로 미응시만 관리하면 된다.
+   * 미응시로 바꿀 때는 이미 넣어둔 요소 점수를 지운다(과제 점수로 대체되므로 남겨두면 헷갈린다).
+   */
+  const toggleAbsent = (taskId: string, studentId: string) => {
     const key = taskStatusKey(evaluation.id, taskId, studentId)
     const taskStatus = { ...data.taskStatus }
-    if (!next) delete taskStatus[key]
-    else taskStatus[key] = next as TaskStatus
-    update({ taskStatus })
+    if (taskStatus[key]) {
+      delete taskStatus[key]
+      update({ taskStatus })
+      return
+    }
+    taskStatus[key] = 'absent' as TaskStatus
+    const scores = { ...data.scores }
+    tasks.find(task => task.id === taskId)?.items.forEach(item => {
+      delete scores[scoreKey(evaluation.id, item.id, studentId)]
+    })
+    update({ taskStatus, scores })
   }
 
   const focusCell = (rowIndex: number, colIndex: number) => {
@@ -309,13 +322,9 @@ function EvaluationEntry({
     target?.select()
   }
 
-  const visibleStudents = students.filter(student => {
-    if (!onlyRemaining) return true
-    return !tasks.every(task => {
-      if (isLockedStatus(taskStatusOf(data, evaluation.id, task.id, student.id))) return true
-      return task.items.length > 0 && task.items.every(item => data.scores[scoreKey(evaluation.id, item.id, student.id)] !== undefined)
-    })
-  })
+  const visibleStudents = students.filter(student => (
+    onlyAbsent ? isAbsentAnywhere(data, evaluation, student.id) : true
+  ))
 
   // 요소 칸에 몇 번째 열인지 붙여 키보드 이동을 만든다.
   let columnCursor = 0
@@ -378,15 +387,14 @@ function EvaluationEntry({
             <div className="eval-summary-bar">
               <span>전체 {counts.total}명</span>
               <span className="on">채점 완료 {counts.graded}명</span>
-              {counts.remaining > 0 && <span className="muted">남음 {counts.remaining}명</span>}
-              {counts.absent > 0 && <span className="off">미응시 {counts.absent}명</span>}
-              {counts.missing > 0 && <span className="off">미제출 {counts.missing}명</span>}
+              {counts.remaining > 0 && <span className="muted">미채점 {counts.remaining}명</span>}
+              <span className={counts.absent > 0 ? 'off' : 'muted'}>미응시 {counts.absent}명</span>
               <button className="ghost-button eval-rubric-toggle" onClick={() => setShowRubric(!showRubric)}>
                 {showRubric ? '채점기준 접기' : '채점기준 보기'}
               </button>
               <label className="eval-only-absent">
-                <input type="checkbox" checked={onlyRemaining} onChange={event => setOnlyRemaining(event.target.checked)} />
-                남은 학생만
+                <input type="checkbox" checked={onlyAbsent} onChange={event => setOnlyAbsent(event.target.checked)} />
+                미응시자 보기
               </label>
             </div>
           )}
@@ -440,7 +448,7 @@ function EvaluationEntry({
                   <tr>
                     {tasks.map(task => (
                       <Fragment key={task.id}>
-                        <th className="eg-status">응시</th>
+                        <th className="eg-status">미응시</th>
                         {task.items.map(item => (
                           <th key={item.id}>{item.name}<small>{item.maxScore}</small></th>
                         ))}
@@ -454,25 +462,21 @@ function EvaluationEntry({
                       <td className="eg-sticky eg-no">{student.number}</td>
                       <td className="eg-sticky eg-name">{student.name}</td>
                       {tasks.map(task => {
-                        const status = taskStatusOf(data, evaluation.id, task.id, student.id)
-                        const locked = isLockedStatus(status)
+                        const absent = isAbsent(data, evaluation.id, task.id, student.id)
                         return (
                           <Fragment key={task.id}>
                             <td className="eg-status">
-                              <select
-                                className={locked ? 'eg-status-select off' : 'eg-status-select'}
-                                value={status || ''}
-                                onChange={event => setStatus(task.id, student.id, event.target.value)}
-                              >
-                                <option value="">–</option>
-                                <option value="present">응시</option>
-                                <option value="absent">미응시</option>
-                                <option value="missing">미제출</option>
-                              </select>
+                              <input
+                                type="checkbox"
+                                className="eg-absent-check"
+                                checked={absent}
+                                title={absent ? '응시로 되돌리기' : '미응시로 표시'}
+                                onChange={() => toggleAbsent(task.id, student.id)}
+                              />
                             </td>
-                            {locked ? (
+                            {absent ? (
                               <td className="eg-locked" colSpan={task.items.length}>
-                                {statusLabel[status as TaskStatus]} 처리 · {taskScore(data, evaluation, task, student.id)}점 자동 부여
+                                미응시 · {taskScore(data, evaluation, task, student.id)}점 자동 부여
                               </td>
                             ) : (
                               task.items.map(item => {
@@ -578,14 +582,6 @@ function EvaluationSettings({
           </select>
         </label>
         <label>반영 비율(%)<input type="number" min={0} max={100} value={evaluation.weight} onChange={event => update({ weight: Number(event.target.value) })} /></label>
-        <label>
-          출제 계획표 파일명(참고용)
-          <input
-            value={evaluation.sourceFileName || ''}
-            placeholder="예: 2026 음악연주 수행평가 계획표.pdf"
-            onChange={event => update({ sourceFileName: event.target.value || undefined })}
-          />
-        </label>
       </div>
 
       <h3 className="eval-task-heading">평가 과제 <small>배점 합 {maxTotal(evaluation)}점</small></h3>
@@ -671,17 +667,7 @@ function TaskEditor({
             onChange={event => editTask(task.id, { absentScore: event.target.value === '' ? undefined : Number(event.target.value) })}
           />
         </label>
-        <label>
-          미제출 점수
-          <input
-            type="number"
-            min={0}
-            value={task.missingScore ?? ''}
-            placeholder="0"
-            onChange={event => editTask(task.id, { missingScore: event.target.value === '' ? undefined : Number(event.target.value) })}
-          />
-        </label>
-        <span className="hint">채점표에서 미응시·미제출로 표시하면 이 과제 점수가 자동으로 이 값이 됩니다.</span>
+        <span className="hint">채점표에서 미응시로 표시하면 이 과제 점수가 자동으로 이 값이 됩니다. 미제출도 미응시로 처리합니다.</span>
       </div>
 
       {task.items.map(item => (
@@ -743,7 +729,15 @@ function EvalItemEditor({
         <button className="ghost-button" onClick={() => setOpen(!open)}>
           {open ? '기준 접기' : `기준 ${levels.length}개 쓰기`}
         </button>
-        <button className="ghost-button" onClick={() => removeItem(item.id)}>삭제</button>
+        <button
+          className="ghost-button danger-button"
+          title="이 평가 요소와 채점기준을 지웁니다"
+          onClick={() => {
+            if (window.confirm(`평가 요소 "${item.name}"과 채점기준을 지웁니다. 계속할까요?`)) removeItem(item.id)
+          }}
+        >
+          요소 삭제
+        </button>
       </div>
 
       {warn && (

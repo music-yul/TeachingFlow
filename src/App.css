@@ -537,8 +537,8 @@ thead th small { display: block; font-weight: 400; }
 .class-check input { margin: 0; }
 .class-check.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
 
-.eval-item-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0; }
-.eval-item-row input:first-child { flex: 1 1 auto; min-width: 0; }
+.eval-item-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0; flex-wrap: wrap; }
+.eval-item-row > input:first-child { flex: 1 1 9rem; min-width: 7rem; font-weight: 600; }
 .eval-item-row input[type='number'] { width: 4.5rem; }
 
 .eval-class-tabs { display: flex; gap: 0.3rem; flex-wrap: wrap; margin: 0.6rem 0; }
@@ -763,6 +763,24 @@ thead th small { display: block; font-weight: 400; }
 .block.eval-first { border: 1px solid var(--mark-line, var(--accent)); border-radius: 0.45rem; padding: 0.6rem 0.7rem; margin-bottom: 0.7rem; }
 .attendance-name { font-variant-numeric: tabular-nums; }
 .attendance-table .att-no { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ---------- 미응시 체크 · 평가 목록 구조 ---------- */
+
+.eg-absent-check { width: 1.05rem; height: 1.05rem; margin: 0; cursor: pointer; accent-color: var(--danger); }
+.eval-grid .eg-status { min-width: 3.2rem; }
+
+.eval-row { align-items: flex-start; }
+.eval-row-title { display: flex; flex-direction: column; gap: 0.15rem; }
+.eval-tree { display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.45rem; }
+.eval-tree-task { display: flex; align-items: baseline; gap: 0.4rem; flex-wrap: wrap; font-size: 0.78rem; }
+.eval-tree-task-name { flex: 0 0 auto; font-weight: 600; color: var(--ink); }
+.eval-tree-task-name em { font-style: normal; color: var(--muted); font-weight: 400; margin-left: 0.2rem; }
+.eval-tree-items { display: flex; flex-wrap: wrap; gap: 0.25rem; min-width: 0; }
+.eval-tree-item { background: var(--chip); color: var(--muted); border-radius: 0.25rem; padding: 0.02rem 0.35rem; white-space: nowrap; }
+.eval-tree-item em { font-style: normal; margin-left: 0.2rem; opacity: 0.7; }
+.eval-tree-empty { color: var(--muted); font-size: 0.78rem; }
+
+.danger-button { color: var(--danger); }
 
 @media (max-width: 900px) {
   .workspace { flex-direction: column; gap: 0.6rem; padding: 0.6rem 0.7rem 3rem; }

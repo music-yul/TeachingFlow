@@ -140,8 +140,8 @@ export type AppData = {
   /** 학생별 평가 비고. 키는 `${evaluationId}:${studentId}`. */
   evaluationNotes: Record<string, string>
   /**
-   * 평가 과제별 응시 상태. 키는 `${evaluationId}:${taskId}:${studentId}`.
-   * 키가 없으면 "미확인", 'present' 응시, 'absent' 미응시, 'missing' 미제출.
+   * 평가 과제별 미응시 표시. 키는 `${evaluationId}:${taskId}:${studentId}`.
+   * 키가 없으면 응시(기본). 점수를 넣으면 자동으로 응시로 본다.
    */
   taskStatus: Record<string, TaskStatus>
   /** @deprecated taskStatus 로 옮겼다. 예전 데이터를 읽을 때만 쓴다. */
@@ -183,15 +183,18 @@ export type EvaluationItem = {
 export type EvaluationTask = {
   id: string
   name: string
-  /** 미응시로 표시했을 때 이 과제에 자동으로 넣을 점수. 비우면 0점. */
+  /** 미응시(=미제출)로 표시했을 때 이 과제에 자동으로 넣을 점수. 비우면 0점. */
   absentScore?: number
-  /** 미제출로 표시했을 때 이 과제에 자동으로 넣을 점수. 비우면 0점. */
+  /** @deprecated 미응시로 합쳤다. 예전 데이터를 읽을 때만 쓴다. */
   missingScore?: number
   items: EvaluationItem[]
 }
 
-/** 과제별 응시 상태. 키가 없으면 "미확인"(아직 안 봄)이다. */
-export type TaskStatus = 'present' | 'absent' | 'missing'
+/**
+ * 과제별 응시 상태.
+ * 기본이 응시이므로 따로 표시하지 않는다. 키가 있으면 미응시(=미제출)다.
+ */
+export type TaskStatus = 'absent'
 
 export type Evaluation = {
   id: string
@@ -208,8 +211,6 @@ export type Evaluation = {
   tasks: EvaluationTask[]
   /** @deprecated tasks 로 옮겨졌다. 예전 데이터를 읽을 때만 쓴다. */
   items?: EvaluationItem[]
-  /** 이 채점기준을 만든 원본 파일 이름(참고용 표시만, 파일 자체는 저장하지 않는다). */
-  sourceFileName?: string
 }
 
 /** 자동 배정된 한 번의 수업 시간 */

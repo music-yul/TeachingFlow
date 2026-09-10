@@ -4,12 +4,11 @@ import { coverage, sessionLabel } from './schedule'
 import {
   evaluationClasses,
   evaluationTasks,
-  isLockedStatus,
+  isAbsent,
   noteKey,
   rawTotal,
   scoreKey,
   taskScore,
-  taskStatusOf,
   weightedScore,
 } from './evaluation'
 
@@ -118,7 +117,7 @@ export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
     const itemRow: (string | number)[] = ['학번', '성명']
     tasks.forEach(task => {
       taskRow.push(task.name, ...task.items.map(() => ''))
-      itemRow.push('응시', ...task.items.map(item => `${item.name}(${item.maxScore})`))
+      itemRow.push('미응시', ...task.items.map(item => `${item.name}(${item.maxScore})`))
     })
     taskRow.push('', '', '')
     itemRow.push('원점수', '반영점수', '비고')
@@ -131,10 +130,10 @@ export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
     classroom.students.forEach(student => {
       const row: (string | number)[] = [student.number, student.name]
       tasks.forEach(task => {
-        const status = taskStatusOf(data, evaluation.id, task.id, student.id)
-        row.push(status === 'absent' ? '미응시' : status === 'missing' ? '미제출' : status === 'present' ? '응시' : '')
-        if (isLockedStatus(status)) {
-          // 미응시·미제출이면 요소별 칸은 비우고 과제 점수만 첫 칸에 적는다.
+        const absent = isAbsent(data, evaluation.id, task.id, student.id)
+        row.push(absent ? '미응시' : '')
+        if (absent) {
+          // 미응시면 요소별 칸은 비우고 과제 점수만 첫 칸에 적는다.
           task.items.forEach((_, index) => row.push(index === 0 ? taskScore(data, evaluation, task, student.id) : ''))
         } else {
           task.items.forEach(item => row.push(data.scores[scoreKey(evaluation.id, item.id, student.id)] ?? ''))

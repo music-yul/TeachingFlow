@@ -61,23 +61,31 @@ function readTeacher(value: string) {
   return matched ? matched[1].trim() : ''
 }
 
-/** 1순위: `번호` / `성명` 머리글을 찾는다. */
+/**
+ * 1순위: `학번`/`번호`/`No.` + `성명`/`이름` 머리글을 찾는다.
+ * NEIS 출석부는 열이 'No.'(반 출석번호)와 '학번'(전체 학번)으로 나뉘어 있는 경우가 많다.
+ * 동명이인 구분에는 학번이 필요하므로 '학번' 열이 있으면 그쪽을 우선한다.
+ */
 function findHeaderColumns(rows: Row[]) {
   const index = rows.findIndex(row => {
     const values = row.map(text)
-    return values.some(value => /번호/.test(value)) && values.some(value => /성\s*명|이름/.test(value))
+    return values.some(value => /번호|^No\.?$/i.test(value)) && values.some(value => /성\s*명|이름/.test(value))
   })
   if (index < 0) return null
   const header = rows[index].map(text)
-  const numberIndex = header.findIndex(value => /^번호$|출석\s*번호|학생\s*번호/.test(value))
   const nameIndex = header.findIndex(value => /^성\s*명$|^이름$|성명/.test(value))
-  if (numberIndex < 0 || nameIndex < 0) return null
+  if (nameIndex < 0) return null
+  const studentNoIndex = header.findIndex(value => /^학번$|학생\s*번호/.test(value))
+  const classNoIndex = header.findIndex(value => /^No\.?$|^번호$|출석\s*번호/i.test(value))
+  const numberIndex = studentNoIndex >= 0 ? studentNoIndex : classNoIndex
+  if (numberIndex < 0) return null
   return { index, numberIndex, nameIndex }
 }
 
 /**
  * 2순위: 머리글이 없거나 형식이 달라도, 한글 이름이 가장 많이 모인 열을 명단으로 본다.
- * 번호는 바로 왼쪽의 숫자 열에서 찾고, 없으면 순서대로 매긴다.
+ * 번호 열은 이름 왼쪽 몇 칸 안에서 찾는데, 학번(보통 4~5자리)이 있으면 그 열을 우선한다.
+ * 반 출석번호(1~2자리)뿐이면 그걸 대신 쓴다.
  */
 function guessColumns(rows: Row[]) {
   const score: Record<number, number> = {}
@@ -90,17 +98,18 @@ function guessColumns(rows: Row[]) {
   if (!best || Number(best[1]) < 3) return null
   const nameIndex = Number(best[0])
 
-  let numberIndex = -1
-  for (let column = nameIndex - 1; column >= 0 && column >= nameIndex - 4; column -= 1) {
-    const numeric = rows.filter(row => {
-      const value = text(row[column])
-      return value !== '' && /^\d{1,2}$/.test(value.replace(/\.0$/, ''))
-    }).length
-    if (numeric >= 3) {
-      numberIndex = column
-      break
-    }
-  }
+  const countMatching = (column: number, pattern: RegExp) => rows.filter(row => {
+    const value = text(row[column]).replace(/\.0$/, '')
+    return value !== '' && pattern.test(value)
+  }).length
+
+  const candidates: number[] = []
+  for (let column = nameIndex - 1; column >= 0 && column >= nameIndex - 4; column -= 1) candidates.push(column)
+
+  const studentNoColumn = candidates.find(column => countMatching(column, /^\d{4,5}$/) >= 3)
+  const classNoColumn = candidates.find(column => countMatching(column, /^\d{1,3}$/) >= 3)
+  const numberIndex = studentNoColumn ?? classNoColumn ?? -1
+
   const firstNameRow = rows.findIndex(row => isHangulName(text(row[nameIndex])))
   return { index: firstNameRow - 1, numberIndex, nameIndex }
 }
@@ -219,7 +228,11 @@ export async function parseWorkbooks(files: File[]): Promise<{ classes: Imported
   return classes.length || failed.length ? { classes, failed } : { classes: [], failed: files.map(file => file.name) }
 }
 
-/** 아무 표에서나 복사해 붙여넣은 명단을 읽는다. `1 홍길동` / `1<tab>홍길동` / `홍길동` 모두 허용. */
+/**
+ * 아무 표에서나 복사해 붙여넣은 명단을 읽는다.
+ * `2104 홍길동` / `1<tab>홍길동` / `홍길동` 모두 허용한다.
+ * 앞 칸이 숫자면 학번으로 본다(선택과목 반은 원적반 학번 2104 같은 4자리를 쓴다).
+ */
 export function parsePastedRoster(input: string): ImportedStudent[] {
   const students: ImportedStudent[] = []
   input.split(/\r?\n/).forEach(line => {
@@ -228,7 +241,7 @@ export function parsePastedRoster(input: string): ImportedStudent[] {
     const parts = trimmed.split(/[\t,;]+|\s{1,}/).filter(Boolean)
     let number = 0
     let name = ''
-    if (parts.length >= 2 && /^\d{1,2}$/.test(parts[0])) {
+    if (parts.length >= 2 && /^\d{1,5}$/.test(parts[0])) {
       number = Number(parts[0])
       name = parts.slice(1).join(' ')
     } else {

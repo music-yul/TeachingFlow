@@ -118,9 +118,8 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
                 >
                   <span>⚠️ {evaluation.name}</span>
                   <span className="eval-link-cta">
-                    남은 학생 {counts.remaining}명
-                    {counts.absent > 0 && ` · 미응시 ${counts.absent}명`}
-                    {counts.missing > 0 && ` · 미제출 ${counts.missing}명`} 확인 ›
+                    미채점 {counts.remaining}명
+                    {counts.absent > 0 && ` · 미응시 ${counts.absent}명`} 확인 ›
                   </span>
                 </button>
               ))}
