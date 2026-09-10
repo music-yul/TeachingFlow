@@ -532,7 +532,7 @@ function EvaluationSettings({
     <div className="block">
       <div className="eval-settings-head">
         <h3>평가 정보 · 평가 요소</h3>
-        <button className="ghost-button" onClick={() => setOpen(!open)}>{open ? '접기' : '펼치기'}</button>
+        <button className="ghost-button" onClick={() => setOpen(!open)}>{open ? '접기' : '요소·채점기준 펼치기'}</button>
       </div>
 
       {open && (
