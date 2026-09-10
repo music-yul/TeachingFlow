@@ -236,7 +236,7 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
       {open && (
         <div className="students">
           <div className="inline-form">
-            <input type="number" placeholder="번호" value={number} onChange={event => setNumber(event.target.value)} />
+            <input type="number" placeholder="학번 (예: 2104)" value={number} onChange={event => setNumber(event.target.value)} />
             <input placeholder="이름" value={name} onChange={event => setName(event.target.value)} />
             <button className="ghost-button" onClick={addStudent}>+ 학생 추가</button>
             <button className="ghost-button" onClick={() => setShowPaste(!showPaste)}>
@@ -247,11 +247,11 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
           {showPaste && (
             <div className="paste-box">
               <p className="hint">
-                엑셀에서 번호와 이름 두 열을 복사해 그대로 붙여넣으세요. 번호 없이 이름만 붙여넣어도 위에서부터 번호가 매겨집니다.
+엑셀에서 <b>학번</b>과 이름 두 열을 복사해 그대로 붙여넣으세요. 선택과목 반이면 원적반 학번(예: 2104)을 그대로 쓰시면 동명이인이 구분됩니다. 학번 없이 이름만 붙여넣으면 위에서부터 1번씩 매겨집니다.
               </p>
               <textarea
                 value={paste}
-                placeholder={'1\t홍길동\n2\t김철수'}
+                placeholder={'2104\t김재훈\n2106\t문지훈'}
                 onChange={event => setPaste(event.target.value)}
               />
               <button className="primary-button" onClick={applyPaste}>명단으로 넣기</button>

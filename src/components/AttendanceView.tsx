@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { AppData, AttendanceStatus, Session } from '../types'
 import { dateKey, formatShort, sessionLabel, todayKey } from '../schedule'
 import { exportClassDigestXlsx } from '../exportPrint'
+import { studentLabel } from '../students'
 
 type Props = {
   data: AppData
@@ -118,8 +119,8 @@ export default function AttendanceView({ data, sessions, update }: Props) {
                 <table className="attendance-table">
                   <thead>
                     <tr>
-                      <th>번호</th>
-                      <th>이름</th>
+                      <th>학번</th>
+                      <th>성명</th>
                       <th>출결</th>
                       <th>수업 중 특이사항</th>
                       <th>누계</th>
@@ -133,8 +134,8 @@ export default function AttendanceView({ data, sessions, update }: Props) {
                       const absent = countFor(classroom.id, student.id, '결석')
                       return (
                         <tr key={student.id}>
-                          <td>{student.number}</td>
-                          <td>{student.name}</td>
+                          <td className="att-no">{student.number}</td>
+                          <td className="att-name">{student.name}</td>
                           <td className="status-cell">
                             {statuses.map(status => (
                               <button
@@ -216,7 +217,7 @@ function StudentDigest({ data, sessions, classes }: { data: AppData; sessions: S
         <select value={studentId} onChange={event => setStudentId(event.target.value)}>
           <option value="">학생 선택</option>
           {classroom?.students.map(item => (
-            <option key={item.id} value={item.id}>{item.number}. {item.name}</option>
+            <option key={item.id} value={item.id}>{studentLabel(item)}</option>
           ))}
         </select>
         <button

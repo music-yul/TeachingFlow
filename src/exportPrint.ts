@@ -1,7 +1,17 @@
 import * as XLSX from 'xlsx'
 import type { AppData, Evaluation, Session } from './types'
 import { coverage, sessionLabel } from './schedule'
-import { evaluationClasses, noteKey, rawTotal, scoreKey, weightedScore } from './evaluation'
+import {
+  evaluationClasses,
+  evaluationTasks,
+  isLockedStatus,
+  noteKey,
+  rawTotal,
+  scoreKey,
+  taskScore,
+  taskStatusOf,
+  weightedScore,
+} from './evaluation'
 
 /** 진도표를 엑셀 파일로 내려받는다. */
 export function exportProgressXlsx(data: AppData, sessions: Session[], subjectId: string) {
@@ -75,7 +85,7 @@ export function exportClassDigestXlsx(data: AppData, sessions: Session[], classI
     .filter(item => item.classId === classId && item.mode !== 'none' && !item.cancelled)
     .sort((left, right) => (left.date + String(left.period)).localeCompare(right.date + String(right.period)))
 
-  const rows: (string | number)[][] = [['번호', '이름', '날짜', '교시', '수업 내용', '출결', '특이사항']]
+  const rows: (string | number)[][] = [['학번', '성명', '날짜', '교시', '수업 내용', '출결', '특이사항']]
   classroom.students.forEach(student => {
     own.forEach(session => {
       const key = `${session.id}:${student.id}`
@@ -100,30 +110,48 @@ export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
   const classes = evaluationClasses(data, evaluation)
   if (!classes.length) return
 
+  const tasks = evaluationTasks(evaluation)
   const workbook = XLSX.utils.book_new()
   classes.forEach(classroom => {
-    const header = ['번호', '학번', '이름', ...evaluation.items.map(item => `${item.name}(${item.maxScore})`), '원점수', '반영점수', '비고']
+    // 과제 행 → 요소 행 순서로 두 줄짜리 머리글을 만든다(학교 채점표와 같은 모양).
+    const taskRow: (string | number)[] = ['', '']
+    const itemRow: (string | number)[] = ['학번', '성명']
+    tasks.forEach(task => {
+      taskRow.push(task.name, ...task.items.map(() => ''))
+      itemRow.push('응시', ...task.items.map(item => `${item.name}(${item.maxScore})`))
+    })
+    taskRow.push('', '', '')
+    itemRow.push('원점수', '반영점수', '비고')
+
     const rows: (string | number)[][] = [
-      [`${evaluation.name} (${evaluation.weight}% 반영, ${evaluation.date})`],
-      header,
+      [`${evaluation.name} (${evaluation.weight}% 반영)`],
+      taskRow,
+      itemRow,
     ]
     classroom.students.forEach(student => {
-      const row: (string | number)[] = [
-        student.number,
-        student.number,
-        student.name,
-        ...evaluation.items.map(item => data.scores[scoreKey(evaluation.id, item.id, student.id)] ?? ''),
+      const row: (string | number)[] = [student.number, student.name]
+      tasks.forEach(task => {
+        const status = taskStatusOf(data, evaluation.id, task.id, student.id)
+        row.push(status === 'absent' ? '미응시' : status === 'missing' ? '미제출' : status === 'present' ? '응시' : '')
+        if (isLockedStatus(status)) {
+          // 미응시·미제출이면 요소별 칸은 비우고 과제 점수만 첫 칸에 적는다.
+          task.items.forEach((_, index) => row.push(index === 0 ? taskScore(data, evaluation, task, student.id) : ''))
+        } else {
+          task.items.forEach(item => row.push(data.scores[scoreKey(evaluation.id, item.id, student.id)] ?? ''))
+        }
+      })
+      row.push(
         rawTotal(data, evaluation, student.id),
         Math.round(weightedScore(data, evaluation, student.id) * 10) / 10,
         data.evaluationNotes[noteKey(evaluation.id, student.id)] || '',
-      ]
+      )
       rows.push(row)
     })
     const sheet = XLSX.utils.aoa_to_sheet(rows)
     sheet['!cols'] = [
-      { wch: 5 }, { wch: 8 }, { wch: 8 },
-      ...evaluation.items.map(() => ({ wch: 10 })),
-      { wch: 8 }, { wch: 8 }, { wch: 24 },
+      { wch: 8 }, { wch: 9 },
+      ...tasks.flatMap(task => [{ wch: 7 }, ...task.items.map(() => ({ wch: 11 }))]),
+      { wch: 8 }, { wch: 9 }, { wch: 24 },
     ]
     XLSX.utils.book_append_sheet(workbook, sheet, classroom.name.slice(0, 31))
   })

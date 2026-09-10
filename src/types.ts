@@ -17,6 +17,7 @@ export type Subject = {
 
 export type Student = {
   id: string
+  /** 학번. 선택과목 반은 원적반 학번(예: 2104)을 그대로 쓴다. 동명이인 구분의 기준이 된다. */
   number: number
   name: string
 }
@@ -139,10 +140,12 @@ export type AppData = {
   /** 학생별 평가 비고. 키는 `${evaluationId}:${studentId}`. */
   evaluationNotes: Record<string, string>
   /**
-   * 평가 응시 여부. 점수와는 별개다. 키가 아예 없으면 "미확인"(아직 안 봄),
-   * 'present' 면 응시, 'absent' 면 미응시(결석 등)로 교사가 확정한 상태다.
+   * 평가 과제별 응시 상태. 키는 `${evaluationId}:${taskId}:${studentId}`.
+   * 키가 없으면 "미확인", 'present' 응시, 'absent' 미응시, 'missing' 미제출.
    */
-  evalAttendance: Record<string, 'present' | 'absent'>
+  taskStatus: Record<string, TaskStatus>
+  /** @deprecated taskStatus 로 옮겼다. 예전 데이터를 읽을 때만 쓴다. */
+  evalAttendance?: Record<string, 'present' | 'absent'>
 }
 
 export type EvaluationType = {
@@ -164,21 +167,47 @@ export type EvaluationItem = {
   description?: string
   /** 채점기준(레벨). 있으면 채점표에서 숫자 입력 대신 이 버튼들로 클릭 입력한다. */
   levels?: RubricLevel[]
-  /** 미참여·미제출 시 기본으로 줄 점수. */
+  /** 채점기준 자동 생성용 - 기준 칸 수(예: 5) */
+  levelCount?: number
+  /** 채점기준 자동 생성용 - 급간(예: 4). 점수는 만점에서 급간만큼 내려가며 자동으로 매겨진다. */
+  step?: number
+  /** @deprecated 미응시·미제출 점수는 평가 과제(EvaluationTask) 단위로 옮겼다. */
   basicScore?: number
 }
+
+/**
+ * 평가 과제. 평가 영역(Evaluation) 아래, 평가 요소(EvaluationItem) 위 단계다.
+ * 예: 평가 영역 "악기 탐색 및 연주" → 평가 과제 "악기 탐색", "악기 연주".
+ * 미응시·미제출 점수는 과제 단위로 준다. 요소별 채점 자체가 불가능한 상황이기 때문이다.
+ */
+export type EvaluationTask = {
+  id: string
+  name: string
+  /** 미응시로 표시했을 때 이 과제에 자동으로 넣을 점수. 비우면 0점. */
+  absentScore?: number
+  /** 미제출로 표시했을 때 이 과제에 자동으로 넣을 점수. 비우면 0점. */
+  missingScore?: number
+  items: EvaluationItem[]
+}
+
+/** 과제별 응시 상태. 키가 없으면 "미확인"(아직 안 봄)이다. */
+export type TaskStatus = 'present' | 'absent' | 'missing'
 
 export type Evaluation = {
   id: string
   subjectId: string
+  /** 평가 영역명. 예: "악기 탐색 및 연주" */
   name: string
   typeId: string
   /** 반영 비율(%). 예: 30 */
   weight: number
-  date: string
+  /** @deprecated 진도에 따라 여러 날에 걸쳐 하므로 더 이상 입력받지 않는다. 예전 데이터 호환용. */
+  date?: string
   /** 대상 학급. 비어 있으면 그 과목의 모든 학급. */
   classIds: string[]
-  items: EvaluationItem[]
+  tasks: EvaluationTask[]
+  /** @deprecated tasks 로 옮겨졌다. 예전 데이터를 읽을 때만 쓴다. */
+  items?: EvaluationItem[]
   /** 이 채점기준을 만든 원본 파일 이름(참고용 표시만, 파일 자체는 저장하지 않는다). */
   sourceFileName?: string
 }

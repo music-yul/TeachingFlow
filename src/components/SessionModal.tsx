@@ -1,11 +1,7 @@
 import type { AppData, AttendanceStatus, Session, SessionMode } from '../types'
-import { effectiveLessonIds, parseDate, progressKey, sessionLabel } from '../schedule'
+import { effectiveLessonIds, progressKey, sessionLabel } from '../schedule'
 import { evalCounts, linkedEvaluation } from '../evaluation'
-
-function dateDistance(a: string, b: string) {
-  if (!a || !b) return Infinity
-  return Math.abs(parseDate(a).getTime() - parseDate(b).getTime())
-}
+import { studentLabel } from '../students'
 
 type Props = {
   data: AppData
@@ -33,24 +29,25 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
   const isEmphasisSession = lessons.some(lesson => data.types.find(t => t.id === lesson!.typeId)?.emphasis)
 
   /** 명시적으로 연결되지 않았어도, 수행평가 유형 수업이면 이 반을 대상으로 하는 평가를 전부 후보로 보여준다. */
-  const candidateEvaluations = (isEmphasisSession ? data.evaluations : data.evaluations.filter(item => item.date === session.date))
+  const candidateEvaluations = (isEmphasisSession ? data.evaluations : [])
     .filter(item =>
       item.id !== linked?.id
       && item.subjectId === session.subjectId
       && (!item.classIds.length || item.classIds.includes(session.classId)),
     )
-    .sort((a, b) => dateDistance(a.date, session.date) - dateDistance(b.date, session.date))
 
-  /** 이 반·이 과목의 지난 평가 중, 응시 확정이 안 된 학생이 남아있는 평가. */
+  /**
+   * 이 반·이 과목에서 채점을 시작했는데 아직 안 끝난 평가.
+   * 예전엔 평가일 기준으로 골랐지만, 평가일을 없앴으므로 "시작했는데 남은 학생이 있는가"로 본다.
+   */
   const pendingEvaluations = data.evaluations
     .filter(item =>
-      item.subjectId === session.subjectId
-      && item.date
-      && item.date < session.date
+      item.id !== linked?.id
+      && item.subjectId === session.subjectId
       && (!item.classIds.length || item.classIds.includes(session.classId)),
     )
     .map(item => ({ evaluation: item, counts: evalCounts(data, item, classroom.students) }))
-    .filter(item => item.counts.absent + item.counts.unmarked > 0)
+    .filter(item => item.counts.started && item.counts.remaining > 0)
 
   const override = data.overrides[session.id] || {}
 
@@ -78,6 +75,58 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
         </header>
 
         <div className="modal-body">
+          {linked && (
+            <div className="block eval-first">
+              <h3>수행평가</h3>
+              <button className="eval-link-row featured" onClick={() => onOpenEvaluation(linked.id, session.classId)}>
+                <b>🎯 {linked.name}</b>
+                <span>{linked.weight}% 반영</span>
+                <span className="eval-link-cta">수행평가 채점하기 ›</span>
+              </button>
+            </div>
+          )}
+
+          {!linked && candidateEvaluations.length > 0 && (
+            <div className="block eval-first">
+              <h3>수행평가</h3>
+              <p className="hint">수행평가 유형 수업입니다. 이 반이 대상인 평가입니다.</p>
+              {candidateEvaluations.map(evaluation => {
+                const type = data.evaluationTypes.find(item => item.id === evaluation.typeId)
+                return (
+                  <button
+                    className="eval-link-row featured"
+                    key={evaluation.id}
+                    onClick={() => onOpenEvaluation(evaluation.id, session.classId)}
+                  >
+                    <b>🎯 {evaluation.name}</b>
+                    <span>{type?.name} · {evaluation.weight}%</span>
+                    <span className="eval-link-cta">수행평가 채점하기 ›</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {pendingEvaluations.length > 0 && (
+            <div className="block">
+              <h3>아직 안 끝난 수행평가</h3>
+              {pendingEvaluations.map(({ evaluation, counts }) => (
+                <button
+                  className="eval-pending-row"
+                  key={evaluation.id}
+                  onClick={() => onOpenEvaluation(evaluation.id, session.classId)}
+                >
+                  <span>⚠️ {evaluation.name}</span>
+                  <span className="eval-link-cta">
+                    남은 학생 {counts.remaining}명
+                    {counts.absent > 0 && ` · 미응시 ${counts.absent}명`}
+                    {counts.missing > 0 && ` · 미제출 ${counts.missing}명`} 확인 ›
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="block">
             <h3>{sessionLabel(data, session)}</h3>
 
@@ -136,58 +185,6 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
             </div>
           )}
 
-          {linked && (
-            <div className="block">
-              <h3>수행평가</h3>
-              <button className="eval-link-row featured" onClick={() => onOpenEvaluation(linked.id, session.classId)}>
-                <b>🎯 {linked.name}</b>
-                <span>{linked.weight}% 반영</span>
-                <span className="eval-link-cta">수행평가 채점하기 ›</span>
-              </button>
-            </div>
-          )}
-
-          {!linked && candidateEvaluations.length > 0 && (
-            <div className="block">
-              <h3>평가</h3>
-              <p className="hint">
-                {isEmphasisSession
-                  ? '수행평가 유형 수업입니다. 이 반이 대상인 평가입니다.'
-                  : '이 날짜·이 반과 연결된 평가입니다.'}
-              </p>
-              {candidateEvaluations.map(evaluation => {
-                const type = data.evaluationTypes.find(item => item.id === evaluation.typeId)
-                return (
-                  <button
-                    className="eval-link-row"
-                    key={evaluation.id}
-                    onClick={() => onOpenEvaluation(evaluation.id, session.classId)}
-                  >
-                    <b>{evaluation.name}</b>
-                    <span>{type?.name} · {evaluation.weight}%{evaluation.date && ` · ${evaluation.date}`}</span>
-                    <span className="eval-link-cta">평가 입력 ›</span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-
-          {pendingEvaluations.length > 0 && (
-            <div className="block">
-              <h3>이전 수행평가 미응시 학생</h3>
-              {pendingEvaluations.map(({ evaluation, counts }) => (
-                <button
-                  className="eval-pending-row"
-                  key={evaluation.id}
-                  onClick={() => onOpenEvaluation(evaluation.id, session.classId)}
-                >
-                  <span>⚠️ {evaluation.date} {evaluation.name}</span>
-                  <span className="eval-link-cta">미응시 {counts.absent + counts.unmarked}명 확인 ›</span>
-                </button>
-              ))}
-            </div>
-          )}
-
           {classroom.students.length > 0 && (
             <div className="block">
               <h3>출석</h3>
@@ -196,7 +193,7 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
                 const current = data.attendance[attKey]
                 return (
                   <div className="attendance-row" key={student.id}>
-                    <span>{student.number}. {student.name}</span>
+                    <span className="attendance-name">{studentLabel(student)}</span>
                     {statuses.map(status => (
                       <button
                         className={current === status ? 'slot on' : 'slot'}

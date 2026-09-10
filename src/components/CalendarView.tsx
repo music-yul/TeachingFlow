@@ -77,11 +77,11 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                   {event.type === 'swap' && event.sourceDay ? `${event.sourceDay}요일 시간표` : event.title}
                 </div>
               ))}
-              {notes.length > 0 && (
-                <button className="day-note-chip" onClick={() => setNoteDate(key)}>
-                  📌 {notes.length > 1 ? `메모 ${notes.length}건` : notes[0].text}
+              {notes.map(note => (
+                <button className="day-note-chip" key={note.id} onClick={() => setNoteDate(key)}>
+                  📌 {note.text}
                 </button>
-              )}
+              ))}
               {daySessions.map(item => {
                 const classroom = data.classes.find(value => value.id === item.classId)
                 const subject = data.subjects.find(value => value.id === item.subjectId)

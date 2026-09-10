@@ -1,4 +1,4 @@
-import type { AppData, EvaluationType, LessonType, Subject } from './types'
+import type { AppData, Evaluation, EvaluationItem, EvaluationTask, LessonType, EvaluationType, Subject, TaskStatus } from './types'
 import { subjectColorsForTheme } from './theme'
 
 export const APP_VERSION = 'v4.0'
@@ -58,13 +58,82 @@ export function emptyData(): AppData {
     evaluations: [],
     scores: {},
     evaluationNotes: {},
-    evalAttendance: {},
+    taskStatus: {},
   }
+}
+
+/**
+ * 채점기준 자동 생성.
+ * 만점 20 / 기준 5개 / 급간 4 → 20, 16, 12, 8, 4.
+ * 이미 써둔 설명은 같은 순번끼리 그대로 옮겨 담는다.
+ */
+export function buildLevels(item: EvaluationItem): EvaluationItem['levels'] {
+  const count = item.levelCount ?? item.levels?.length ?? 0
+  if (!count) return item.levels
+  const step = item.step ?? 0
+  const old = item.levels || []
+  return Array.from({ length: count }, (_, index) => ({
+    id: old[index]?.id || makeId('level'),
+    score: item.maxScore - index * step,
+    description: old[index]?.description || '',
+  }))
+}
+
+/** 예전 요소(수동으로 점수를 적던 형태)에서 기준 개수·급간을 추정해 채워준다. */
+function migrateItem(item: EvaluationItem): EvaluationItem {
+  const levels = (item.levels || []).slice().sort((a, b) => b.score - a.score)
+  if (!levels.length) return { ...item, levels: undefined }
+  const levelCount = item.levelCount ?? levels.length
+  const step = item.step ?? (levels.length > 1 ? Math.max(0, levels[0].score - levels[1].score) : 0)
+  return { ...item, levels, levelCount, step }
+}
+
+/** 평가 바로 아래 items 만 있던 예전 데이터를 "평가 과제" 한 개로 감싼다. */
+function migrateEvaluation(evaluation: Evaluation): Evaluation {
+  const rawTasks: EvaluationTask[] = evaluation.tasks?.length
+    ? evaluation.tasks
+    : [{
+        id: `${evaluation.id}-task`,
+        name: evaluation.name || '평가 과제',
+        items: evaluation.items || [],
+        // 예전엔 요소별 basicScore 로 관리했다. 합계를 과제 미응시 점수로 옮긴다.
+        absentScore: (evaluation.items || []).reduce((sum, item) => sum + (item.basicScore ?? 0), 0) || undefined,
+      }]
+  return {
+    ...evaluation,
+    classIds: evaluation.classIds || [],
+    tasks: rawTasks.map(task => ({ ...task, items: (task.items || []).map(migrateItem) })),
+    items: undefined,
+  }
+}
+
+/** 평가 단위였던 응시 여부를 과제 단위로 펼친다. */
+function migrateTaskStatus(
+  evaluations: Evaluation[],
+  saved: Record<string, TaskStatus> | undefined,
+  legacy: Record<string, 'present' | 'absent'> | undefined,
+): Record<string, TaskStatus> {
+  const next: Record<string, TaskStatus> = { ...(saved || {}) }
+  if (!legacy) return next
+  Object.entries(legacy).forEach(([key, status]) => {
+    const divider = key.indexOf(':')
+    if (divider < 0) return
+    const evaluationId = key.slice(0, divider)
+    const studentId = key.slice(divider + 1)
+    const evaluation = evaluations.find(item => item.id === evaluationId)
+    if (!evaluation) return
+    evaluation.tasks.forEach(task => {
+      const nextKey = `${evaluationId}:${task.id}:${studentId}`
+      if (next[nextKey] === undefined) next[nextKey] = status
+    })
+  })
+  return next
 }
 
 /** 저장된 값이 일부만 있어도 빈 구조로 채워서 돌려준다. */
 function normalize(saved: Partial<AppData>): AppData {
   const base = emptyData()
+  const evaluations = (saved.evaluations || []).map(migrateEvaluation)
   return {
     version: 2,
     settings: {
@@ -83,10 +152,10 @@ function normalize(saved: Partial<AppData>): AppData {
     activities: saved.activities || {},
     dayNotes: saved.dayNotes || {},
     evaluationTypes: saved.evaluationTypes?.length ? saved.evaluationTypes : defaultEvaluationTypes,
-    evaluations: (saved.evaluations || []).map(item => ({ ...item, classIds: item.classIds || [], items: item.items || [] })),
+    evaluations,
     scores: saved.scores || {},
     evaluationNotes: saved.evaluationNotes || {},
-    evalAttendance: saved.evalAttendance || {},
+    taskStatus: migrateTaskStatus(evaluations, saved.taskStatus, saved.evalAttendance),
   }
 }
 
