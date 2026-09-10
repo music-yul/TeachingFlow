@@ -31,6 +31,21 @@ type Props = {
 }
 
 export default function EvaluationsView({ data, update, sessions, jumpTo, onJumpHandled, onOpenSession }: Props) {
+  const deleteEvaluation = (evaluationId: string) => {
+    if (!window.confirm('이 평가 영역을 삭제합니다. 여기에 입력한 점수·비고·응시 기록도 함께 지워지며 되돌릴 수 없습니다. 계속할까요?')) return
+    const prefix = `${evaluationId}:`
+    const scores = Object.fromEntries(Object.entries(data.scores).filter(([key]) => !key.startsWith(prefix)))
+    const evaluationNotes = Object.fromEntries(Object.entries(data.evaluationNotes).filter(([key]) => !key.startsWith(prefix)))
+    const taskStatus = Object.fromEntries(Object.entries(data.taskStatus).filter(([key]) => !key.startsWith(prefix)))
+    const lessons = data.lessons.map(item => (item.evaluationId === evaluationId ? { ...item, evaluationId: undefined } : item))
+    update({
+      evaluations: data.evaluations.filter(item => item.id !== evaluationId),
+      scores,
+      evaluationNotes,
+      taskStatus,
+      lessons,
+    })
+  }
   const usable = data.subjects.filter(item => item.usesProgress !== false)
   const [subjectId, setSubjectId] = useState(usable[0]?.id || '')
   const [openId, setOpenId] = useState<string | null>(null)
@@ -99,36 +114,39 @@ export default function EvaluationsView({ data, update, sessions, jumpTo, onJump
           const type = data.evaluationTypes.find(item => item.id === evaluation.typeId)
           const tasks = evaluationTasks(evaluation)
           return (
-            <button className="eval-row" key={evaluation.id} onClick={() => setOpenId(evaluation.id)}>
-              <div className="eval-row-main">
-                <div className="eval-row-title">
-                  <b>{evaluation.name}</b>
-                  <span className="eval-meta">
-                    {type?.name} · {evaluation.weight}% · {maxTotal(evaluation)}점 ·{' '}
-                    {classes.length ? classes.map(c => c.name).join(', ') : '대상 없음'}
-                  </span>
+            <div className="eval-row" key={evaluation.id}>
+              <button className="eval-row-open" onClick={() => setOpenId(evaluation.id)}>
+                <div className="eval-row-main">
+                  <div className="eval-row-title">
+                    <b>{evaluation.name}</b>
+                    <span className="eval-meta">
+                      {type?.name} · {evaluation.weight}% · {maxTotal(evaluation)}점 ·{' '}
+                      {classes.length ? classes.map(c => c.name).join(', ') : '대상 없음'}
+                    </span>
+                  </div>
+                  <div className="eval-tree">
+                    {tasks.map(task => (
+                      <div className="eval-tree-task" key={task.id}>
+                        <span className="eval-tree-task-name">{task.name || '(과제명 미입력)'}<em>{taskMax(task)}점</em></span>
+                        <span className="eval-tree-items">
+                          {task.items.length
+                            ? task.items.map(item => (
+                                <span className="eval-tree-item" key={item.id}>{item.name}<em>{item.maxScore}</em></span>
+                              ))
+                            : <span className="eval-tree-empty">요소 없음</span>}
+                        </span>
+                      </div>
+                    ))}
+                    {!tasks.length && <span className="eval-tree-empty">평가 과제 없음</span>}
+                  </div>
                 </div>
-                <div className="eval-tree">
-                  {tasks.map(task => (
-                    <div className="eval-tree-task" key={task.id}>
-                      <span className="eval-tree-task-name">{task.name}<em>{taskMax(task)}점</em></span>
-                      <span className="eval-tree-items">
-                        {task.items.length
-                          ? task.items.map(item => (
-                              <span className="eval-tree-item" key={item.id}>{item.name}<em>{item.maxScore}</em></span>
-                            ))
-                          : <span className="eval-tree-empty">요소 없음</span>}
-                      </span>
-                    </div>
-                  ))}
-                  {!tasks.length && <span className="eval-tree-empty">평가 과제 없음</span>}
+                <div className="eval-row-fill">
+                  <div className="eval-fill-bar"><span style={{ width: `${overallFill}%` }} /></div>
+                  <small>{overallFill}%</small>
                 </div>
-              </div>
-              <div className="eval-row-fill">
-                <div className="eval-fill-bar"><span style={{ width: `${overallFill}%` }} /></div>
-                <small>{overallFill}%</small>
-              </div>
-            </button>
+              </button>
+              <button className="ghost-button eval-row-delete" title="이 평가 영역 삭제" onClick={() => deleteEvaluation(evaluation.id)}>삭제</button>
+            </div>
           )
         })}
       </div>
@@ -178,7 +196,8 @@ function EvaluationCreateModal({
       typeId,
       weight,
       classIds,
-      tasks: [{ id: makeId('task'), name: name.trim(), items: [] }],
+      // 과제명은 영역명과 다른 경우가 대부분이라 자동으로 채우지 않는다. 평가 설정 탭에서 직접 적는다.
+      tasks: [{ id: makeId('task'), name: '', items: [] }],
     }
     update({ evaluations: [...data.evaluations, evaluation] })
     onCreated(evaluation.id)
@@ -250,7 +269,6 @@ function EvaluationEntry({
   const classes = evaluationClasses(data, evaluation)
   const [classId, setClassId] = useState(initialClassId || classes[0]?.id || '')
   const [mode, setMode] = useState<'score' | 'settings'>('score')
-  const [showRubric, setShowRubric] = useState(false)
   const [onlyAbsent, setOnlyAbsent] = useState(false)
   const classroom = classes.find(item => item.id === classId) || classes[0]
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -372,7 +390,30 @@ function EvaluationEntry({
       )}
 
       {mode === 'score' && (
-        <>
+        <div className="eval-score-layout">
+          <aside className="eval-rubric-sidebar">
+            <h3 className="eval-rubric-sidebar-title">채점기준</h3>
+            {tasks.map(task => (
+              <div className="eval-rubric-task" key={task.id}>
+                <b>{task.name || '(과제명 미입력)'} <small>{taskMax(task)}점</small></b>
+                {task.items.map(item => (
+                  <div className="eval-rubric-item" key={item.id}>
+                    <span className="eval-rubric-item-name">{item.name} ({item.maxScore})</span>
+                    {item.levels?.length ? (
+                      <ul className="eval-criteria-list">
+                        {item.levels.map(level => (
+                          <li key={level.id}><b>{level.score}점</b> {level.description || '(설명 없음)'}</li>
+                        ))}
+                      </ul>
+                    ) : <span className="hint">채점기준 없음 · 숫자 직접 입력</span>}
+                  </div>
+                ))}
+              </div>
+            ))}
+            {!tasks.some(task => task.items.length) && <p className="hint">평가 설정 탭에서 요소·채점기준을 추가하면 여기 표시됩니다.</p>}
+          </aside>
+
+          <div className="eval-score-main">
           {classes.length > 1 && (
             <div className="eval-class-tabs">
               {classes.map(item => (
@@ -389,35 +430,10 @@ function EvaluationEntry({
               <span className="on">채점 완료 {counts.graded}명</span>
               {counts.remaining > 0 && <span className="muted">미채점 {counts.remaining}명</span>}
               <span className={counts.absent > 0 ? 'off' : 'muted'}>미응시 {counts.absent}명</span>
-              <button className="ghost-button eval-rubric-toggle" onClick={() => setShowRubric(!showRubric)}>
-                {showRubric ? '채점기준 접기' : '채점기준 보기'}
-              </button>
               <label className="eval-only-absent">
                 <input type="checkbox" checked={onlyAbsent} onChange={event => setOnlyAbsent(event.target.checked)} />
                 미응시자 보기
               </label>
-            </div>
-          )}
-
-          {showRubric && (
-            <div className="eval-rubric-panel">
-              {tasks.map(task => (
-                <div className="eval-rubric-task" key={task.id}>
-                  <b>{task.name} <small>{taskMax(task)}점</small></b>
-                  {task.items.map(item => (
-                    <div className="eval-rubric-item" key={item.id}>
-                      <span className="eval-rubric-item-name">{item.name} ({item.maxScore})</span>
-                      {item.levels?.length ? (
-                        <ul className="eval-criteria-list">
-                          {item.levels.map(level => (
-                            <li key={level.id}><b>{level.score}점</b> {level.description || '(설명 없음)'}</li>
-                          ))}
-                        </ul>
-                      ) : <span className="hint">채점기준 없음 · 숫자 직접 입력</span>}
-                    </div>
-                  ))}
-                </div>
-              ))}
             </div>
           )}
 
@@ -438,7 +454,7 @@ function EvaluationEntry({
                     <th className="eg-sticky eg-name" rowSpan={2}>성명</th>
                     {tasks.map(task => (
                       <th className="eg-task" colSpan={task.items.length + 1} key={task.id}>
-                        {task.name} <small>{taskMax(task)}</small>
+                        {task.name || '(과제명 미입력)'} <small>{taskMax(task)}</small>
                       </th>
                     ))}
                     <th className="eg-total" rowSpan={2}>합계<small>/{max}</small></th>
@@ -537,7 +553,8 @@ function EvaluationEntry({
             </div>
           )}
           {classroom && students.length > 0 && !visibleStudents.length && <p className="hint">남은 학생이 없습니다. 채점이 모두 끝났습니다.</p>}
-        </>
+          </div>
+        </div>
       )}
     </section>
   )
@@ -603,7 +620,7 @@ function EvaluationSettings({
       <div className="inline-form">
         <input
           value={taskName}
-          placeholder="과제명 (예: 시김새를 살린 가창 및 발림 표현)"
+          placeholder="과제명 (예: 발림의 표현)"
           onChange={event => setTaskName(event.target.value)}
           onKeyDown={event => { if (event.key === 'Enter') addTask() }}
         />
@@ -650,6 +667,7 @@ function TaskEditor({
         <input
           className="eval-task-name"
           value={task.name}
+          placeholder="예: 시김새 및 창법"
           onChange={event => editTask(task.id, { name: event.target.value })}
         />
         <span className="hint">{taskMax(task)}점</span>

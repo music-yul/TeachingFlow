@@ -157,21 +157,17 @@ export default function App() {
         </div>
       </header>
 
+      <nav className="tabbar">
+        {tabs.map((item, index) => (
+          <button className={tab === item ? 'tab-item active' : 'tab-item'} key={item} onClick={() => setTab(item)}>
+            <span className="tab-index">{String(index + 1).padStart(2, '0')}</span>{item}
+          </button>
+        ))}
+      </nav>
+
       {saveError && <p className="banner warn">저장 공간이 가득 찼습니다. 백업을 내보낸 뒤 기록을 정리해 주세요.</p>}
 
       <main className="workspace">
-        <aside className="sidebar">
-          <nav>
-            {tabs.map((item, index) => (
-              <button className={tab === item ? 'nav-item active' : 'nav-item'} key={item} onClick={() => setTab(item)}>
-                <span className="nav-index">{String(index + 1).padStart(2, '0')}</span>{item}
-              </button>
-            ))}
-          </nav>
-          <MiniTimetable data={data} />
-          <p className="sidebar-foot">© 2026 율쌤 ｜ 무단 배포 및 수정 금지</p>
-        </aside>
-
         <section className="content">
           {!started && tab !== '설정' && (
             <p className="banner">
@@ -181,7 +177,10 @@ export default function App() {
           )}
 
           {tab === '달력' && (
-            <CalendarView data={data} sessions={sessions} month={month} setMonth={setMonth} onSelect={setSelected} update={update} />
+            <div className="calendar-layout">
+              <MiniTimetable data={data} />
+              <CalendarView data={data} sessions={sessions} month={month} setMonth={setMonth} onSelect={setSelected} update={update} />
+            </div>
           )}
           {tab === '진도표' && <ProgressView data={data} sessions={sessions} update={update} onSelect={setSelected} onOpenEvaluation={openEvaluation} />}
           {tab === '반별 출석부' && <AttendanceView data={data} sessions={sessions} update={update} />}
@@ -198,6 +197,7 @@ export default function App() {
           {tab === '설정' && (
             <SettingsHub data={data} update={update} onFiles={openFiles} onImport={loadBackup} onReset={reset} />
           )}
+          <p className="app-foot">© 2026 율쌤 ｜ 무단 배포 및 수정 금지</p>
         </section>
       </main>
 
