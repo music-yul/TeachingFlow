@@ -377,57 +377,7 @@ function EvaluationEntry({
 
           {evaluation.items.length > 0 && classroom && (
             <>
-              <div className="table-wrap">
-                <table className="eval-roster-table">
-                  <thead>
-                    <tr>
-                      <th className="eval-name-col">번호 · 이름</th>
-                      <th>응시</th>
-                      <th>원점수<small>/{max}</small></th>
-                      <th>반영점수<small>/{evaluation.weight}</small></th>
-                      <th className="eval-note-col">비고</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleStudents.map(student => {
-                      const attStatus = data.evalAttendance[attendanceKey(evaluation.id, student.id)]
-                      return (
-                        <tr className={attStatus === 'absent' ? 'eval-row-absent' : ''} key={student.id}>
-                          <th className="eval-name-col">{student.number}. {student.name}</th>
-                          <td className="eval-att-cell">
-                            {attStatus === 'absent' ? (
-                              <>
-                                <span className="eval-absent-tag">미응시</span>
-                                <button className="eval-att-undo" onClick={() => setAttendance(student.id, 'present')}>응시로 변경</button>
-                                {evaluation.items.some(item => item.basicScore !== undefined) && (
-                                  <button className="eval-basic-apply" title="등록해둔 기본점수를 이 학생의 모든 요소에 채웁니다" onClick={() => applyBasicScores(student.id)}>
-                                    기본점수 적용
-                                  </button>
-                                )}
-                              </>
-                            ) : (
-                              <button className="eval-att-mark" onClick={() => setAttendance(student.id, 'absent')}>미응시로 표시</button>
-                            )}
-                          </td>
-                          <td className="eval-total">{rawTotal(data, evaluation, student.id)}</td>
-                          <td className="eval-total">{Math.round(weightedScore(data, evaluation, student.id) * 10) / 10}</td>
-                          <td>
-                            <input
-                              className="eval-note-input"
-                              value={data.evaluationNotes[noteKey(evaluation.id, student.id)] || ''}
-                              placeholder="예: 9/8 리코더X"
-                              onChange={event => setNote(student.id, event.target.value)}
-                            />
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              <p className="hint">아래에서 요소마다 점수를 매깁니다. 채점기준이 있으면 버튼을, 없으면 숫자 칸을 씁니다.</p>
-
+              <p className="hint">요소마다 아래 버튼(또는 숫자)을 눌러 점수를 입력하세요. 왼쪽엔 채점기준, 오른쪽엔 학생 목록입니다.</p>
               {evaluation.items.map((item, itemIndex) => (
                 <div className="eval-item-block" key={item.id}>
                   <div className="eval-item-block-crit">
@@ -485,6 +435,58 @@ function EvaluationEntry({
                   </div>
                 </div>
               ))}
+
+              <p className="hint">아래는 학급 전체 요약입니다.</p>
+
+              <div className="table-wrap">
+                <table className="eval-roster-table">
+                  <thead>
+                    <tr>
+                      <th className="eval-name-col">번호 · 이름</th>
+                      <th>응시</th>
+                      <th>원점수<small>/{max}</small></th>
+                      <th>반영점수<small>/{evaluation.weight}</small></th>
+                      <th className="eval-note-col">비고</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleStudents.map(student => {
+                      const attStatus = data.evalAttendance[attendanceKey(evaluation.id, student.id)]
+                      return (
+                        <tr className={attStatus === 'absent' ? 'eval-row-absent' : ''} key={student.id}>
+                          <th className="eval-name-col">{student.number}. {student.name}</th>
+                          <td className="eval-att-cell">
+                            {attStatus === 'absent' ? (
+                              <>
+                                <span className="eval-absent-tag">미응시</span>
+                                <button className="eval-att-undo" onClick={() => setAttendance(student.id, 'present')}>응시로 변경</button>
+                                {evaluation.items.some(item => item.basicScore !== undefined) && (
+                                  <button className="eval-basic-apply" title="등록해둔 기본점수를 이 학생의 모든 요소에 채웁니다" onClick={() => applyBasicScores(student.id)}>
+                                    기본점수 적용
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <button className="eval-att-mark" onClick={() => setAttendance(student.id, 'absent')}>미응시로 표시</button>
+                            )}
+                          </td>
+                          <td className="eval-total">{rawTotal(data, evaluation, student.id)}</td>
+                          <td className="eval-total">{Math.round(weightedScore(data, evaluation, student.id) * 10) / 10}</td>
+                          <td>
+                            <input
+                              className="eval-note-input"
+                              value={data.evaluationNotes[noteKey(evaluation.id, student.id)] || ''}
+                              placeholder="예: 9/8 리코더X"
+                              onChange={event => setNote(student.id, event.target.value)}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
             </>
           )}
           {classroom && !students.length && <p className="hint">이 학급에 학생 명단이 없습니다.</p>}
