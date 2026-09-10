@@ -60,7 +60,7 @@ export default function ImportModal({ initial, failed, onCancel, onConfirm }: Pr
                       <input
                         className={row.className.trim() ? '' : 'needs-input'}
                         value={row.className}
-                        placeholder="예: 2-3"
+                        placeholder="예: 1-1"
                         onChange={event => edit(index, { className: event.target.value })}
                       />
                     </td>

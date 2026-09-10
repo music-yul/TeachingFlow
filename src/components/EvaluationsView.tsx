@@ -197,7 +197,7 @@ function EvaluationCreateModal({
             (예: 영역 &quot;악기 탐색 및 연주&quot; → 과제 &quot;악기 탐색&quot;·&quot;악기 연주&quot;)
           </p>
           <div className="field-grid">
-            <label>평가 영역명<input value={name} placeholder="예: 다양한 악기 탐색 및 연주" onChange={event => setName(event.target.value)} /></label>
+            <label>평가 영역명<input value={name} placeholder="예: 판소리 '사랑가' 부르기" onChange={event => setName(event.target.value)} /></label>
             <label>
               평가 유형
               <select value={typeId} onChange={event => setTypeId(event.target.value)}>
@@ -526,7 +526,7 @@ function EvaluationEntry({
                         <input
                           className="eval-note-input"
                           value={data.evaluationNotes[noteKey(evaluation.id, student.id)] || ''}
-                          placeholder="예: 9/8 리코더 미지참"
+                          placeholder=""
                           onChange={event => setNote(student.id, event.target.value)}
                         />
                       </td>
@@ -603,7 +603,7 @@ function EvaluationSettings({
       <div className="inline-form">
         <input
           value={taskName}
-          placeholder="과제명 (예: 악기 연주)"
+          placeholder="과제명 (예: 시김새를 살린 가창 및 발림 표현)"
           onChange={event => setTaskName(event.target.value)}
           onKeyDown={event => { if (event.key === 'Enter') addTask() }}
         />
@@ -677,7 +677,7 @@ function TaskEditor({
       <div className="inline-form">
         <input
           value={itemName}
-          placeholder="요소명 (예: 음정)"
+          placeholder="요소명 (예: 발림의 적절성)"
           onChange={event => setItemName(event.target.value)}
           onKeyDown={event => { if (event.key === 'Enter') addItem() }}
         />
@@ -757,7 +757,7 @@ function EvalItemEditor({
               <span className="eval-level-score">{level.score}점</span>
               <input
                 className="eval-level-desc"
-                placeholder={index === 0 ? '가장 높은 수준의 기준 (예: 바른 자세와 기본 주법을 안정적으로 적용하여 자연스럽게 연주함)' : '이 점수를 주는 기준'}
+                placeholder={index === 0 ? '가장 높은 수준의 기준 (예: 시김새를 정확하게 표현하고...)' : '이 점수를 주는 기준'}
                 value={level.description}
                 onChange={event => editItem(item.id, {
                   levels: levels.map(value => (value.id === level.id ? { ...value, description: event.target.value } : value)),

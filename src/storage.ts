@@ -8,11 +8,9 @@ export const STORAGE_KEY = 'class-schedule-planner-data'
 
 export const defaultTypes: LessonType[] = [
   { id: 'sing', name: '가창', color: '#2d8c7b' },
-  { id: 'play', name: '연주', color: '#4f7db8' },
+  { id: 'play', name: '기악', color: '#4f7db8' },
   { id: 'listen', name: '감상', color: '#9a72b0' },
   { id: 'create', name: '창작', color: '#d08043' },
-  { id: 'korean', name: '국악', color: '#b36a50' },
-  { id: 'assessment', name: '수행평가', color: '#d04f5d', emphasis: true },
 ]
 
 /** 평가 유형은 학교 평가계획과 맞춰 수행평가·지필평가 둘로 고정한다. 직접 추가하지 않는다. */

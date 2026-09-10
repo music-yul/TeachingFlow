@@ -125,7 +125,7 @@ export default function ClassesView({ data, update, onFiles }: Props) {
           <select value={targetSubject || data.subjects[0]?.id || ''} onChange={event => setTargetSubject(event.target.value)}>
             {data.subjects.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
           </select>
-          <input value={className} placeholder="예: 1-3" onChange={event => setClassName(event.target.value)} />
+          <input value={className} placeholder="예: 1-1" onChange={event => setClassName(event.target.value)} />
           <button className="primary-button" onClick={addClass} disabled={!data.subjects.length}>+ 학급 추가</button>
         </div>
 
@@ -251,7 +251,7 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
               </p>
               <textarea
                 value={paste}
-                placeholder={'2104\t김재훈\n2106\t문지훈'}
+                placeholder={'1101\t도레미\n1102\t라솔파'}
                 onChange={event => setPaste(event.target.value)}
               />
               <button className="primary-button" onClick={applyPaste}>명단으로 넣기</button>

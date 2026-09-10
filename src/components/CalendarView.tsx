@@ -171,7 +171,7 @@ function DayNoteModal({
           <div className="inline-form">
             <input
               value={draft}
-              placeholder="예: 민준 수행평가 재응시"
+              placeholder="예: 평가 계획 제출"
               onChange={event => setDraft(event.target.value)}
               onKeyDown={event => { if (event.key === 'Enter') add() }}
             />
