@@ -11,6 +11,7 @@ const defaultTypes: LessonType[] = [
   { id: 'play', name: '기악', color: '#4f7db8' },
   { id: 'listen', name: '감상', color: '#9a72b0' },
   { id: 'create', name: '창작', color: '#d08043' },
+  { id: 'assessment', name: '수행평가', color: '#d04f5d', emphasis: true },
 ]
 
 /** 평가 유형은 학교 평가계획과 맞춰 수행평가·지필평가 둘로 고정한다. 직접 추가하지 않는다. */
@@ -148,6 +149,13 @@ function migrateTaskStatus(
 function normalize(saved: Partial<AppData>): AppData {
   const base = emptyData()
   const evaluations = (saved.evaluations || []).map(migrateEvaluation)
+  const types = saved.types?.length ? saved.types : base.types
+  // 강조(수행평가 등)가 아닌 유형으로 바꿨는데 예전 평가 연결이 안 지워진 경우를 정리한다.
+  // 안 지우면 진도 현황에 이미 지난 평가의 🎯 채점표 링크가 그대로 남아있게 된다.
+  const lessons = (saved.lessons || []).map(item => {
+    const type = types.find(value => value.id === item.typeId)
+    return { ...item, note: item.note || '', evaluationId: type?.emphasis ? item.evaluationId : undefined }
+  })
   return {
     version: 2,
     settings: {
@@ -157,8 +165,8 @@ function normalize(saved: Partial<AppData>): AppData {
     },
     subjects: (saved.subjects || []).map(item => ({ ...item, usesProgress: item.usesProgress !== false })),
     classes: (saved.classes || []).map(item => ({ ...item, slots: item.slots || [], students: item.students || [] })),
-    lessons: (saved.lessons || []).map(item => ({ ...item, note: item.note || '' })),
-    types: saved.types?.length ? saved.types : base.types,
+    lessons,
+    types,
     events: (saved.events || []).map(item => ({ ...item, periods: item.periods || [], classIds: item.classIds || [] })),
     progress: saved.progress || {},
     overrides: saved.overrides || {},

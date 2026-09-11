@@ -53,7 +53,9 @@ export default function LessonsView({ data, update }: Props) {
 
   const addType = () => {
     if (!typeName.trim()) return
-    update({ types: [...data.types, { id: makeId('type'), name: typeName.trim(), color: typeColor }] })
+    const name = typeName.trim()
+    // "수행평가"라는 이름으로 새로 만들면 강조를 기본으로 켠다. 대부분 그렇게 쓰기 때문이다.
+    update({ types: [...data.types, { id: makeId('type'), name, color: typeColor, emphasis: name === '수행평가' }] })
     setTypeName('')
   }
 
@@ -135,7 +137,15 @@ export default function LessonsView({ data, update }: Props) {
                 <select
                   className="lesson-type-select"
                   value={lesson.typeId}
-                  onChange={event => editLesson(lesson.id, { typeId: event.target.value })}
+                  onChange={event => {
+                    const nextType = data.types.find(item => item.id === event.target.value)
+                    // 강조(수행평가 등) 유형이 아닌 걸로 바꾸면, 이전에 연결해둔 평가도 함께 지운다.
+                    // 안 지우면 진도 현황에 예전 평가 링크(🎯 채점표)가 그대로 남는다.
+                    editLesson(lesson.id, {
+                      typeId: event.target.value,
+                      evaluationId: nextType?.emphasis ? lesson.evaluationId : undefined,
+                    })
+                  }}
                 >
                   {data.types.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </select>
