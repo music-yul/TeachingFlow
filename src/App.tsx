@@ -14,17 +14,17 @@ import ImportModal from './components/ImportModal'
 import MiniTimetable from './components/MiniTimetable'
 import './App.css'
 
-const tabs = ['달력', '진도표', '반별 출석부', '평가', '설정'] as const
+const tabs = ['수업 일정', '진도 관리', '출결 관리', '평가·성적', '환경 설정'] as const
 type Tab = (typeof tabs)[number]
 
 export default function App() {
   const [data, setData] = useState<AppData>(readData)
-  const [tab, setTab] = useState<Tab>('달력')
+  const [tab, setTab] = useState<Tab>('수업 일정')
   const [evalJump, setEvalJump] = useState<{ evaluationId: string; classId: string } | null>(null)
   const openEvaluation = (evaluationId: string, classId: string) => {
     setSelected(null)
     setEvalJump({ evaluationId, classId })
-    setTab('평가')
+    setTab('평가·성적')
   }
   const [month, setMonth] = useState(() => new Date())
   const [selected, setSelected] = useState<string | null>(null)
@@ -169,27 +169,27 @@ export default function App() {
 
       <main className="workspace">
         <section className="content">
-          {!started && tab !== '설정' && (
+          {!started && tab !== '환경 설정' && (
             <p className="banner">
-              먼저 <b>설정 &gt; 학급·시간표</b>에서 출석부를 올리거나 과목·학급을 등록해 주세요.
-              그다음 <b>설정 &gt; 학기·백업</b>에서 학기 기간을 맞추면 진도표가 만들어집니다.
+              먼저 <b>환경 설정 &gt; 학급·시간표</b>에서 출석부를 올리거나 과목·학급을 등록해 주세요.
+              그다음 <b>환경 설정 &gt; 학사일정</b>에서 학기 기간을 맞추면 진도표가 만들어집니다.
             </p>
           )}
 
-          {tab === '달력' && (
+          {tab === '수업 일정' && (
             <div className="timetable-layout">
               <MiniTimetable data={data} />
               <CalendarView data={data} sessions={sessions} month={month} setMonth={setMonth} onSelect={setSelected} update={update} />
             </div>
           )}
-          {tab === '진도표' && (
+          {tab === '진도 관리' && (
             <div className="timetable-layout">
               <MiniTimetable data={data} />
               <ProgressView data={data} sessions={sessions} update={update} onSelect={setSelected} onOpenEvaluation={openEvaluation} />
             </div>
           )}
-          {tab === '반별 출석부' && <AttendanceView data={data} sessions={sessions} update={update} />}
-          {tab === '평가' && (
+          {tab === '출결 관리' && <AttendanceView data={data} sessions={sessions} update={update} />}
+          {tab === '평가·성적' && (
             <EvaluationsView
               data={data}
               update={update}
@@ -199,7 +199,7 @@ export default function App() {
               onOpenSession={setSelected}
             />
           )}
-          {tab === '설정' && (
+          {tab === '환경 설정' && (
             <SettingsHub data={data} update={update} onFiles={openFiles} onImport={loadBackup} onReset={reset} />
           )}
           <p className="app-foot">© 2026 율쌤 ｜ 무단 배포 및 수정 금지</p>

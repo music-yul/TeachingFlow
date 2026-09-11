@@ -34,7 +34,7 @@ export default function AttendanceView({ data, sessions, update }: Props) {
   if (!active.length) {
     return (
       <section className="panel empty-panel">
-        등록된 학급이 없습니다. <b>설정 &gt; 학급·시간표</b>에서 먼저 학급을 추가해 주세요.
+        등록된 학급이 없습니다. <b>환경 설정 &gt; 학급·시간표</b>에서 먼저 학급을 추가해 주세요.
       </section>
     )
   }

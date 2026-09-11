@@ -21,7 +21,7 @@ export default function ProgressView({ data, sessions, update, onSelect, onOpenE
   if (!subject) {
     return (
       <section className="panel empty-panel">
-        진도표를 쓰는 과목이 없습니다. <b>설정 &gt; 학급·시간표</b>에서 과목을 추가하거나, 과목의 <b>진도표</b> 체크를 켜 주세요.
+        진도표를 쓰는 과목이 없습니다. <b>환경 설정 &gt; 학급·시간표</b>에서 과목을 추가하거나, 과목의 <b>진도표</b> 체크를 켜 주세요.
       </section>
     )
   }

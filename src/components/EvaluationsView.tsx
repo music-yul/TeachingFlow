@@ -68,7 +68,7 @@ export default function EvaluationsView({ data, update, sessions, jumpTo, onJump
   if (!subject) {
     return (
       <section className="panel empty-panel">
-        평가를 만들 과목이 없습니다. <b>설정 &gt; 학급·시간표</b>에서 과목을 먼저 등록해 주세요.
+        평가를 만들 과목이 없습니다. <b>환경 설정 &gt; 학급·시간표</b>에서 과목을 먼저 등록해 주세요.
       </section>
     )
   }

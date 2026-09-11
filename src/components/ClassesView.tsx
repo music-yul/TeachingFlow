@@ -114,7 +114,7 @@ export default function ClassesView({ data, update, onFiles }: Props) {
         </div>
         <p className="hint">
           <b>진도표</b> 체크를 끄면 그 과목은 진도표와 수업 목록에서 빠집니다. CA·HR처럼 진도를 따로 관리하지 않는 시간에 쓰세요.
-          달력과 반별 출석부에는 그대로 나옵니다.
+          수업 일정과 출결 관리에는 그대로 나옵니다.
         </p>
       </div>
 
