@@ -62,6 +62,52 @@ function readTeacher(value: string) {
 }
 
 /**
+ * 0순위: `학년`/`반`/`번호`가 각각 다른 열로 나뉜 표를 읽는다.
+ * 선택과목처럼 여러 원적반 학생이 한 반에 섞이면 나이스 출석부가 이 형태로 나온다.
+ * 이때 '번호'는 그 반 안에서만 고유해서(다른 원적반 학생과 번호가 겹칠 수 있다),
+ * 학년+반+번호를 합쳐 5자리 학번(예: 2학년 1반 4번 → 20104)으로 새로 만들어야 학생이 안 겹친다.
+ */
+function findGradeClassNumberColumns(rows: Row[]) {
+  const index = rows.findIndex(row => {
+    const values = row.map(text)
+    return (
+      values.some(value => /^학년$/.test(value))
+      && values.some(value => /^반$/.test(value))
+      && values.some(value => /^번호$|^No\.?$/i.test(value))
+      && values.some(value => /성\s*명|이름/.test(value))
+    )
+  })
+  if (index < 0) return null
+  const header = rows[index].map(text)
+  const gradeIndex = header.findIndex(value => /^학년$/.test(value))
+  const classIndex = header.findIndex(value => /^반$/.test(value))
+  const noIndex = header.findIndex(value => /^번호$|^No\.?$/i.test(value))
+  const nameIndex = header.findIndex(value => /^성\s*명$|^이름$|성명/.test(value))
+  if ([gradeIndex, classIndex, noIndex, nameIndex].some(item => item < 0)) return null
+  return { index, gradeIndex, classIndex, noIndex, nameIndex }
+}
+
+function collectStudentsFromGradeClassNumber(
+  rows: Row[],
+  cols: { index: number; gradeIndex: number; classIndex: number; noIndex: number; nameIndex: number },
+) {
+  const students: ImportedStudent[] = []
+  rows.slice(cols.index + 1).forEach(row => {
+    const name = text(row[cols.nameIndex])
+    if (!name || !isHangulName(name)) return
+    const grade = Number(text(row[cols.gradeIndex]).replace(/[^0-9]/g, ''))
+    const classNo = Number(text(row[cols.classIndex]).replace(/[^0-9]/g, ''))
+    const no = Number(text(row[cols.noIndex]).replace(/[^0-9]/g, ''))
+    if (!grade || !classNo || !no) return
+    // 학년 1자리 + 반 2자리 + 번호 2자리 = 5자리. 원적반이 서로 달라도 겹치지 않는다.
+    const number = grade * 10000 + classNo * 100 + no
+    if (students.some(item => item.number === number)) return
+    students.push({ number, name })
+  })
+  return students.sort((left, right) => left.number - right.number)
+}
+
+/**
  * 1순위: `학번`/`번호`/`No.` + `성명`/`이름` 머리글을 찾는다.
  * NEIS 출석부는 열이 'No.'(반 출석번호)와 '학번'(전체 학번)으로 나뉘어 있는 경우가 많다.
  * 동명이인 구분에는 학번이 필요하므로 '학번' 열이 있으면 그쪽을 우선한다.
@@ -171,8 +217,13 @@ function parseSheet(sheet: XLSX.WorkSheet, fileName: string, sheetName: string):
   }
   if (!className) className = readClassOnly(sheetName) || readClassOnly(fileName)
 
-  const columns = findHeaderColumns(rows) || guessColumns(rows)
-  const students = columns ? collectStudents(rows, columns.index, columns.numberIndex, columns.nameIndex) : []
+  const splitColumns = findGradeClassNumberColumns(rows)
+  const columns = splitColumns ? null : (findHeaderColumns(rows) || guessColumns(rows))
+  const students = splitColumns
+    ? collectStudentsFromGradeClassNumber(rows, splitColumns)
+    : columns
+      ? collectStudents(rows, columns.index, columns.numberIndex, columns.nameIndex)
+      : []
 
   if (!className && !students.length && !slots.length) return null
 

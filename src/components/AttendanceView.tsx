@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { AppData, AttendanceStatus, Session } from '../types'
 import { dateKey, formatShort, sessionLabel, todayKey } from '../schedule'
-import { exportClassDigestXlsx } from '../exportPrint'
+import { exportClassDigestXlsx, exportStudentDigestXlsx } from '../exportPrint'
 import { studentLabel } from '../students'
 
 type Props = {
@@ -28,6 +28,8 @@ export default function AttendanceView({ data, sessions, update }: Props) {
   const [date, setDate] = useState(todayKey())
   const [classFilter, setClassFilter] = useState('')
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [digestStudentId, setDigestStudentId] = useState<string | null>(null)
+  const [showDownload, setShowDownload] = useState(false)
 
   if (!active.length) {
     return (
@@ -108,6 +110,7 @@ export default function AttendanceView({ data, sessions, update }: Props) {
               {current.period}교시 {classroom.name}
               {current.swappedFrom && <em className="swap-tag">{current.swappedFrom}요일 대체</em>}
               {' — '}{sessionLabel(data, current)}
+              <button className="ghost-button digest-download-open" onClick={() => setShowDownload(true)}>누가기록 다운로드</button>
             </h3>
 
             {!classroom.students.length && <p className="hint">학생 명단이 비어 있습니다.</p>}
@@ -122,8 +125,9 @@ export default function AttendanceView({ data, sessions, update }: Props) {
                       <th>학번</th>
                       <th>성명</th>
                       <th>출결</th>
-                      <th>수업 중 특이사항</th>
+                      <th>수업 중 특기사항</th>
                       <th>누계</th>
+                      <th>누가기록</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -155,13 +159,16 @@ export default function AttendanceView({ data, sessions, update }: Props) {
                           <td>
                             <input
                               value={data.activities[key] || ''}
-                              placeholder="관찰 내용, 활동 특이사항"
+                              placeholder="관찰 내용, 활동 특기사항"
                               onChange={event => update({ activities: { ...data.activities, [key]: event.target.value } })}
                             />
                           </td>
                           <td className="tally">
                             {absent > 0 && <span className="warn">결석 {absent}</span>}
                             {late > 0 && <span>지각 {late}</span>}
+                          </td>
+                          <td>
+                            <button className="ghost-button" onClick={() => setDigestStudentId(student.id)}>보기</button>
                           </td>
                         </tr>
                       )
@@ -175,68 +182,133 @@ export default function AttendanceView({ data, sessions, update }: Props) {
         )
       })()}
 
-      <StudentDigest data={data} sessions={sessions} classes={active} />
+      {digestStudentId && current && (() => {
+        const classroom = data.classes.find(item => item.id === current.classId)
+        const student = classroom?.students.find(item => item.id === digestStudentId)
+        if (!classroom || !student) return null
+        return (
+          <StudentDigestModal
+            data={data}
+            sessions={sessions}
+            classroom={classroom}
+            student={student}
+            onClose={() => setDigestStudentId(null)}
+          />
+        )
+      })()}
+
+      {showDownload && current && (() => {
+        const classroom = data.classes.find(item => item.id === current.classId)
+        if (!classroom) return null
+        return (
+          <DigestDownloadModal
+            classroom={classroom}
+            onClose={() => setShowDownload(false)}
+            onDownload={studentId => {
+              if (studentId) exportStudentDigestXlsx(data, sessions, classroom.id, studentId)
+              else exportClassDigestXlsx(data, sessions, classroom.id)
+              setShowDownload(false)
+            }}
+          />
+        )
+      })()}
     </section>
   )
 }
 
-function StudentDigest({ data, sessions, classes }: { data: AppData; sessions: Session[]; classes: AppData['classes'] }) {
-  const [classId, setClassId] = useState(classes[0]?.id || '')
-  const [studentId, setStudentId] = useState('')
-  const classroom = classes.find(item => item.id === classId)
-  const student = classroom?.students.find(item => item.id === studentId)
+/** 학생 한 명의 학기 전체 출결·특기사항을 모아 보여주는 창. 세특 쓸 때 근거로 쓴다. */
+function StudentDigestModal({
+  data,
+  sessions,
+  classroom,
+  student,
+  onClose,
+}: {
+  data: AppData
+  sessions: Session[]
+  classroom: AppData['classes'][number]
+  student: AppData['classes'][number]['students'][number]
+  onClose: () => void
+}) {
+  const own = sessions
+    .filter(item => item.classId === classroom.id && item.mode !== 'none' && !item.cancelled)
+    .sort((left, right) => (left.date + String(left.period)).localeCompare(right.date + String(right.period)))
 
-  const own = classroom
-    ? sessions.filter(item => item.classId === classroom.id && item.mode !== 'none' && !item.cancelled)
-    : []
-
-  const notes = student
-    ? own
-        .map(item => ({
-          session: item,
-          note: data.activities[`${item.id}:${student.id}`] || '',
-          status: data.attendance[`${item.id}:${student.id}`],
-        }))
-        .filter(item => item.note || (item.status && item.status !== '출석'))
-    : []
+  const notes = own
+    .map(item => ({
+      session: item,
+      note: data.activities[`${item.id}:${student.id}`] || '',
+      status: data.attendance[`${item.id}:${student.id}`],
+    }))
+    .filter(item => item.note || (item.status && item.status !== '출석'))
 
   return (
-    <div className="block">
-      <h3>학생별 기록 모아 보기</h3>
-      <p className="hint">
-        한 학생의 학기 전체 기록을 모아 봅니다. 세특 쓰실 때 근거로 쓰세요.
-        아래 학급을 골라두면 그 반 <b>전체 학생</b>의 기록을 한 번에 엑셀로도 받을 수 있습니다.
-      </p>
-      <div className="inline-form">
-        <select value={classId} onChange={event => { setClassId(event.target.value); setStudentId('') }}>
-          {classes.map(item => {
-            const subject = data.subjects.find(value => value.id === item.subjectId)
-            return <option key={item.id} value={item.id}>{subject?.name} {item.name}</option>
-          })}
-        </select>
-        <select value={studentId} onChange={event => setStudentId(event.target.value)}>
-          <option value="">학생 선택</option>
-          {classroom?.students.map(item => (
-            <option key={item.id} value={item.id}>{studentLabel(item)}</option>
+    <div className="modal-backdrop" onClick={onClose}>
+      <section className="modal" onClick={event => event.stopPropagation()}>
+        <header className="modal-head">
+          <div>
+            <p className="eyebrow">누가기록</p>
+            <h2>{classroom.name} · {studentLabel(student)}</h2>
+          </div>
+          <button className="ghost-button" onClick={onClose}>닫기</button>
+        </header>
+        <div className="modal-body">
+          {!notes.length && <p className="hint">쌓인 기록이 없습니다.</p>}
+          {notes.map(item => (
+            <div className="digest-row" key={item.session.id}>
+              <b>{formatShort(item.session.date)}</b>
+              <span className="digest-lesson">{sessionLabel(data, item.session)}</span>
+              {item.status && item.status !== '출석' && <span className="warn">{item.status}</span>}
+              <span>{item.note}</span>
+            </div>
           ))}
-        </select>
-        <button
-          className="ghost-button"
-          disabled={!classroom}
-          onClick={() => classroom && exportClassDigestXlsx(data, sessions, classroom.id)}
-        >
-          이 반 전체 기록 엑셀로 내려받기
-        </button>
-      </div>
-      {student && !notes.length && <p className="hint">쌓인 기록이 없습니다.</p>}
-      {notes.map(item => (
-        <div className="digest-row" key={item.session.id}>
-          <b>{formatShort(item.session.date)}</b>
-          <span className="digest-lesson">{sessionLabel(data, item.session)}</span>
-          {item.status && item.status !== '출석' && <span className="warn">{item.status}</span>}
-          <span>{item.note}</span>
         </div>
-      ))}
+      </section>
+    </div>
+  )
+}
+
+/** 누가기록을 엑셀로 내려받을 대상(반 전체 / 학생 한 명)을 고르는 창. */
+function DigestDownloadModal({
+  classroom,
+  onClose,
+  onDownload,
+}: {
+  classroom: AppData['classes'][number]
+  onClose: () => void
+  onDownload: (studentId: string | null) => void
+}) {
+  const [studentId, setStudentId] = useState('')
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <section className="modal narrow" onClick={event => event.stopPropagation()}>
+        <header className="modal-head">
+          <div>
+            <p className="eyebrow">누가기록 다운로드</p>
+            <h2>{classroom.name}</h2>
+          </div>
+          <button className="ghost-button" onClick={onClose}>닫기</button>
+        </header>
+        <div className="modal-body">
+          <p className="hint">반 전체를 한 시트로 받거나, 학생 한 명만 골라 받을 수 있습니다.</p>
+          <div className="field-grid">
+            <label>
+              대상 학생 (선택 안 하면 반 전체)
+              <select value={studentId} onChange={event => setStudentId(event.target.value)}>
+                <option value="">전체 학생</option>
+                {classroom.students.map(item => (
+                  <option key={item.id} value={item.id}>{studentLabel(item)}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+        <footer className="modal-foot">
+          <button className="ghost-button" onClick={onClose}>취소</button>
+          <button className="primary-button" onClick={() => onDownload(studentId || null)}>엑셀로 내려받기</button>
+        </footer>
+      </section>
     </div>
   )
 }

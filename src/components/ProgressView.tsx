@@ -143,36 +143,30 @@ export default function ProgressView({ data, sessions, update, onSelect, onOpenE
                 )
               })}
             </tbody>
+            <tfoot>
+              <tr className="progress-total-row">
+                <th className="sticky-col">총 차시</th>
+                {shownClasses.map(item => {
+                  const stat = stats.find(value => value.classId === item.id)
+                  return <td key={item.id}>{stat ? `${stat.lessonCount}차시` : '-'}</td>
+                })}
+              </tr>
+              <tr className="progress-total-row">
+                <th className="sticky-col">여유</th>
+                {shownClasses.map(item => {
+                  const stat = stats.find(value => value.classId === item.id)
+                  return (
+                    <td className={stat && stat.spare < 0 ? 'warn' : ''} key={item.id}>
+                      {stat ? `${stat.spare}시간` : '-'}
+                    </td>
+                  )
+                })}
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
 
-      {classes.length > 0 && (
-        <div className="coverage">
-          <h3>수업 시간 대비 진도 분량</h3>
-          <table>
-            <thead>
-              <tr><th>학급</th><th>학기 중 수업 시간</th><th>등록된 차시</th><th>여유</th></tr>
-            </thead>
-            <tbody>
-              {classes.map(classroom => {
-                const stat = stats.find(item => item.classId === classroom.id)
-                if (!stat) return null
-                return (
-                  <tr key={classroom.id}>
-                    <td>{classroom.name}</td>
-                    <td>{stat.total}</td>
-                    <td>{stat.lessonCount}</td>
-                    <td className={stat.spare < 0 ? 'warn' : ''}>
-                      {stat.spare >= 0 ? `${stat.spare}시간 남음` : `${-stat.spare}시간 부족`}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
       {memoTarget && (
         <MemoModal
           title={memoTarget.title}

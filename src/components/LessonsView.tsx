@@ -132,17 +132,25 @@ export default function LessonsView({ data, update }: Props) {
             <span className="order">{index + 1}</span>
             <div className="lesson-fields">
               <div className="lesson-line">
-                <input value={lesson.title} onChange={event => editLesson(lesson.id, { title: event.target.value })} />
-                <select value={lesson.typeId} onChange={event => editLesson(lesson.id, { typeId: event.target.value })}>
+                <select
+                  className="lesson-type-select"
+                  value={lesson.typeId}
+                  onChange={event => editLesson(lesson.id, { typeId: event.target.value })}
+                >
                   {data.types.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </select>
+                <input
+                  className="lesson-title-input"
+                  value={lesson.title}
+                  onChange={event => editLesson(lesson.id, { title: event.target.value })}
+                />
+                <input
+                  className="note-input"
+                  value={lesson.note}
+                  placeholder="이 차시 공통 메모 (모든 학급에 함께 표시)"
+                  onChange={event => editLesson(lesson.id, { note: event.target.value })}
+                />
               </div>
-              <input
-                className="note-input"
-                value={lesson.note}
-                placeholder="이 차시 공통 메모 (모든 학급에 함께 표시)"
-                onChange={event => editLesson(lesson.id, { note: event.target.value })}
-              />
               {type?.emphasis && (
                 <label className="lesson-eval-pick">
                   평가 선택

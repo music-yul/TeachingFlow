@@ -14,7 +14,7 @@ import ImportModal from './components/ImportModal'
 import MiniTimetable from './components/MiniTimetable'
 import './App.css'
 
-const tabs = ['달력', '진도표', '반별 출석부', '평가 관리', '설정'] as const
+const tabs = ['달력', '진도표', '반별 출석부', '평가', '설정'] as const
 type Tab = (typeof tabs)[number]
 
 export default function App() {
@@ -24,7 +24,7 @@ export default function App() {
   const openEvaluation = (evaluationId: string, classId: string) => {
     setSelected(null)
     setEvalJump({ evaluationId, classId })
-    setTab('평가 관리')
+    setTab('평가')
   }
   const [month, setMonth] = useState(() => new Date())
   const [selected, setSelected] = useState<string | null>(null)
@@ -177,14 +177,19 @@ export default function App() {
           )}
 
           {tab === '달력' && (
-            <div className="calendar-layout">
+            <div className="timetable-layout">
               <MiniTimetable data={data} />
               <CalendarView data={data} sessions={sessions} month={month} setMonth={setMonth} onSelect={setSelected} update={update} />
             </div>
           )}
-          {tab === '진도표' && <ProgressView data={data} sessions={sessions} update={update} onSelect={setSelected} onOpenEvaluation={openEvaluation} />}
+          {tab === '진도표' && (
+            <div className="timetable-layout">
+              <MiniTimetable data={data} />
+              <ProgressView data={data} sessions={sessions} update={update} onSelect={setSelected} onOpenEvaluation={openEvaluation} />
+            </div>
+          )}
           {tab === '반별 출석부' && <AttendanceView data={data} sessions={sessions} update={update} />}
-          {tab === '평가 관리' && (
+          {tab === '평가' && (
             <EvaluationsView
               data={data}
               update={update}

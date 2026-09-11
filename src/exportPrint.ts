@@ -75,7 +75,7 @@ export function exportCalendarXlsx(data: AppData, sessions: Session[], month: Da
   XLSX.writeFile(workbook, `달력_${year}년${monthNumber}월.xlsx`)
 }
 
-/** 한 학급 전체 학생의 출결·특이사항 기록을 한 시트로 내려받는다. */
+/** 한 학급 전체 학생의 출결·특기사항 누가기록을 한 시트로 내려받는다. */
 export function exportClassDigestXlsx(data: AppData, sessions: Session[], classId: string) {
   const classroom = data.classes.find(item => item.id === classId)
   if (!classroom) return
@@ -84,7 +84,7 @@ export function exportClassDigestXlsx(data: AppData, sessions: Session[], classI
     .filter(item => item.classId === classId && item.mode !== 'none' && !item.cancelled)
     .sort((left, right) => (left.date + String(left.period)).localeCompare(right.date + String(right.period)))
 
-  const rows: (string | number)[][] = [['학번', '성명', '날짜', '교시', '수업 내용', '출결', '특이사항']]
+  const rows: (string | number)[][] = [['학번', '성명', '날짜', '교시', '수업 내용', '출결', '특기사항']]
   classroom.students.forEach(student => {
     own.forEach(session => {
       const key = `${session.id}:${student.id}`
@@ -102,6 +102,34 @@ export function exportClassDigestXlsx(data: AppData, sessions: Session[], classI
 
   const stamp = new Date().toISOString().slice(0, 10)
   XLSX.writeFile(workbook, `출결기록_${classroom.name}_${stamp}.xlsx`)
+}
+
+/** 학생 한 명의 출결·특기사항 누가기록만 내려받는다. */
+export function exportStudentDigestXlsx(data: AppData, sessions: Session[], classId: string, studentId: string) {
+  const classroom = data.classes.find(item => item.id === classId)
+  const student = classroom?.students.find(item => item.id === studentId)
+  if (!classroom || !student) return
+
+  const own = sessions
+    .filter(item => item.classId === classId && item.mode !== 'none' && !item.cancelled)
+    .sort((left, right) => (left.date + String(left.period)).localeCompare(right.date + String(right.period)))
+
+  const rows: (string | number)[][] = [['학번', '성명', '날짜', '교시', '수업 내용', '출결', '특기사항']]
+  own.forEach(session => {
+    const key = `${session.id}:${student.id}`
+    const status = data.attendance[key] || '출석'
+    const note = data.activities[key] || ''
+    if (status === '출석' && !note) return
+    rows.push([student.number, student.name, session.date, session.period, sessionLabel(data, session), status, note])
+  })
+
+  const sheet = XLSX.utils.aoa_to_sheet(rows)
+  sheet['!cols'] = [{ wch: 6 }, { wch: 8 }, { wch: 12 }, { wch: 6 }, { wch: 20 }, { wch: 8 }, { wch: 34 }]
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, sheet, student.name.slice(0, 31))
+
+  const stamp = new Date().toISOString().slice(0, 10)
+  XLSX.writeFile(workbook, `누가기록_${classroom.name}_${student.name}_${stamp}.xlsx`)
 }
 
 /** 평가 점수를 학급별 시트로 내려받는다. 학교 평가표와 비슷한 형태(학번·성명·요소별 점수·합계·비고). */

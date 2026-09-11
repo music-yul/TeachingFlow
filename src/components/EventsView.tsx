@@ -49,6 +49,7 @@ const emptyDraft: Draft = {
 
 export default function EventsView({ data, update }: Props) {
   const [draft, setDraft] = useState<Draft>(emptyDraft)
+  const edit = (change: Partial<AppData['settings']>) => update({ settings: { ...data.settings, ...change } })
 
   const addEvent = () => {
     if (!draft.date || !draft.title.trim()) return
@@ -72,6 +73,30 @@ export default function EventsView({ data, update }: Props) {
 
   return (
     <section className="panel">
+      <div className="block">
+        <h2>학기 설정</h2>
+        <p className="hint">
+          여기 입력한 기간 안에서만 수업이 배정됩니다. 학기가 바뀌면 날짜를 바꿔 주세요.
+        </p>
+        <div className="field-grid">
+          <label>학교명<input value={data.settings.schoolName} onChange={event => edit({ schoolName: event.target.value })} /></label>
+          <label>교사명<input value={data.settings.teacherName} onChange={event => edit({ teacherName: event.target.value })} /></label>
+          <label>학년도<input value={data.settings.year} onChange={event => edit({ year: event.target.value })} /></label>
+          <label>학기 이름<input value={data.settings.termName} onChange={event => edit({ termName: event.target.value })} /></label>
+          <label>학기 시작<input type="date" value={data.settings.termStart} onChange={event => edit({ termStart: event.target.value })} /></label>
+          <label>학기 종료<input type="date" value={data.settings.termEnd} onChange={event => edit({ termEnd: event.target.value })} /></label>
+        </div>
+        <label className="switch-row">
+          <input
+            type="checkbox"
+            checked={data.settings.useHolidays !== false}
+            onChange={event => edit({ useHolidays: event.target.checked })}
+          />
+          대한민국 공휴일을 달력에 표시하고 그날 수업을 자동으로 뺍니다
+        </label>
+      </div>
+
+      <div className="block">
       <h2>학사일정</h2>
       <p className="hint">
         휴업일과 행사를 등록하면 그 시간은 진도 배정에서 빠지고, 뒤 차시가 자동으로 밀립니다.<br />
@@ -219,6 +244,7 @@ export default function EventsView({ data, update }: Props) {
         )
       })}
       {!sorted.length && <p className="hint">등록된 일정이 없습니다.</p>}
+      </div>
     </section>
   )
 }
