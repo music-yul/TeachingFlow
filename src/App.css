@@ -133,7 +133,8 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .timetable-layout { display: flex; align-items: flex-start; gap: 1rem; }
 .timetable-layout .mini-timetable { flex: 0 0 16rem; position: sticky; top: 1rem; margin-top: 0; }
 .timetable-layout > .calendar-panel,
-.timetable-layout > .panel { flex: 1; min-width: 0; }
+.timetable-layout > .panel,
+.timetable-layout > .progress-hub { flex: 1; min-width: 0; }
 .eyebrow { margin: 0; color: var(--muted); font-size: 0.8rem; letter-spacing: 0.02em; }
 
 .panel { background: var(--card); border: 1px solid var(--line); border-radius: 0.6rem; padding: 1rem; max-width: 100%; min-width: 0; }

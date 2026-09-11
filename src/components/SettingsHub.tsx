@@ -2,12 +2,11 @@ import { useState } from 'react'
 import type { AppData } from '../types'
 import { APP_NAME, APP_TAGLINE, APP_VERSION, exportData } from '../storage'
 import ClassesView from './ClassesView'
-import LessonsView from './LessonsView'
 import EventsView from './EventsView'
 import HelpView from './HelpView'
 import AppearanceView from './AppearanceView'
 
-const subTabs = ['학사일정', '학급·시간표', '진도표 관리', '화면', '데이터 관리', '도움말'] as const
+const subTabs = ['학사일정', '학급·시간표', '화면', '데이터 관리', '도움말'] as const
 type SubTab = (typeof subTabs)[number]
 
 type Props = {
@@ -39,7 +38,6 @@ export default function SettingsHub({ data, update, onFiles, onImport, onReset }
 
       {sub === '학사일정' && <EventsView data={data} update={update} />}
       {sub === '학급·시간표' && <ClassesView data={data} update={update} onFiles={onFiles} />}
-      {sub === '진도표 관리' && <LessonsView data={data} update={update} />}
       {sub === '화면' && <AppearanceView data={data} update={update} />}
       {sub === '도움말' && <HelpView />}
 

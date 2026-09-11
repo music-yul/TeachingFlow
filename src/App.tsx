@@ -6,7 +6,7 @@ import { buildSessions } from './schedule'
 import { parseWorkbooks, type ImportedClass } from './naesAttendanceParser'
 import CalendarView from './components/CalendarView'
 import EvaluationsView from './components/EvaluationsView'
-import ProgressView from './components/ProgressView'
+import ProgressHub from './components/ProgressHub'
 import AttendanceView from './components/AttendanceView'
 import SettingsHub from './components/SettingsHub'
 import SessionModal from './components/SessionModal'
@@ -185,7 +185,7 @@ export default function App() {
           {tab === '진도 관리' && (
             <div className="timetable-layout">
               <MiniTimetable data={data} />
-              <ProgressView data={data} sessions={sessions} update={update} onSelect={setSelected} onOpenEvaluation={openEvaluation} />
+              <ProgressHub data={data} sessions={sessions} update={update} onSelect={setSelected} onOpenEvaluation={openEvaluation} />
             </div>
           )}
           {tab === '출결 관리' && <AttendanceView data={data} sessions={sessions} update={update} />}
