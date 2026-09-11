@@ -1,0 +1,235 @@
+diff --git a/src/App.css b/src/App.css
+index 2ed3df8..27c4143 100644
+--- a/src/App.css
++++ b/src/App.css
+@@ -78,6 +78,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
+   background: var(--card);
+   border-bottom: 1px solid var(--line);
+   flex-wrap: wrap;
++  font-size: 16px; /* 폰트 크기 설정(환경 설정 › 화면)은 본문에만 적용하고, 제목 영역은 항상 고정 크기로 둔다 */
+ }
+ 
+ .brand { display: flex; align-items: center; gap: 0.6rem; }
+@@ -87,18 +88,18 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
+   display: grid; place-items: center;
+   border-radius: 0.5rem;
+   background: var(--accent-soft);
+-  font-size: 1.35rem; line-height: 1;
++  font-size: 21.6px; line-height: 1; /* 폰트 크기 설정과 무관하게 고정 */
+ }
+ 
+ .brand-text { display: flex; flex-direction: column; line-height: 1.25; }
+ .brand-title { display: flex; align-items: baseline; gap: 0.4rem; }
+-.brand-text strong { font-size: 1.05rem; }
+-.brand-text small { color: var(--muted); font-size: 0.75rem; }
+-.version-badge { font-size: 0.68rem; color: var(--muted); background: var(--chip); padding: 0.05rem 0.4rem; border-radius: 999px; }
++.brand-text strong { font-size: 16.8px; } /* 폰트 크기 설정과 무관하게 고정 */
++.brand-text small { color: var(--muted); font-size: 12px; } /* 폰트 크기 설정과 무관하게 고정 */
++.version-badge { font-size: 10.88px; color: var(--muted); background: var(--chip); padding: 0.05rem 0.4rem; border-radius: 999px; } /* 폰트 크기 설정과 무관하게 고정 */
+ .app-foot { margin: 1.2rem 0 0; text-align: center; color: var(--muted); font-size: 0.7rem; }
+ 
+ .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+-.font-control { display: flex; align-items: center; gap: 0.35rem; color: var(--muted); font-size: 0.85rem; }
++.font-control { display: flex; align-items: center; gap: 0.35rem; color: var(--muted); font-size: 13.6px; } /* 폰트 크기 설정과 무관하게 고정 */
+ 
+ /* ---------- 상단 가로 탭 ---------- */
+ 
+@@ -109,6 +110,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
+   background: var(--card);
+   border-bottom: 1px solid var(--line);
+   overflow-x: auto;
++  font-size: 16px; /* 폰트 크기 설정과 무관하게 고정 */
+ }
+ 
+ .tab-item {
+@@ -122,7 +124,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
+   color: var(--ink);
+ }
+ .tab-item.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+-.tab-index { color: var(--muted); font-size: 0.75rem; }
++.tab-index { color: var(--muted); font-size: 12px; } /* 폰트 크기 설정과 무관하게 고정 */
+ .tab-item.active .tab-index { color: var(--accent); }
+ 
+ .workspace { padding: 1rem 1.25rem 3rem; }
+@@ -330,6 +332,9 @@ thead th small { display: block; font-weight: 400; }
+ 
+ .modal.wide { width: min(60rem, 100%); }
+ .needs-input { background: #fff7e6; border-color: #e3bb70; }
++.digit-toggle { display: flex; gap: 0.25rem; }
++.digit-toggle .ghost-button { padding: 0.2rem 0.5rem; font-size: 0.78rem; }
++.digit-toggle .ghost-button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+ 
+ /* ---------- classes ---------- */
+ 
+@@ -804,16 +809,16 @@ thead th small { display: block; font-weight: 400; }
+   .eval-task-fallback { gap: 0.4rem; }
+ 
+   .tabbar { padding: 0.4rem 0.7rem; position: sticky; top: 0; z-index: 5; }
+-  .tab-item { padding: 0.35rem 0.7rem; font-size: 0.88rem; }
++  .tab-item { padding: 0.35rem 0.7rem; font-size: 14.08px; } /* 폰트 크기 설정과 무관하게 고정 */
+   .tab-index { display: none; }
+ 
+   .timetable-layout { flex-direction: column; }
+   .timetable-layout .mini-timetable { flex: none; position: static; width: 100%; }
+ 
+   .topbar { padding: 0.5rem 0.7rem; gap: 0.4rem; }
+-  .brand-mark { width: 1.9rem; height: 1.9rem; font-size: 1.1rem; }
+-  .brand-text strong { font-size: 0.95rem; }
+-  .brand-text small { font-size: 0.68rem; }
++  .brand-mark { width: 30.4px; height: 30.4px; font-size: 17.6px; } /* 폰트 크기 설정과 무관하게 고정 */
++  .brand-text strong { font-size: 15.2px; }
++  .brand-text small { font-size: 10.88px; }
+   .topbar-right { margin-left: 0; width: 100%; justify-content: flex-end; }
+ 
+   .panel { padding: 0.7rem; border-radius: 0.5rem; }
+diff --git a/src/App.tsx b/src/App.tsx
+index 0cc716d..4b2516f 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -90,7 +90,7 @@ export default function App() {
+           subjectId: subject.id,
+           name: incoming.className,
+           slots: incoming.slots,
+-          students: incoming.students.map(student => ({ id: makeId('student'), ...student })),
++          students: incoming.students.map(student => ({ id: makeId('student'), number: student.number, name: student.name })),
+         })
+         return
+       }
+@@ -101,7 +101,7 @@ export default function App() {
+       incoming.students.forEach(student => {
+         const old = existing.students.find(item => item.number === student.number)
+         if (old) old.name = student.name
+-        else existing.students.push({ id: makeId('student'), ...student })
++        else existing.students.push({ id: makeId('student'), number: student.number, name: student.name })
+       })
+       existing.students.sort((left, right) => left.number - right.number)
+     })
+diff --git a/src/components/ImportModal.tsx b/src/components/ImportModal.tsx
+index ab70a4d..fc9aa04 100644
+--- a/src/components/ImportModal.tsx
++++ b/src/components/ImportModal.tsx
+@@ -1,6 +1,6 @@
+ import { useState } from 'react'
+ import type { ImportedClass } from '../naesAttendanceParser'
+-import { formatSlots, parseSlotText } from '../naesAttendanceParser'
++import { formatSlots, parseSlotText, withNumberDigits } from '../naesAttendanceParser'
+ 
+ type Props = {
+   initial: ImportedClass[]
+@@ -42,6 +42,7 @@ export default function ImportModal({ initial, failed, onCancel, onConfirm }: Pr
+                   <th>학급</th>
+                   <th>수업 시간</th>
+                   <th>학생</th>
++                  <th>학번 자릿수</th>
+                   <th>파일</th>
+                 </tr>
+               </thead>
+@@ -75,6 +76,26 @@ export default function ImportModal({ initial, failed, onCancel, onConfirm }: Pr
+                     <td>
+                       {row.students.length ? `${row.students.length}명` : <span className="warn">읽지 못함</span>}
+                     </td>
++                    <td>
++                      {row.numberDigits ? (
++                        <div className="digit-toggle">
++                          <button
++                            className={row.numberDigits === 4 ? 'ghost-button on' : 'ghost-button'}
++                            title="학년 1자리+반 1자리+번호 2자리. 반이 10개 이상이면 겹칠 수 있습니다."
++                            onClick={() => edit(index, withNumberDigits(row, 4))}
++                          >
++                            4자리
++                          </button>
++                          <button
++                            className={row.numberDigits === 5 ? 'ghost-button on' : 'ghost-button'}
++                            title="학년 1자리+반 2자리+번호 2자리. 반이 몇 개든 안 겹칩니다."
++                            onClick={() => edit(index, withNumberDigits(row, 5))}
++                          >
++                            5자리
++                          </button>
++                        </div>
++                      ) : <span className="hint">-</span>}
++                    </td>
+                     <td><small>{row.fileName}</small></td>
+                   </tr>
+                 ))}
+diff --git a/src/naesAttendanceParser.ts b/src/naesAttendanceParser.ts
+index 4ab2cea..3456138 100644
+--- a/src/naesAttendanceParser.ts
++++ b/src/naesAttendanceParser.ts
+@@ -1,7 +1,12 @@
+ import * as XLSX from 'xlsx'
+ import type { Day, Slot } from './types'
+ 
+-export type ImportedStudent = { number: number; name: string }
++export type ImportedStudent = {
++  number: number
++  name: string
++  /** 학년/반/번호를 합쳐 학번을 새로 만든 경우에만 있다. 자릿수를 4↔5로 바꿀 때 이 값으로 다시 계산한다. */
++  gradeClassNo?: { grade: number; classNo: number; no: number }
++}
+ 
+ export type ImportedClass = {
+   subject: string
+@@ -13,6 +18,8 @@ export type ImportedClass = {
+   fileName: string
+   /** 자동으로 못 읽어 사용자가 채워야 하는 항목 */
+   missing: ('subject' | 'className' | 'slots' | 'students')[]
++  /** 학년+반+번호를 합쳐 학번을 새로 만든 반이면 지금 쓰고 있는 자릿수(4 또는 5). 아니면 없음. */
++  numberDigits?: 4 | 5
+ }
+ 
+ type Row = unknown[]
+@@ -87,6 +94,31 @@ function findGradeClassNumberColumns(rows: Row[]) {
+   return { index, gradeIndex, classIndex, noIndex, nameIndex }
+ }
+ 
++/**
++ * 학년+반+번호로 학번을 새로 만든다.
++ * 5자리(기본): 학년 1자리 + 반 2자리 + 번호 2자리. 반이 두 자리(10반 이상)여도 안 겹친다.
++ * 4자리: 학년 1자리 + 반 1자리 + 번호 2자리. 학교에서 보통 쓰는 짧은 학번과 형태가 같지만,
++ *        반이 10개 이상이면 자릿수가 겹칠 수 있다.
++ */
++export function gradeClassNumber(grade: number, classNo: number, no: number, digits: 4 | 5 = 5) {
++  return digits === 5 ? grade * 10000 + classNo * 100 + no : grade * 1000 + classNo * 100 + no
++}
++
++/** 이미 가져온 반의 학번 자릿수를 4↔5로 바꿔 다시 계산한다. 원본 학년·반·번호가 없는 학생은 그대로 둔다. */
++export function withNumberDigits(classItem: ImportedClass, digits: 4 | 5): ImportedClass {
++  return {
++    ...classItem,
++    numberDigits: digits,
++    students: classItem.students
++      .map(student => (
++        student.gradeClassNo
++          ? { ...student, number: gradeClassNumber(student.gradeClassNo.grade, student.gradeClassNo.classNo, student.gradeClassNo.no, digits) }
++          : student
++      ))
++      .sort((left, right) => left.number - right.number),
++  }
++}
++
+ function collectStudentsFromGradeClassNumber(
+   rows: Row[],
+   cols: { index: number; gradeIndex: number; classIndex: number; noIndex: number; nameIndex: number },
+@@ -99,10 +131,11 @@ function collectStudentsFromGradeClassNumber(
+     const classNo = Number(text(row[cols.classIndex]).replace(/[^0-9]/g, ''))
+     const no = Number(text(row[cols.noIndex]).replace(/[^0-9]/g, ''))
+     if (!grade || !classNo || !no) return
+-    // 학년 1자리 + 반 2자리 + 번호 2자리 = 5자리. 원적반이 서로 달라도 겹치지 않는다.
+-    const number = grade * 10000 + classNo * 100 + no
++    const gradeClassNo = { grade, classNo, no }
++    // 기본은 5자리. 원적반이 서로 달라도 겹치지 않는다. ImportModal에서 4자리로 바꿀 수 있다.
++    const number = gradeClassNumber(grade, classNo, no, 5)
+     if (students.some(item => item.number === number)) return
+-    students.push({ number, name })
++    students.push({ number, name, gradeClassNo })
+   })
+   return students.sort((left, right) => left.number - right.number)
+ }
+@@ -242,6 +275,7 @@ function parseSheet(sheet: XLSX.WorkSheet, fileName: string, sheetName: string):
+     school,
+     fileName,
+     missing,
++    numberDigits: splitColumns ? 5 : undefined,
+   }
+ }
+ 
