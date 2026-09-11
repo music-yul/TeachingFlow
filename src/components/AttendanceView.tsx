@@ -28,8 +28,9 @@ export default function AttendanceView({ data, sessions, update }: Props) {
   const [date, setDate] = useState(todayKey())
   const [classFilter, setClassFilter] = useState('')
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [digestStudentId, setDigestStudentId] = useState<string | null>(null)
   const [showDownload, setShowDownload] = useState(false)
+  const [studentQuery, setStudentQuery] = useState('')
+  const [digestTarget, setDigestTarget] = useState<{ classId: string; studentId: string } | null>(null)
 
   if (!active.length) {
     return (
@@ -52,6 +53,16 @@ export default function AttendanceView({ data, sessions, update }: Props) {
   // 날짜·학급을 바꾸면 이전에 고른 교시가 목록에 없을 수 있다. 그럴 땐 가장 이른 수업으로 되돌아간다.
   const current = daySessions.find(item => item.id === activeId) || daySessions[0]
 
+  const trimmedQuery = studentQuery.trim()
+  const searchResults = trimmedQuery
+    ? active.flatMap(classroom => {
+        const subject = data.subjects.find(value => value.id === classroom.subjectId)
+        return classroom.students
+          .filter(student => student.name.includes(trimmedQuery) || String(student.number).includes(trimmedQuery))
+          .map(student => ({ student, classroom, subjectName: subject?.name || '' }))
+      }).slice(0, 20)
+    : []
+
   const countFor = (classId: string, studentId: string, status: AttendanceStatus) => {
     const own = sessions.filter(item => item.classId === classId && item.mode !== 'none' && !item.cancelled)
     return own.filter(item => data.attendance[`${item.id}:${studentId}`] === status).length
@@ -59,6 +70,33 @@ export default function AttendanceView({ data, sessions, update }: Props) {
 
   return (
     <section className="panel">
+      <div className="student-search">
+        <input
+          className="student-search-input"
+          value={studentQuery}
+          placeholder="학생 이름 또는 학번으로 검색"
+          onChange={event => setStudentQuery(event.target.value)}
+        />
+        {trimmedQuery && (
+          <div className="student-search-results">
+            {searchResults.length === 0 && <p className="hint">일치하는 학생이 없습니다.</p>}
+            {searchResults.map(({ student, classroom, subjectName }) => (
+              <button
+                className="student-search-row"
+                key={`${classroom.id}-${student.id}`}
+                onClick={() => {
+                  setDigestTarget({ classId: classroom.id, studentId: student.id })
+                  setStudentQuery('')
+                }}
+              >
+                <span>{studentLabel(student)}</span>
+                <span className="hint">{subjectName} {classroom.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="date-nav">
         <button className="ghost-button" onClick={() => setDate(shiftDay(date, -1))}>‹ 하루 전</button>
         <input type="date" value={date} onChange={event => setDate(event.target.value)} />
@@ -168,7 +206,7 @@ export default function AttendanceView({ data, sessions, update }: Props) {
                             {late > 0 && <span>지각 {late}</span>}
                           </td>
                           <td>
-                            <button className="ghost-button" onClick={() => setDigestStudentId(student.id)}>보기</button>
+                            <button className="ghost-button" onClick={() => setDigestTarget({ classId: classroom.id, studentId: student.id })}>보기</button>
                           </td>
                         </tr>
                       )
@@ -182,9 +220,9 @@ export default function AttendanceView({ data, sessions, update }: Props) {
         )
       })()}
 
-      {digestStudentId && current && (() => {
-        const classroom = data.classes.find(item => item.id === current.classId)
-        const student = classroom?.students.find(item => item.id === digestStudentId)
+      {digestTarget && (() => {
+        const classroom = data.classes.find(item => item.id === digestTarget.classId)
+        const student = classroom?.students.find(item => item.id === digestTarget.studentId)
         if (!classroom || !student) return null
         return (
           <StudentDigestModal
@@ -192,7 +230,7 @@ export default function AttendanceView({ data, sessions, update }: Props) {
             sessions={sessions}
             classroom={classroom}
             student={student}
-            onClose={() => setDigestStudentId(null)}
+            onClose={() => setDigestTarget(null)}
           />
         )
       })()}
