@@ -1,0 +1,260 @@
+diff --git a/src/App.tsx b/src/App.tsx
+index be6f90c..b013598 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -14,17 +14,17 @@ import ImportModal from './components/ImportModal'
+ import MiniTimetable from './components/MiniTimetable'
+ import './App.css'
+ 
+-const tabs = ['달력', '진도표', '반별 출석부', '평가', '설정'] as const
++const tabs = ['수업 일정', '진도 관리', '출결 관리', '평가·성적', '환경 설정'] as const
+ type Tab = (typeof tabs)[number]
+ 
+ export default function App() {
+   const [data, setData] = useState<AppData>(readData)
+-  const [tab, setTab] = useState<Tab>('달력')
++  const [tab, setTab] = useState<Tab>('수업 일정')
+   const [evalJump, setEvalJump] = useState<{ evaluationId: string; classId: string } | null>(null)
+   const openEvaluation = (evaluationId: string, classId: string) => {
+     setSelected(null)
+     setEvalJump({ evaluationId, classId })
+-    setTab('평가')
++    setTab('평가·성적')
+   }
+   const [month, setMonth] = useState(() => new Date())
+   const [selected, setSelected] = useState<string | null>(null)
+@@ -169,27 +169,27 @@ export default function App() {
+ 
+       <main className="workspace">
+         <section className="content">
+-          {!started && tab !== '설정' && (
++          {!started && tab !== '환경 설정' && (
+             <p className="banner">
+-              먼저 <b>설정 &gt; 학급·시간표</b>에서 출석부를 올리거나 과목·학급을 등록해 주세요.
+-              그다음 <b>설정 &gt; 학기·백업</b>에서 학기 기간을 맞추면 진도표가 만들어집니다.
++              먼저 <b>환경 설정 &gt; 학급·시간표</b>에서 출석부를 올리거나 과목·학급을 등록해 주세요.
++              그다음 <b>환경 설정 &gt; 학사일정</b>에서 학기 기간을 맞추면 진도표가 만들어집니다.
+             </p>
+           )}
+ 
+-          {tab === '달력' && (
++          {tab === '수업 일정' && (
+             <div className="timetable-layout">
+               <MiniTimetable data={data} />
+               <CalendarView data={data} sessions={sessions} month={month} setMonth={setMonth} onSelect={setSelected} update={update} />
+             </div>
+           )}
+-          {tab === '진도표' && (
++          {tab === '진도 관리' && (
+             <div className="timetable-layout">
+               <MiniTimetable data={data} />
+               <ProgressView data={data} sessions={sessions} update={update} onSelect={setSelected} onOpenEvaluation={openEvaluation} />
+             </div>
+           )}
+-          {tab === '반별 출석부' && <AttendanceView data={data} sessions={sessions} update={update} />}
+-          {tab === '평가' && (
++          {tab === '출결 관리' && <AttendanceView data={data} sessions={sessions} update={update} />}
++          {tab === '평가·성적' && (
+             <EvaluationsView
+               data={data}
+               update={update}
+@@ -199,7 +199,7 @@ export default function App() {
+               onOpenSession={setSelected}
+             />
+           )}
+-          {tab === '설정' && (
++          {tab === '환경 설정' && (
+             <SettingsHub data={data} update={update} onFiles={openFiles} onImport={loadBackup} onReset={reset} />
+           )}
+           <p className="app-foot">© 2026 율쌤 ｜ 무단 배포 및 수정 금지</p>
+diff --git a/src/components/AttendanceView.tsx b/src/components/AttendanceView.tsx
+index 93716de..20a14ad 100644
+--- a/src/components/AttendanceView.tsx
++++ b/src/components/AttendanceView.tsx
+@@ -34,7 +34,7 @@ export default function AttendanceView({ data, sessions, update }: Props) {
+   if (!active.length) {
+     return (
+       <section className="panel empty-panel">
+-        등록된 학급이 없습니다. <b>설정 &gt; 학급·시간표</b>에서 먼저 학급을 추가해 주세요.
++        등록된 학급이 없습니다. <b>환경 설정 &gt; 학급·시간표</b>에서 먼저 학급을 추가해 주세요.
+       </section>
+     )
+   }
+diff --git a/src/components/ClassesView.tsx b/src/components/ClassesView.tsx
+index ecd0932..ee6e8e7 100644
+--- a/src/components/ClassesView.tsx
++++ b/src/components/ClassesView.tsx
+@@ -114,7 +114,7 @@ export default function ClassesView({ data, update, onFiles }: Props) {
+         </div>
+         <p className="hint">
+           <b>진도표</b> 체크를 끄면 그 과목은 진도표와 수업 목록에서 빠집니다. CA·HR처럼 진도를 따로 관리하지 않는 시간에 쓰세요.
+-          달력과 반별 출석부에는 그대로 나옵니다.
++          수업 일정과 출결 관리에는 그대로 나옵니다.
+         </p>
+       </div>
+ 
+diff --git a/src/components/EvaluationsView.tsx b/src/components/EvaluationsView.tsx
+index 7352e89..9726f9f 100644
+--- a/src/components/EvaluationsView.tsx
++++ b/src/components/EvaluationsView.tsx
+@@ -68,7 +68,7 @@ export default function EvaluationsView({ data, update, sessions, jumpTo, onJump
+   if (!subject) {
+     return (
+       <section className="panel empty-panel">
+-        평가를 만들 과목이 없습니다. <b>설정 &gt; 학급·시간표</b>에서 과목을 먼저 등록해 주세요.
++        평가를 만들 과목이 없습니다. <b>환경 설정 &gt; 학급·시간표</b>에서 과목을 먼저 등록해 주세요.
+       </section>
+     )
+   }
+diff --git a/src/components/HelpView.tsx b/src/components/HelpView.tsx
+index e13829b..cf1e7b2 100644
+--- a/src/components/HelpView.tsx
++++ b/src/components/HelpView.tsx
+@@ -23,7 +23,7 @@ export default function HelpView() {
+ 
+           <h3>1단계 · 학기 기간 정하기</h3>
+           <p>
+-            <b>설정 › 학사일정</b>에서 학교명, 교사명, 학년도, 학기 이름, 학기 시작일과 종료일을 넣습니다.
++            <b>환경 설정 › 학사일정</b>에서 학교명, 교사명, 학년도, 학기 이름, 학기 시작일과 종료일을 넣습니다.
+             학교명은 왼쪽 주간 시간표 제목에도 그대로 쓰이니, 줄여 쓰고 싶으면 여기에 직접 줄여서 입력하시면 됩니다.
+           </p>
+           <p className="callout">
+@@ -32,7 +32,7 @@ export default function HelpView() {
+           </p>
+ 
+           <h3>2단계 · 과목과 학급 만들기</h3>
+-          <p><b>설정 › 학급·시간표</b>를 열면 <b>출석부 올리기</b>가 맨 위에 있습니다. 두 가지 방법 중 하나를 씁니다.</p>
++          <p><b>환경 설정 › 학급·시간표</b>를 열면 <b>출석부 올리기</b>가 맨 위에 있습니다. 두 가지 방법 중 하나를 씁니다.</p>
+           <h4>방법 A — 나이스 출석부 올리기 (추천)</h4>
+           <p>
+             나이스 <b>교과시간별출석부</b>를 반별로 내려받아 <b>여러 개를 한꺼번에</b> 선택합니다.
+@@ -54,13 +54,13 @@ export default function HelpView() {
+ 
+           <h3>3단계 · 진도표를 쓸 과목 고르기</h3>
+           <p>
+-            <b>설정 › 학급·시간표</b> 맨 위 과목 카드에서, <b>진도표 사용</b> 알약 버튼으로 정합니다. 켜지면 파란색으로 표시됩니다.
++            <b>환경 설정 › 학급·시간표</b> 맨 위 과목 카드에서, <b>진도표 사용</b> 알약 버튼으로 정합니다. 켜지면 파란색으로 표시됩니다.
+           </p>
+           <table>
+             <thead><tr><th>상태</th><th>동작</th></tr></thead>
+             <tbody>
+               <tr><td>켬</td><td>진도표와 진도표 관리에 나옵니다.</td></tr>
+-              <tr><td>끔</td><td>진도표·진도표 관리에서 빠지고, 달력과 반별 출석부에는 그대로 나옵니다.</td></tr>
++              <tr><td>끔</td><td>진도표·진도표 관리에서 빠지고, 수업 일정과 출결 관리에는 그대로 나옵니다.</td></tr>
+             </tbody>
+           </table>
+           <p>
+@@ -70,7 +70,7 @@ export default function HelpView() {
+ 
+           <h3>4단계 · 진도표 관리 등록하기</h3>
+           <p>
+-            <b>설정 › 진도표 관리</b>을 열면 <b>수업 유형</b>(가창·연주·감상 등)이 맨 위에 있습니다. 먼저 필요한 유형을 만들거나 확인하세요.
++            <b>환경 설정 › 진도표 관리</b>을 열면 <b>수업 유형</b>(가창·연주·감상 등)이 맨 위에 있습니다. 먼저 필요한 유형을 만들거나 확인하세요.
+             유형 중 <b>강조</b>를 켠 것(기본은 수행평가)은 달력·진도표에서 굵은 글씨와 다른 배경으로 눈에 띄게 표시됩니다.
+           </p>
+           <p>
+@@ -82,7 +82,7 @@ export default function HelpView() {
+           <h3>5단계 · 학사일정 넣기</h3>
+           <p className="callout">
+             신정·설날·추석·공휴일과 대체공휴일은 <b>이미 들어 있습니다.</b> 따로 등록하지 않으셔도 달력에 빨갛게 표시되고 그날 수업이 자동으로 빠집니다.
+-            음력 명절은 천문 계산으로 구하므로 연도 제한 없이 몇십 년이 지나도 그대로 맞습니다. 원하지 않으면 설정 › 학사일정에서 끌 수 있습니다.
++            음력 명절은 천문 계산으로 구하므로 연도 제한 없이 몇십 년이 지나도 그대로 맞습니다. 원하지 않으면 환경 설정 › 학사일정에서 끌 수 있습니다.
+             재량휴업일·시험·행사처럼 학교마다 다른 일정만 아래에서 등록하시면 됩니다.
+           </p>
+           <table>
+@@ -117,7 +117,7 @@ export default function HelpView() {
+             <li>위쪽 <b>엑셀로 내보내기 / 인쇄</b> 버튼으로 그 달의 배정 결과를 뽑을 수 있습니다.</li>
+           </ul>
+ 
+-          <h3>반별 출석부</h3>
++          <h3>출결 관리</h3>
+           <ol>
+             <li>탭을 열면 <b>오늘 수업이 있는 반</b>이 자동으로 잡힙니다. 그날 수업이 여러 개면 아래에 <b>교시 버튼</b>이 나오고, 가장 이른 교시가 기본으로 열립니다. 버튼을 눌러 다른 수업으로 바꿉니다.</li>
+             <li>다른 날을 보려면 <b>하루 전 / 다음 날</b> 화살표를 쓰거나 날짜를 직접 고르세요. 특정 반만 보고 싶으면 오른쪽 <b>학급</b> 선택으로 좁힐 수 있습니다.</li>
+@@ -137,7 +137,7 @@ export default function HelpView() {
+             <tbody>
+               <tr><td>노란 배경</td><td>오늘 하는 수업</td></tr>
+               <tr><td>회색 배경</td><td>완료 표시한 수업</td></tr>
+-              <tr><td>굵은 글씨·다른 배경</td><td>수행평가처럼 <b>강조</b>로 지정한 유형입니다. 설정 › 진도표 관리에서 바꿉니다.</td></tr>
++              <tr><td>굵은 글씨·다른 배경</td><td>수행평가처럼 <b>강조</b>로 지정한 유형입니다. 환경 설정 › 진도표 관리에서 바꿉니다.</td></tr>
+               <tr><td>+ 메모</td><td>누르면 팝업이 열립니다. 길어도 칸은 한 줄로 고정됩니다.</td></tr>
+               <tr><td>시간 부족</td><td>학기 안에 이 차시를 할 시간이 없다는 뜻</td></tr>
+               <tr><td>엑셀로 내보내기 / 인쇄</td><td>위쪽 버튼으로 지금 과목의 진도표를 엑셀 파일이나 인쇄물로 뽑을 수 있습니다.</td></tr>
+@@ -156,7 +156,7 @@ export default function HelpView() {
+           </p>
+ 
+           <h3>화면 바꾸기</h3>
+-          <p><b>설정 › 화면</b>에서 아래 네 가지를 각각 따로 정합니다.</p>
++          <p><b>환경 설정 › 화면</b>에서 아래 네 가지를 각각 따로 정합니다.</p>
+           <table>
+             <thead><tr><th>항목</th><th>내용</th></tr></thead>
+             <tbody>
+@@ -184,7 +184,7 @@ export default function HelpView() {
+ 
+           <h3>평가 만들기</h3>
+           <ol>
+-            <li><b>평가</b> 탭에서 과목을 고르고 <b>+ 새 평가 만들기</b>를 누릅니다.</li>
++            <li><b>평가·성적</b> 탭에서 과목을 고르고 <b>+ 새 평가 만들기</b>를 누릅니다.</li>
+             <li>평가명, 유형, 반영 비율(%), 평가일, 대상 학급을 정합니다. 대상 학급을 비워두면 그 과목의 모든 학급이 대상입니다.</li>
+             <li>만들면 <b>평가 설정</b> 탭으로 넘어갑니다. 요소명과 배점을 하나씩 추가하세요. 요소는 평가마다 완전히 다르게 만들 수 있습니다.</li>
+           </ol>
+@@ -214,7 +214,7 @@ export default function HelpView() {
+ 
+           <h3>진도표 관리에서 평가 연결하기</h3>
+           <p>
+-            <b>설정 › 진도표 관리</b>에서 수업 유형에 <b>강조</b>가 켜져 있으면(기본은 수행평가), 그 유형을 쓰는 차시마다
++            <b>환경 설정 › 진도표 관리</b>에서 수업 유형에 <b>강조</b>가 켜져 있으면(기본은 수행평가), 그 유형을 쓰는 차시마다
+             <b>평가 선택</b> 칸이 나타납니다. 여기서 평가를 고르면 그 차시를 쓰는 모든 수업이 그 평가와 연결됩니다.
+           </p>
+ 
+@@ -268,7 +268,7 @@ export default function HelpView() {
+ 
+           <h3>학교 전체가 바뀔 때 → 학사일정</h3>
+           <p>
+-            <b>설정 › 학사일정</b>에서 <b>요일 변경</b>을 등록합니다.
++            <b>환경 설정 › 학사일정</b>에서 <b>요일 변경</b>을 등록합니다.
+             예를 들어 9월 22일 화요일에 금요일 시간표로 운영한다면, 날짜를 고르고 유형을 요일 변경으로 한 뒤 <b>금</b>요일을 선택합니다.
+           </p>
+           <ul>
+@@ -317,7 +317,7 @@ export default function HelpView() {
+           <h3>엑셀·인쇄로도 뽑을 수 있습니다</h3>
+           <p>
+             진도표·달력 위쪽의 <b>엑셀로 내보내기</b>는 그 화면의 내용을 xlsx 파일로 저장합니다.
+-            반별 출석부 아래쪽에서는 반 전체 학생의 기록을 한 번에 받을 수 있습니다. <b>인쇄</b> 버튼은 메뉴·버튼을 뺀 화면만 인쇄합니다.
++            출결 관리 표 위쪽 누가기록 다운로드에서 반 전체 학생의 기록을 한 번에 받을 수 있습니다. <b>인쇄</b> 버튼은 메뉴·버튼을 뺀 화면만 인쇄합니다.
+             백업(json)과는 별개로, 이 파일들은 다시 불러올 수는 없고 보거나 나눠주는 용도입니다.
+           </p>
+ 
+@@ -334,8 +334,8 @@ export default function HelpView() {
+           <table>
+             <thead><tr><th>증상</th><th>원인과 해결</th></tr></thead>
+             <tbody>
+-              <tr><td>달력이 텅 비어 있다</td><td>설정 › 학사일정에서 학기 기간이 맞지 않습니다.</td></tr>
+-              <tr><td>진도표에 아무것도 없다</td><td>설정 › 진도표 관리에 차시가 없습니다.</td></tr>
++              <tr><td>수업 일정이 텅 비어 있다</td><td>환경 설정 › 학사일정에서 학기 기간이 맞지 않습니다.</td></tr>
++              <tr><td>진도표에 아무것도 없다</td><td>환경 설정 › 진도표 관리에 차시가 없습니다.</td></tr>
+               <tr><td>진도표 과목 목록에 특정 과목이 없다</td><td>그 과목의 진도표 사용이 꺼져 있습니다.</td></tr>
+               <tr><td>시간표에 붉은 테두리가 생겼다</td><td>같은 시간에 두 반이 잡혀 있습니다.</td></tr>
+               <tr><td>미배정이라고 뜬다</td><td>수업 가능한 시간이 등록한 차시보다 많습니다. 차시를 더 넣으세요.</td></tr>
+@@ -344,7 +344,7 @@ export default function HelpView() {
+               <tr><td>새 기능이 안 보인다</td><td>Ctrl+Shift+R 로 강력 새로고침하세요.</td></tr>
+               <tr><td>기록이 사라졌다</td><td>브라우저 저장소가 지워졌습니다. 백업 파일에서 불러오세요.</td></tr>
+               <tr><td>저장 공간이 가득 찼다고 나온다</td><td>백업을 내보낸 뒤 지난 학기 기록을 정리하세요.</td></tr>
+-              <tr><td>화면 테마·과목 색이 예전과 달라졌다</td><td>화면 관련 기능이 업데이트되면서 초기화될 수 있습니다. 설정 › 화면에서 다시 고르세요.</td></tr>
++              <tr><td>화면 테마·과목 색이 예전과 달라졌다</td><td>화면 관련 기능이 업데이트되면서 초기화될 수 있습니다. 환경 설정 › 화면에서 다시 고르세요.</td></tr>
+             </tbody>
+           </table>
+         </div>
+diff --git a/src/components/ProgressView.tsx b/src/components/ProgressView.tsx
+index 396a4c5..fb88ef7 100644
+--- a/src/components/ProgressView.tsx
++++ b/src/components/ProgressView.tsx
+@@ -21,7 +21,7 @@ export default function ProgressView({ data, sessions, update, onSelect, onOpenE
+   if (!subject) {
+     return (
+       <section className="panel empty-panel">
+-        진도표를 쓰는 과목이 없습니다. <b>설정 &gt; 학급·시간표</b>에서 과목을 추가하거나, 과목의 <b>진도표</b> 체크를 켜 주세요.
++        진도표를 쓰는 과목이 없습니다. <b>환경 설정 &gt; 학급·시간표</b>에서 과목을 추가하거나, 과목의 <b>진도표</b> 체크를 켜 주세요.
+       </section>
+     )
+   }
