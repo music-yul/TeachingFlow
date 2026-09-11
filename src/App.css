@@ -574,16 +574,8 @@ thead th small { display: block; font-weight: 400; }
 .eval-total { font-weight: 600; background: var(--subtle); }
 
 .eval-mode-tabs { display: flex; gap: 0.3rem; }
-.eval-roster-table { table-layout: auto; }
-.eval-name-col { text-align: left; white-space: nowrap; }
-.eval-note-col { width: 10rem; }
 .eval-only-absent { display: flex; align-items: center; gap: 0.3rem; margin-left: auto; font-size: 0.82rem; color: var(--muted); cursor: pointer; }
 .eval-only-absent input { margin: 0; }
-
-.eval-absent-tag { background: var(--danger); color: #fff; font-size: 0.72rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 999px; margin-right: 0.4rem; }
-.eval-att-undo { background: none; border: none; color: var(--accent); font-size: 0.75rem; text-decoration: underline; cursor: pointer; padding: 0; margin-right: 0.5rem; }
-.eval-att-mark { background: none; border: none; color: var(--muted); font-size: 0.75rem; text-decoration: underline; cursor: pointer; padding: 0; }
-
 
 .eval-link-row {
   display: flex; align-items: center; gap: 0.5rem; width: 100%;
@@ -613,9 +605,6 @@ thead th small { display: block; font-weight: 400; }
 .eval-summary-bar .on { color: var(--accent); font-weight: 600; }
 .eval-summary-bar .off { color: var(--danger); font-weight: 600; }
 .eval-summary-bar .muted { color: var(--muted); }
-.eval-att-cell { white-space: nowrap; }
-.eval-row-absent { opacity: 0.55; }
-.eval-row-absent .eval-score-input { background: var(--ghost); }
 .lesson-eval-pick { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: var(--muted); }
 
 /* ---------- 채점기준(레벨) ---------- */
@@ -624,34 +613,12 @@ thead th small { display: block; font-weight: 400; }
 .eval-criteria-list li { margin-bottom: 0.3rem; }
 .eval-criteria-list b { color: var(--accent); margin-right: 0.2rem; }
 
-.eval-item-block {
-  display: flex; gap: 1rem; align-items: flex-start;
-  border: 1px solid var(--line); border-radius: 0.5rem;
-  padding: 0.8rem; margin-bottom: 0.7rem; background: var(--card);
-}
-.eval-item-block-crit { flex: 0 0 16rem; min-width: 0; }
-.eval-item-block-crit b { font-size: 0.95rem; }
-.eval-item-block-crit small { display: block; color: var(--muted); font-size: 0.78rem; margin-top: 0.1rem; }
-.eval-item-block-scores {
-  flex: 1 1 auto; min-width: 0;
-  display: flex; flex-direction: column; gap: 0.3rem;
-  border-left: 1px dashed var(--line); padding-left: 1rem;
-}
-.eval-score-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
-.eval-score-row-name { flex: 0 0 8rem; font-size: 0.85rem; }
-.eval-item-block-scores .eval-score-input { width: 4.5rem; }
-
 .eval-level-picker { display: flex; flex-wrap: wrap; gap: 0.25rem; justify-content: flex-start; }
 .eval-level-btn {
   background: var(--chip); border: 1px solid var(--line); border-radius: 0.3rem;
   padding: 0.2rem 0.4rem; font-size: 0.78rem; font-weight: 600; min-width: 1.8rem;
 }
 .eval-level-btn.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-
-.eval-basic-apply {
-  display: block; background: none; border: none; color: var(--muted);
-  font-size: 0.66rem; text-decoration: underline; padding: 0.15rem 0 0; cursor: pointer;
-}
 
 /* ---------- 평가 요소 편집(채점기준 입력) ---------- */
 
@@ -660,8 +627,6 @@ thead th small { display: block; font-weight: 400; }
 .eval-level-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; }
 .eval-level-row input[type='number'] { width: 4rem; }
 .eval-level-desc { flex: 1 1 auto; min-width: 0; }
-.eval-basic-score { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; margin-top: 0.4rem; flex-wrap: wrap; }
-.eval-basic-score input { width: 5rem; }
 
 /* ---------- 모바일 전용 규칙 (항상 마지막에 위치해야 우선 적용됨) ---------- */
 
@@ -757,8 +722,6 @@ thead th small { display: block; font-weight: 400; }
 .eval-grid tbody tr:hover .eg-sticky { background: var(--today, var(--subtle)); }
 
 .eval-grid .eg-status { min-width: 4.2rem; }
-.eg-status-select { width: 100%; font-size: 0.75rem; padding: 0.1rem 0.15rem; border-radius: 0.25rem; }
-.eg-status-select.off { color: var(--danger); font-weight: 600; }
 .eval-grid .eg-locked { background: var(--ghost, var(--subtle)); color: var(--muted); font-size: 0.76rem; }
 .eval-grid .eg-cell { padding: 0.15rem 0.2rem; }
 .eval-grid .eg-cell .eval-level-picker { flex-wrap: nowrap; justify-content: center; gap: 0.12rem; }
@@ -839,11 +802,6 @@ thead th small { display: block; font-weight: 400; }
   .eval-grid .eg-name { left: 3rem; min-width: 3.6rem; }
   .eval-grid .eg-note { min-width: 6rem; }
   .eval-task-fallback { gap: 0.4rem; }
-
-  .eval-item-block { flex-direction: column; }
-  .eval-item-block-crit { flex: none; width: 100%; }
-  .eval-item-block-scores { border-left: none; padding-left: 0; border-top: 1px dashed var(--line); padding-top: 0.6rem; margin-top: 0.3rem; }
-  .eval-score-row-name { flex: 0 0 auto; width: 100%; }
 
   .tabbar { padding: 0.4rem 0.7rem; position: sticky; top: 0; z-index: 5; }
   .tab-item { padding: 0.35rem 0.7rem; font-size: 0.88rem; }

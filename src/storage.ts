@@ -4,9 +4,9 @@ import { subjectColorsForTheme } from './theme'
 export const APP_VERSION = 'v4.0'
 export const APP_NAME = '티칭플로'
 export const APP_TAGLINE = 'TEACHING FLOW ― 수업의 흐름을 한눈에'
-export const STORAGE_KEY = 'class-schedule-planner-data'
+const STORAGE_KEY = 'class-schedule-planner-data'
 
-export const defaultTypes: LessonType[] = [
+const defaultTypes: LessonType[] = [
   { id: 'sing', name: '가창', color: '#2d8c7b' },
   { id: 'play', name: '기악', color: '#4f7db8' },
   { id: 'listen', name: '감상', color: '#9a72b0' },
@@ -14,7 +14,7 @@ export const defaultTypes: LessonType[] = [
 ]
 
 /** 평가 유형은 학교 평가계획과 맞춰 수행평가·지필평가 둘로 고정한다. 직접 추가하지 않는다. */
-export const defaultEvaluationTypes: EvaluationType[] = [
+const defaultEvaluationTypes: EvaluationType[] = [
   { id: 'performance', name: '수행평가' },
   { id: 'written', name: '지필평가' },
 ]

@@ -26,11 +26,6 @@ export function evaluationTasks(evaluation: Evaluation): EvaluationTask[] {
   return []
 }
 
-/** 모든 과제의 평가 요소를 한 줄로 편다. 엑셀·집계용. */
-export function allItems(evaluation: Evaluation) {
-  return evaluationTasks(evaluation).flatMap(task => task.items)
-}
-
 /** 한 과제의 배점 합. */
 export function taskMax(task: EvaluationTask) {
   return task.items.reduce((sum, item) => sum + (item.maxScore || 0), 0)
@@ -41,7 +36,7 @@ export function maxTotal(evaluation: Evaluation) {
   return evaluationTasks(evaluation).reduce((sum, task) => sum + taskMax(task), 0)
 }
 
-export function taskStatusOf(
+function taskStatusOf(
   data: AppData,
   evaluationId: string,
   taskId: string,
@@ -82,7 +77,7 @@ export function weightedScore(data: AppData, evaluation: Evaluation, studentId: 
 }
 
 /** 이 평가에서 학생이 뭐라도 입력됐는지(미응시 표시 포함). */
-export function hasAnyScore(data: AppData, evaluation: Evaluation, studentId: string) {
+function hasAnyScore(data: AppData, evaluation: Evaluation, studentId: string) {
   return evaluationTasks(evaluation).some(task => {
     if (isAbsent(data, evaluation.id, task.id, studentId)) return true
     return task.items.some(item => data.scores[scoreKey(evaluation.id, item.id, studentId)] !== undefined)
@@ -90,14 +85,14 @@ export function hasAnyScore(data: AppData, evaluation: Evaluation, studentId: st
 }
 
 /** 과제 하나가 마감됐는지. 미응시이거나, 요소가 전부 채워졌으면 완료. */
-export function isTaskComplete(data: AppData, evaluation: Evaluation, task: EvaluationTask, studentId: string) {
+function isTaskComplete(data: AppData, evaluation: Evaluation, task: EvaluationTask, studentId: string) {
   if (isAbsent(data, evaluation.id, task.id, studentId)) return true
   if (!task.items.length) return false
   return task.items.every(item => data.scores[scoreKey(evaluation.id, item.id, studentId)] !== undefined)
 }
 
 /** 이 평가에서 학생의 모든 과제가 마감됐는지. */
-export function isComplete(data: AppData, evaluation: Evaluation, studentId: string) {
+function isComplete(data: AppData, evaluation: Evaluation, studentId: string) {
   const tasks = evaluationTasks(evaluation)
   if (!tasks.length) return false
   return tasks.every(task => isTaskComplete(data, evaluation, task, studentId))
