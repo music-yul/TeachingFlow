@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ImportedClass } from '../naesAttendanceParser'
-import { formatSlots, parseSlotText } from '../naesAttendanceParser'
+import { formatSlots, parseSlotText, withNumberDigits } from '../naesAttendanceParser'
 
 type Props = {
   initial: ImportedClass[]
@@ -42,6 +42,7 @@ export default function ImportModal({ initial, failed, onCancel, onConfirm }: Pr
                   <th>학급</th>
                   <th>수업 시간</th>
                   <th>학생</th>
+                  <th>학번 자릿수</th>
                   <th>파일</th>
                 </tr>
               </thead>
@@ -74,6 +75,26 @@ export default function ImportModal({ initial, failed, onCancel, onConfirm }: Pr
                     </td>
                     <td>
                       {row.students.length ? `${row.students.length}명` : <span className="warn">읽지 못함</span>}
+                    </td>
+                    <td>
+                      {row.numberDigits ? (
+                        <div className="digit-toggle">
+                          <button
+                            className={row.numberDigits === 4 ? 'ghost-button on' : 'ghost-button'}
+                            title="학년 1자리+반 1자리+번호 2자리. 반이 10개 이상이면 겹칠 수 있습니다."
+                            onClick={() => edit(index, withNumberDigits(row, 4))}
+                          >
+                            4자리
+                          </button>
+                          <button
+                            className={row.numberDigits === 5 ? 'ghost-button on' : 'ghost-button'}
+                            title="학년 1자리+반 2자리+번호 2자리. 반이 몇 개든 안 겹칩니다."
+                            onClick={() => edit(index, withNumberDigits(row, 5))}
+                          >
+                            5자리
+                          </button>
+                        </div>
+                      ) : <span className="hint">-</span>}
                     </td>
                     <td><small>{row.fileName}</small></td>
                   </tr>

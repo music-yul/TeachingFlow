@@ -90,7 +90,7 @@ export default function App() {
           subjectId: subject.id,
           name: incoming.className,
           slots: incoming.slots,
-          students: incoming.students.map(student => ({ id: makeId('student'), ...student })),
+          students: incoming.students.map(student => ({ id: makeId('student'), number: student.number, name: student.name })),
         })
         return
       }
@@ -101,7 +101,7 @@ export default function App() {
       incoming.students.forEach(student => {
         const old = existing.students.find(item => item.number === student.number)
         if (old) old.name = student.name
-        else existing.students.push({ id: makeId('student'), ...student })
+        else existing.students.push({ id: makeId('student'), number: student.number, name: student.name })
       })
       existing.students.sort((left, right) => left.number - right.number)
     })

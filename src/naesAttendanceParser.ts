@@ -1,7 +1,12 @@
 import * as XLSX from 'xlsx'
 import type { Day, Slot } from './types'
 
-export type ImportedStudent = { number: number; name: string }
+export type ImportedStudent = {
+  number: number
+  name: string
+  /** 학년/반/번호를 합쳐 학번을 새로 만든 경우에만 있다. 자릿수를 4↔5로 바꿀 때 이 값으로 다시 계산한다. */
+  gradeClassNo?: { grade: number; classNo: number; no: number }
+}
 
 export type ImportedClass = {
   subject: string
@@ -13,6 +18,8 @@ export type ImportedClass = {
   fileName: string
   /** 자동으로 못 읽어 사용자가 채워야 하는 항목 */
   missing: ('subject' | 'className' | 'slots' | 'students')[]
+  /** 학년+반+번호를 합쳐 학번을 새로 만든 반이면 지금 쓰고 있는 자릿수(4 또는 5). 아니면 없음. */
+  numberDigits?: 4 | 5
 }
 
 type Row = unknown[]
@@ -87,6 +94,31 @@ function findGradeClassNumberColumns(rows: Row[]) {
   return { index, gradeIndex, classIndex, noIndex, nameIndex }
 }
 
+/**
+ * 학년+반+번호로 학번을 새로 만든다.
+ * 5자리(기본): 학년 1자리 + 반 2자리 + 번호 2자리. 반이 두 자리(10반 이상)여도 안 겹친다.
+ * 4자리: 학년 1자리 + 반 1자리 + 번호 2자리. 학교에서 보통 쓰는 짧은 학번과 형태가 같지만,
+ *        반이 10개 이상이면 자릿수가 겹칠 수 있다.
+ */
+export function gradeClassNumber(grade: number, classNo: number, no: number, digits: 4 | 5 = 5) {
+  return digits === 5 ? grade * 10000 + classNo * 100 + no : grade * 1000 + classNo * 100 + no
+}
+
+/** 이미 가져온 반의 학번 자릿수를 4↔5로 바꿔 다시 계산한다. 원본 학년·반·번호가 없는 학생은 그대로 둔다. */
+export function withNumberDigits(classItem: ImportedClass, digits: 4 | 5): ImportedClass {
+  return {
+    ...classItem,
+    numberDigits: digits,
+    students: classItem.students
+      .map(student => (
+        student.gradeClassNo
+          ? { ...student, number: gradeClassNumber(student.gradeClassNo.grade, student.gradeClassNo.classNo, student.gradeClassNo.no, digits) }
+          : student
+      ))
+      .sort((left, right) => left.number - right.number),
+  }
+}
+
 function collectStudentsFromGradeClassNumber(
   rows: Row[],
   cols: { index: number; gradeIndex: number; classIndex: number; noIndex: number; nameIndex: number },
@@ -99,10 +131,11 @@ function collectStudentsFromGradeClassNumber(
     const classNo = Number(text(row[cols.classIndex]).replace(/[^0-9]/g, ''))
     const no = Number(text(row[cols.noIndex]).replace(/[^0-9]/g, ''))
     if (!grade || !classNo || !no) return
-    // 학년 1자리 + 반 2자리 + 번호 2자리 = 5자리. 원적반이 서로 달라도 겹치지 않는다.
-    const number = grade * 10000 + classNo * 100 + no
+    const gradeClassNo = { grade, classNo, no }
+    // 기본은 5자리. 원적반이 서로 달라도 겹치지 않는다. ImportModal에서 4자리로 바꿀 수 있다.
+    const number = gradeClassNumber(grade, classNo, no, 5)
     if (students.some(item => item.number === number)) return
-    students.push({ number, name })
+    students.push({ number, name, gradeClassNo })
   })
   return students.sort((left, right) => left.number - right.number)
 }
@@ -242,6 +275,7 @@ function parseSheet(sheet: XLSX.WorkSheet, fileName: string, sheetName: string):
     school,
     fileName,
     missing,
+    numberDigits: splitColumns ? 5 : undefined,
   }
 }
 
