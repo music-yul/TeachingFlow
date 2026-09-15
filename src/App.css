@@ -13,8 +13,8 @@
   --danger: #c0433f;
   --done: #eceef1;
   --done-ink: #96a0ae;
-  --mark: #fdeef0;
-  --mark-line: #e6a3ac;
+  --mark: #ffe08a;
+  --mark-line: #c98f16;
   --today: #fff3c4;
 }
 
@@ -200,7 +200,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 .day-note-add:hover, .day-note-add:focus { opacity: 1; }
 .day-note-chip {
-  text-align: left; background: var(--mark); border: 1px dashed var(--mark-line); color: var(--ink);
+  text-align: left; background: var(--accent-soft); border: 1px dashed var(--accent); color: var(--ink);
   font-size: 0.66rem; padding: 0.05rem 0.25rem; border-radius: 0.2rem; line-height: 1.2;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
