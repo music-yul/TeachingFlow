@@ -573,16 +573,24 @@ function EvaluationEntry({
                     {tasks.map(task => {
                       const collapsed = isTaskCollapsed(task.id)
                       return collapsed ? (
-                        <th className="eg-task eg-task-collapsed" rowSpan={2} key={task.id}>
-                          <button className="eval-fold-button" onClick={() => toggleTaskCollapse(task.id)} title={`${task.name || '(과제명 미입력)'} — 펼치기`}>
-                            <span className="eval-fold-icon">▸</span> {task.name || '(과제명 미입력)'}
-                          </button>
+                        <th
+                          className="eg-task eg-task-collapsed"
+                          rowSpan={2}
+                          key={task.id}
+                          onClick={() => toggleTaskCollapse(task.id)}
+                          title={`${task.name || '(과제명 미입력)'} — 펼치기`}
+                        >
+                          ▸ {task.name || '(과제명 미입력)'}
                         </th>
                       ) : (
-                        <th className="eg-task" colSpan={task.items.length + 1} key={task.id}>
-                          <button className="eval-fold-button" onClick={() => toggleTaskCollapse(task.id)} title="과제 접기">
-                            <span className="eval-fold-icon">▾</span> {task.name || '(과제명 미입력)'} <small>{taskMax(task)}</small>
-                          </button>
+                        <th
+                          className="eg-task"
+                          colSpan={task.items.length + 1}
+                          key={task.id}
+                          onClick={() => toggleTaskCollapse(task.id)}
+                          title="클릭하면 이 과제를 접습니다"
+                        >
+                          ▾ {task.name || '(과제명 미입력)'} <small>{taskMax(task)}</small>
                         </th>
                       )
                     })}
