@@ -158,13 +158,21 @@ export default function AttendanceView({ data, sessions, update }: Props) {
                 <p className="hint">체크하지 않은 학생은 출석으로 봅니다.</p>
                 <div className="table-wrap">
                 <table className="attendance-table">
+                  <colgroup>
+                    <col className="att-col-no" />
+                    <col className="att-col-name" />
+                    <col className="att-col-status" />
+                    <col className="att-col-tally" />
+                    <col />
+                    <col className="att-col-digest" />
+                  </colgroup>
                   <thead>
                     <tr>
                       <th>학번</th>
                       <th>성명</th>
                       <th>출결</th>
-                      <th>수업 중 특기사항</th>
                       <th>누계</th>
+                      <th>수업 중 특기사항</th>
                       <th>누가기록</th>
                     </tr>
                   </thead>
@@ -194,16 +202,16 @@ export default function AttendanceView({ data, sessions, update }: Props) {
                               </button>
                             ))}
                           </td>
+                          <td className="tally">
+                            {absent > 0 && <span className="warn">결석 {absent}</span>}
+                            {late > 0 && <span>지각 {late}</span>}
+                          </td>
                           <td>
                             <input
                               value={data.activities[key] || ''}
                               placeholder="관찰 내용, 활동 특기사항"
                               onChange={event => update({ activities: { ...data.activities, [key]: event.target.value } })}
                             />
-                          </td>
-                          <td className="tally">
-                            {absent > 0 && <span className="warn">결석 {absent}</span>}
-                            {late > 0 && <span>지각 {late}</span>}
                           </td>
                           <td>
                             <button className="ghost-button" onClick={() => setDigestTarget({ classId: classroom.id, studentId: student.id })}>보기</button>

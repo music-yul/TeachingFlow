@@ -351,6 +351,13 @@ thead th small { display: block; font-weight: 400; }
 
 .session-title { margin: 0.3rem 0 0.6rem; font-size: 1.02rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .digest-download-open { margin-left: auto; font-size: 0.8rem; }
+.attendance-table { table-layout: fixed; }
+.attendance-table th, .attendance-table td { text-align: center; }
+.attendance-table .att-col-no { width: 3.6rem; }
+.attendance-table .att-col-name { width: 5rem; }
+.attendance-table .att-col-status { width: 13.5rem; }
+.attendance-table .att-col-tally { width: 5rem; }
+.attendance-table .att-col-digest { width: 4.5rem; }
 .attendance-table .status-cell { white-space: nowrap; }
 .attendance-table .status-cell .slot { width: auto; padding: 0 0.35rem; margin-right: 0.1rem; }
 .attendance-table td input { width: 100%; }
@@ -643,8 +650,6 @@ thead th small { display: block; font-weight: 400; }
 /* ---------- 평가 요소 편집(채점기준 입력) ---------- */
 
 .eval-item-editor { border-bottom: 1px dashed var(--line); padding-bottom: 0.4rem; margin-bottom: 0.4rem; }
-.eval-rubric-visible-check { display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--muted); margin: 0.2rem 0 0.3rem; cursor: pointer; }
-.eval-rubric-visible-check input { margin: 0; }
 .eval-rubric-editor { background: var(--subtle); border-radius: 0.4rem; padding: 0.5rem 0.6rem; margin-top: 0.3rem; }
 .eval-level-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; }
 .eval-level-row input[type='number'] { width: 4rem; }

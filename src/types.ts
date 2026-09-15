@@ -182,7 +182,7 @@ export type EvaluationItem = {
   step?: number
   /** @deprecated 미응시·미제출 점수는 평가 과제(EvaluationTask) 단위로 옮겼다. */
   basicScore?: number
-  /** true 면 채점표 옆 "채점기준" 참고 사이드바에서 이 요소를 숨긴다. 채점 자체는 그대로 된다. */
+  /** @deprecated 과제 접기 기능으로 대체됐다. 예전 데이터를 읽을 때만 남아있을 수 있다. */
   hideFromRubric?: boolean
 }
 

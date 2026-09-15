@@ -489,8 +489,7 @@ function EvaluationEntry({
           <aside className="eval-rubric-sidebar">
             <h3 className="eval-rubric-sidebar-title">채점기준</h3>
             {tasks.map(task => {
-              const visibleItems = task.items.filter(item => !item.hideFromRubric)
-              if (!visibleItems.length) return null
+              if (!task.items.length) return null
               const collapsed = isTaskCollapsed(task.id)
               return (
                 <div className="eval-rubric-task" key={task.id}>
@@ -498,7 +497,7 @@ function EvaluationEntry({
                     <span className="eval-fold-icon">{collapsed ? '▸' : '▾'}</span>
                     <b>{task.name || '(과제명 미입력)'} <small>{taskMax(task)}점</small></b>
                   </button>
-                  {!collapsed && visibleItems.map(item => (
+                  {!collapsed && task.items.map(item => (
                     <div className="eval-rubric-item" key={item.id}>
                       <span className="eval-rubric-item-name">{item.name} ({item.maxScore})</span>
                       {item.levels?.length ? (
@@ -513,7 +512,7 @@ function EvaluationEntry({
                 </div>
               )
             })}
-            {!tasks.some(task => task.items.some(item => !item.hideFromRubric)) && (
+            {!tasks.some(task => task.items.length) && (
               <p className="hint">평가 설정 탭에서 요소·채점기준을 추가하면 여기 표시됩니다.</p>
             )}
           </aside>
@@ -1081,15 +1080,6 @@ function EvalItemEditor({
           요소 삭제
         </button>
       </div>
-
-      <label className="eval-rubric-visible-check" title="꺼두면 채점 자체는 그대로 되고, 채점표 옆 채점기준 참고 화면에서만 이 요소가 빠집니다.">
-        <input
-          type="checkbox"
-          checked={!item.hideFromRubric}
-          onChange={event => editItem(item.id, { hideFromRubric: !event.target.checked })}
-        />
-        채점기준 참고 화면에 표시
-      </label>
 
       {warn && (
         <p className="eval-warn">
