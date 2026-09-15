@@ -740,9 +740,9 @@ thead th small { display: block; font-weight: 400; }
 .eval-grid .eg-sticky { position: sticky; background: var(--card); z-index: 3; }
 .eval-grid thead .eg-sticky { background: var(--subtle); z-index: 4; }
 .eval-grid .eg-no { left: 0; min-width: 3.4rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.eval-grid .eg-name { left: 3.4rem; min-width: 4.2rem; text-align: left; }
-.eval-grid .eg-group { left: 7.6rem; min-width: 4.6rem; text-align: left; border-right: 1px solid var(--line-strong, var(--line)); }
-.eval-grid .eg-group .eval-note-input { width: 100%; font-size: 0.76rem; padding: 0.15rem 0.25rem; }
+.eval-grid .eg-name { left: 3.4rem; min-width: 4.2rem; text-align: center; }
+.eval-grid .eg-group { left: 7.6rem; min-width: 2.6rem; text-align: center; border-right: 1px solid var(--line-strong, var(--line)); }
+.eval-grid .eg-group .eval-note-input { width: 100%; font-size: 0.76rem; padding: 0.15rem 0.1rem; text-align: center; }
 .eval-grid tbody tr:hover td { background: var(--today, var(--subtle)); }
 .eval-grid tbody tr:hover .eg-sticky { background: var(--today, var(--subtle)); }
 .eval-grid .eg-group-row td { background: var(--chip); font-weight: 600; text-align: left; padding: 0.25rem 0.5rem; }
@@ -756,8 +756,10 @@ thead th small { display: block; font-weight: 400; }
 .eval-grid .eg-total { min-width: 3.2rem; }
 .eval-grid .eg-note { min-width: 9rem; }
 .eval-grid .eg-note .eval-note-input { width: 100%; font-size: 0.76rem; padding: 0.15rem 0.25rem; }
+.eval-grid .eg-custom-col { min-width: 4.2rem; }
+.eval-grid .eg-custom-col .eval-note-input { width: 100%; font-size: 0.76rem; padding: 0.15rem 0.2rem; text-align: center; }
 .eval-column-dropdown { display: flex; flex-direction: column; gap: 0.2rem; }
-.eval-column-dropdown select { width: 100%; font-size: 0.76rem; padding: 0.1rem 0.2rem; }
+.eval-column-dropdown select { width: 100%; font-size: 0.76rem; padding: 0.1rem 0.1rem; }
 .eval-column-editor { margin-bottom: 0.4rem; }
 .eval-column-options-input { width: 100%; margin-top: 0.15rem; font-size: 0.82rem; }
 .eval-grid tbody .eval-total { font-variant-numeric: tabular-nums; }
@@ -831,8 +833,9 @@ thead th small { display: block; font-weight: 400; }
   .eval-grid { font-size: 0.76rem; }
   .eval-grid .eg-no { min-width: 3rem; }
   .eval-grid .eg-name { left: 3rem; min-width: 3.6rem; }
-  .eval-grid .eg-group { left: 6.6rem; min-width: 3.6rem; }
+  .eval-grid .eg-group { left: 6.6rem; min-width: 2.4rem; }
   .eval-grid .eg-note { min-width: 6rem; }
+  .eval-grid .eg-custom-col { min-width: 3.6rem; }
   .eval-task-fallback { gap: 0.4rem; }
 
   .tabbar { padding: 0.4rem 0.7rem; position: sticky; top: 0; z-index: 5; }

@@ -412,11 +412,11 @@ function EvaluationEntry({
     + 2 + columns.length + 1
 
   const renderColumnTh = (column: EvalColumn) => (
-    <th className="eg-note" rowSpan={2} key={column.id}>{column.label || '(이름 없음)'}</th>
+    <th className="eg-custom-col" rowSpan={2} key={column.id}>{column.label || '(이름 없음)'}</th>
   )
 
   const renderColumnTd = (column: EvalColumn, studentId: string) => (
-    <td className="eg-note" key={column.id}>
+    <td className="eg-custom-col" key={column.id}>
       {column.options?.length ? (
         <ColumnDropdownCell
           options={column.options}
