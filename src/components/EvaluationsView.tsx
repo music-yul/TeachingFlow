@@ -285,6 +285,10 @@ function EvaluationEntry({
 
   const tasks = evaluationTasks(evaluation)
   const columns = evaluationColumns(evaluation)
+  const frontColumns = columns.filter(column => column.position === 'front')
+  const endColumns = columns.filter(column => column.position === 'end')
+  const middleColumns = columns.filter(column => column.position !== 'front' && column.position !== 'end')
+  const isGroupActivity = !!evaluation.groupActivity
   const max = maxTotal(evaluation)
   const students = classroom?.students || []
   const counts = evalCounts(data, evaluation, students)
@@ -402,10 +406,33 @@ function EvaluationEntry({
   const columnIndex: Record<string, number> = {}
   tasks.forEach(task => task.items.forEach(item => { columnIndex[item.id] = columnCursor++ }))
 
-  // 모둠 구분줄에 쓸 전체 열 개수(학번·성명·모둠 + 과제 칸들 + 합계·반영 + 커스텀 열 + 비고).
-  const totalColumnCount = 3
+  // 모둠 구분줄에 쓸 전체 열 개수(학번·성명(+모둠) + 과제 칸들 + 합계·반영 + 커스텀 열 + 비고).
+  const totalColumnCount = (isGroupActivity ? 3 : 2)
     + tasks.reduce((sum, task) => sum + task.items.length + 1, 0)
     + 2 + columns.length + 1
+
+  const renderColumnTh = (column: EvalColumn) => (
+    <th className="eg-note" rowSpan={2} key={column.id}>{column.label || '(이름 없음)'}</th>
+  )
+
+  const renderColumnTd = (column: EvalColumn, studentId: string) => (
+    <td className="eg-note" key={column.id}>
+      {column.options?.length ? (
+        <ColumnDropdownCell
+          options={column.options}
+          value={data.columnValues[columnKey(evaluation.id, column.id, studentId)] || ''}
+          onChange={value => setColumnValue(column.id, studentId, value)}
+        />
+      ) : (
+        <input
+          className="eval-note-input"
+          value={data.columnValues[columnKey(evaluation.id, column.id, studentId)] || ''}
+          placeholder=""
+          onChange={event => setColumnValue(column.id, studentId, event.target.value)}
+        />
+      )}
+    </td>
+  )
 
   return (
     <section className="panel eval-entry">
@@ -451,24 +478,30 @@ function EvaluationEntry({
         <div className="eval-score-layout">
           <aside className="eval-rubric-sidebar">
             <h3 className="eval-rubric-sidebar-title">채점기준</h3>
-            {tasks.map(task => (
-              <div className="eval-rubric-task" key={task.id}>
-                <b>{task.name || '(과제명 미입력)'} <small>{taskMax(task)}점</small></b>
-                {task.items.map(item => (
-                  <div className="eval-rubric-item" key={item.id}>
-                    <span className="eval-rubric-item-name">{item.name} ({item.maxScore})</span>
-                    {item.levels?.length ? (
-                      <ul className="eval-criteria-list">
-                        {item.levels.map(level => (
-                          <li key={level.id}><b>{level.score}점</b> {level.description || '(설명 없음)'}</li>
-                        ))}
-                      </ul>
-                    ) : <span className="hint">채점기준 없음 · 숫자 직접 입력</span>}
-                  </div>
-                ))}
-              </div>
-            ))}
-            {!tasks.some(task => task.items.length) && <p className="hint">평가 설정 탭에서 요소·채점기준을 추가하면 여기 표시됩니다.</p>}
+            {tasks.map(task => {
+              const visibleItems = task.items.filter(item => !item.hideFromRubric)
+              if (!visibleItems.length) return null
+              return (
+                <div className="eval-rubric-task" key={task.id}>
+                  <b>{task.name || '(과제명 미입력)'} <small>{taskMax(task)}점</small></b>
+                  {visibleItems.map(item => (
+                    <div className="eval-rubric-item" key={item.id}>
+                      <span className="eval-rubric-item-name">{item.name} ({item.maxScore})</span>
+                      {item.levels?.length ? (
+                        <ul className="eval-criteria-list">
+                          {item.levels.map(level => (
+                            <li key={level.id}><b>{level.score}점</b> {level.description || '(설명 없음)'}</li>
+                          ))}
+                        </ul>
+                      ) : <span className="hint">채점기준 없음 · 숫자 직접 입력</span>}
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
+            {!tasks.some(task => task.items.some(item => !item.hideFromRubric)) && (
+              <p className="hint">평가 설정 탭에서 요소·채점기준을 추가하면 여기 표시됩니다.</p>
+            )}
           </aside>
 
           <div className="eval-score-main">
@@ -492,14 +525,18 @@ function EvaluationEntry({
                 <input type="checkbox" checked={onlyAbsent} onChange={event => setOnlyAbsent(event.target.checked)} />
                 미응시자 보기
               </label>
-              <label className="eval-only-absent">
-                <input type="checkbox" checked={groupView} onChange={event => setGroupView(event.target.checked)} />
-                모둠별로 묶어 보기
-              </label>
-              <label className="eval-only-absent" title="켜두면 한 학생 점수를 입력할 때 같은 모둠 학생 전원에게도 똑같이 들어갑니다.">
-                <input type="checkbox" checked={groupSync} onChange={event => setGroupSync(event.target.checked)} />
-                모둠 전체 동일 점수 적용
-              </label>
+              {isGroupActivity && (
+                <>
+                  <label className="eval-only-absent">
+                    <input type="checkbox" checked={groupView} onChange={event => setGroupView(event.target.checked)} />
+                    모둠별로 묶어 보기
+                  </label>
+                  <label className="eval-only-absent" title="켜두면 한 학생 점수를 입력할 때 같은 모둠 학생 전원에게도 똑같이 들어갑니다.">
+                    <input type="checkbox" checked={groupSync} onChange={event => setGroupSync(event.target.checked)} />
+                    모둠 전체 동일 점수 적용
+                  </label>
+                </>
+              )}
             </div>
           )}
 
@@ -518,7 +555,8 @@ function EvaluationEntry({
                   <tr>
                     <th className="eg-sticky eg-no" rowSpan={2}>학번</th>
                     <th className="eg-sticky eg-name" rowSpan={2}>성명</th>
-                    <th className="eg-sticky eg-group" rowSpan={2}>모둠</th>
+                    {isGroupActivity && <th className="eg-sticky eg-group" rowSpan={2}>모둠</th>}
+                    {frontColumns.map(renderColumnTh)}
                     {tasks.map(task => (
                       <th className="eg-task" colSpan={task.items.length + 1} key={task.id}>
                         {task.name || '(과제명 미입력)'} <small>{taskMax(task)}</small>
@@ -526,10 +564,9 @@ function EvaluationEntry({
                     ))}
                     <th className="eg-total" rowSpan={2}>합계<small>/{max}</small></th>
                     <th className="eg-total" rowSpan={2}>반영<small>/{evaluation.weight}</small></th>
-                    {columns.map(column => (
-                      <th className="eg-note" rowSpan={2} key={column.id}>{column.label || '(이름 없음)'}</th>
-                    ))}
+                    {middleColumns.map(renderColumnTh)}
                     <th className="eg-note" rowSpan={2}>비고</th>
+                    {endColumns.map(renderColumnTh)}
                   </tr>
                   <tr>
                     {tasks.map(task => (
@@ -557,14 +594,17 @@ function EvaluationEntry({
                     <tr>
                       <td className="eg-sticky eg-no">{student.number}</td>
                       <td className="eg-sticky eg-name">{student.name}</td>
-                      <td className="eg-sticky eg-group">
-                        <input
-                          className="eval-note-input"
-                          value={group}
-                          placeholder=""
-                          onChange={event => setGroup(student.id, event.target.value)}
-                        />
-                      </td>
+                      {isGroupActivity && (
+                        <td className="eg-sticky eg-group">
+                          <input
+                            className="eval-note-input"
+                            value={group}
+                            placeholder=""
+                            onChange={event => setGroup(student.id, event.target.value)}
+                          />
+                        </td>
+                      )}
+                      {frontColumns.map(column => renderColumnTd(column, student.id))}
                       {tasks.map(task => {
                         const absent = isAbsent(data, evaluation.id, task.id, student.id)
                         return (
@@ -626,24 +666,7 @@ function EvaluationEntry({
                       })}
                       <td className="eval-total">{rawTotal(data, evaluation, student.id)}</td>
                       <td className="eval-total">{Math.round(weightedScore(data, evaluation, student.id) * 10) / 10}</td>
-                      {columns.map(column => (
-                        <td className="eg-note" key={column.id}>
-                          {column.options?.length ? (
-                            <ColumnDropdownCell
-                              options={column.options}
-                              value={data.columnValues[columnKey(evaluation.id, column.id, student.id)] || ''}
-                              onChange={value => setColumnValue(column.id, student.id, value)}
-                            />
-                          ) : (
-                            <input
-                              className="eval-note-input"
-                              value={data.columnValues[columnKey(evaluation.id, column.id, student.id)] || ''}
-                              placeholder=""
-                              onChange={event => setColumnValue(column.id, student.id, event.target.value)}
-                            />
-                          )}
-                        </td>
-                      ))}
+                      {middleColumns.map(column => renderColumnTd(column, student.id))}
                       <td className="eg-note">
                         <input
                           className="eval-note-input"
@@ -652,6 +675,7 @@ function EvaluationEntry({
                           onChange={event => setNote(student.id, event.target.value)}
                         />
                       </td>
+                      {endColumns.map(column => renderColumnTd(column, student.id))}
                     </tr>
                     </Fragment>
                     )
@@ -707,7 +731,20 @@ function EvaluationSettings({
           </select>
         </label>
         <label>반영 비율(%)<input type="number" min={0} max={100} value={evaluation.weight} onChange={event => update({ weight: Number(event.target.value) })} /></label>
+        <label className="eval-checkbox-field">
+          <input
+            type="checkbox"
+            checked={!!evaluation.groupActivity}
+            onChange={event => update({ groupActivity: event.target.checked })}
+          />
+          모둠활동입니다
+        </label>
       </div>
+      {evaluation.groupActivity && (
+        <p className="hint">
+          채점표에 모둠 열과 &quot;모둠별로 묶어 보기&quot;, &quot;모둠 전체 동일 점수 적용&quot; 기능이 나타납니다.
+        </p>
+      )}
 
       <EvalColumnsEditor evaluation={evaluation} update={update} />
 
@@ -771,6 +808,10 @@ function EvalColumnsEditor({
     update({ columns: columns.map(item => (item.id === id ? { ...item, options: options.length ? options : undefined } : item)) })
   }
 
+  const editPosition = (id: string, position: EvalColumn['position']) => {
+    update({ columns: columns.map(item => (item.id === id ? { ...item, position } : item)) })
+  }
+
   const removeColumn = (id: string) => {
     if (!window.confirm('이 열을 지웁니다. 학생별로 적어둔 내용도 함께 지워지며 되돌릴 수 없습니다. 계속할까요?')) return
     update({ columns: columns.filter(item => item.id !== id) })
@@ -787,6 +828,11 @@ function EvalColumnsEditor({
         <div className="eval-column-editor" key={column.id}>
           <div className="inline-form">
             <input value={column.label} placeholder="열 이름 (예: 연주 악기)" onChange={event => editColumn(column.id, event.target.value)} />
+            <select value={column.position || 'middle'} onChange={event => editPosition(column.id, event.target.value as EvalColumn['position'])}>
+              <option value="front">앞쪽(학번·모둠 옆)</option>
+              <option value="middle">점수 뒤(합계 옆) — 기본</option>
+              <option value="end">맨 끝(비고 뒤)</option>
+            </select>
             <button className="ghost-button danger-button" onClick={() => removeColumn(column.id)}>열 삭제</button>
           </div>
           <OptionsInput column={column} editOptions={editOptions} />
@@ -999,6 +1045,15 @@ function EvalItemEditor({
           요소 삭제
         </button>
       </div>
+
+      <label className="eval-rubric-visible-check" title="꺼두면 채점 자체는 그대로 되고, 채점표 옆 채점기준 참고 화면에서만 이 요소가 빠집니다.">
+        <input
+          type="checkbox"
+          checked={!item.hideFromRubric}
+          onChange={event => editItem(item.id, { hideFromRubric: !event.target.checked })}
+        />
+        채점기준 참고 화면에 표시
+      </label>
 
       {warn && (
         <p className="eval-warn">

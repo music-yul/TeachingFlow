@@ -174,6 +174,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.6rem; }
 .field-grid label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; color: var(--muted); }
+.field-grid label.eval-checkbox-field { flex-direction: row; align-items: center; gap: 0.4rem; }
 .field-grid input { color: var(--ink); }
 
 .legend { color: var(--muted); font-size: 0.8rem; display: flex; align-items: center; gap: 0.3rem; }
@@ -642,6 +643,8 @@ thead th small { display: block; font-weight: 400; }
 /* ---------- 평가 요소 편집(채점기준 입력) ---------- */
 
 .eval-item-editor { border-bottom: 1px dashed var(--line); padding-bottom: 0.4rem; margin-bottom: 0.4rem; }
+.eval-rubric-visible-check { display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--muted); margin: 0.2rem 0 0.3rem; cursor: pointer; }
+.eval-rubric-visible-check input { margin: 0; }
 .eval-rubric-editor { background: var(--subtle); border-radius: 0.4rem; padding: 0.5rem 0.6rem; margin-top: 0.3rem; }
 .eval-level-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; }
 .eval-level-row input[type='number'] { width: 4rem; }

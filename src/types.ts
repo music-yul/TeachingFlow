@@ -182,6 +182,8 @@ export type EvaluationItem = {
   step?: number
   /** @deprecated 미응시·미제출 점수는 평가 과제(EvaluationTask) 단위로 옮겼다. */
   basicScore?: number
+  /** true 면 채점표 옆 "채점기준" 참고 사이드바에서 이 요소를 숨긴다. 채점 자체는 그대로 된다. */
+  hideFromRubric?: boolean
 }
 
 /**
@@ -211,6 +213,8 @@ export type EvalColumn = {
   label: string
   /** 있으면 채점표에서 이 목록 중 하나를 고르는 드롭다운으로 바뀐다. 비어 있으면(또는 없으면) 자유 텍스트 입력. */
   options?: string[]
+  /** 채점표에서 이 열이 놓이는 자리. 없으면 'middle'(현재처럼 합계·반영 뒤, 비고 앞). */
+  position?: 'front' | 'middle' | 'end'
 }
 
 export type Evaluation = {
@@ -230,6 +234,8 @@ export type Evaluation = {
   items?: EvaluationItem[]
   /** 채점표에 추가한 커스텀 열(예: 연주 악기, 연주곡). 없으면 빈 배열로 취급. */
   columns?: EvalColumn[]
+  /** 모둠활동 평가인지. true 일 때만 채점표에 모둠 관련 기능(모둠 열·묶어보기·일괄 채점)이 나온다. */
+  groupActivity?: boolean
 }
 
 /** 자동 배정된 한 번의 수업 시간 */
