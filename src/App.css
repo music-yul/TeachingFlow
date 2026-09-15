@@ -13,8 +13,10 @@
   --danger: #c0433f;
   --done: #eceef1;
   --done-ink: #96a0ae;
-  --mark: #ffe08a;
-  --mark-line: #c98f16;
+  --mark: #daf2ef;
+  --mark-line: #4ea89c;
+  --assess: #2f5a8a;
+  --assess-line: #24466c;
   --today: #fff3c4;
 }
 
@@ -464,9 +466,15 @@ thead th small { display: block; font-weight: 400; }
 
 /* ---------- 수행평가 등 강조 ---------- */
 
-.calendar-lesson.marked { background: var(--mark); border-color: var(--mark-line); font-weight: 700; }
+.calendar-lesson.marked {
+  background: var(--assess); border-color: var(--assess-line); color: #ffffff; font-weight: 700;
+}
+.calendar-lesson.marked .cl-left, .calendar-lesson.marked .cl-right { color: #ffffff; }
 .calendar-lesson.marked span { font-weight: 700; }
-.calendar-lesson.marked.done { background: var(--done); font-weight: 400; }
+.calendar-lesson.marked.done {
+  background: var(--done); border-color: var(--done-ink); color: var(--done-ink); font-weight: 400;
+}
+.calendar-lesson.marked.done .cl-left, .calendar-lesson.marked.done .cl-right { color: var(--done-ink); }
 .calendar-lesson.marked.done span { font-weight: 400; }
 .progress-table tr.marked-row .sticky-col { background: var(--mark); }
 .progress-table tr.marked-row .sticky-col b { font-weight: 700; }
