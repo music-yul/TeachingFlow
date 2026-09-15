@@ -304,6 +304,16 @@ function EvaluationEntry({
     update({ evaluations: data.evaluations.map(item => (item.id === evaluation.id ? { ...item, ...change } : item)) })
   }
 
+  const collapsedTaskIds = evaluation.collapsedTaskIds || []
+  const isTaskCollapsed = (taskId: string) => collapsedTaskIds.includes(taskId)
+  const toggleTaskCollapse = (taskId: string) => {
+    updateEvaluation({
+      collapsedTaskIds: isTaskCollapsed(taskId)
+        ? collapsedTaskIds.filter(id => id !== taskId)
+        : [...collapsedTaskIds, taskId],
+    })
+  }
+
   const setScore = (itemId: string, maxScore: number, studentId: string, raw: string) => {
     const scores = { ...data.scores }
     const applyTo = (id: string) => {
@@ -406,9 +416,9 @@ function EvaluationEntry({
   const columnIndex: Record<string, number> = {}
   tasks.forEach(task => task.items.forEach(item => { columnIndex[item.id] = columnCursor++ }))
 
-  // 모둠 구분줄에 쓸 전체 열 개수(학번·성명(+모둠) + 과제 칸들 + 합계·반영 + 커스텀 열 + 비고).
+  // 모둠 구분줄에 쓸 전체 열 개수(학번·성명(+모둠) + 과제 칸들 + 합계·반영 + 커스텀 열 + 비고). 접은 과제는 1칸으로 친다.
   const totalColumnCount = (isGroupActivity ? 3 : 2)
-    + tasks.reduce((sum, task) => sum + task.items.length + 1, 0)
+    + tasks.reduce((sum, task) => sum + (isTaskCollapsed(task.id) ? 1 : task.items.length + 1), 0)
     + 2 + columns.length + 1
 
   const renderColumnTh = (column: EvalColumn) => (
@@ -481,10 +491,14 @@ function EvaluationEntry({
             {tasks.map(task => {
               const visibleItems = task.items.filter(item => !item.hideFromRubric)
               if (!visibleItems.length) return null
+              const collapsed = isTaskCollapsed(task.id)
               return (
                 <div className="eval-rubric-task" key={task.id}>
-                  <b>{task.name || '(과제명 미입력)'} <small>{taskMax(task)}점</small></b>
-                  {visibleItems.map(item => (
+                  <button className="eval-rubric-task-toggle" onClick={() => toggleTaskCollapse(task.id)}>
+                    <span className="eval-fold-icon">{collapsed ? '▸' : '▾'}</span>
+                    <b>{task.name || '(과제명 미입력)'} <small>{taskMax(task)}점</small></b>
+                  </button>
+                  {!collapsed && visibleItems.map(item => (
                     <div className="eval-rubric-item" key={item.id}>
                       <span className="eval-rubric-item-name">{item.name} ({item.maxScore})</span>
                       {item.levels?.length ? (
@@ -557,11 +571,22 @@ function EvaluationEntry({
                     <th className="eg-sticky eg-name" rowSpan={2}>성명</th>
                     {isGroupActivity && <th className="eg-sticky eg-group" rowSpan={2}>모둠</th>}
                     {frontColumns.map(renderColumnTh)}
-                    {tasks.map(task => (
-                      <th className="eg-task" colSpan={task.items.length + 1} key={task.id}>
-                        {task.name || '(과제명 미입력)'} <small>{taskMax(task)}</small>
-                      </th>
-                    ))}
+                    {tasks.map(task => {
+                      const collapsed = isTaskCollapsed(task.id)
+                      return collapsed ? (
+                        <th className="eg-task eg-task-collapsed" rowSpan={2} key={task.id}>
+                          <button className="eval-fold-button" onClick={() => toggleTaskCollapse(task.id)} title={`${task.name || '(과제명 미입력)'} — 펼치기`}>
+                            <span className="eval-fold-icon">▸</span> {task.name || '(과제명 미입력)'}
+                          </button>
+                        </th>
+                      ) : (
+                        <th className="eg-task" colSpan={task.items.length + 1} key={task.id}>
+                          <button className="eval-fold-button" onClick={() => toggleTaskCollapse(task.id)} title="과제 접기">
+                            <span className="eval-fold-icon">▾</span> {task.name || '(과제명 미입력)'} <small>{taskMax(task)}</small>
+                          </button>
+                        </th>
+                      )
+                    })}
                     <th className="eg-total" rowSpan={2}>합계<small>/{max}</small></th>
                     <th className="eg-total" rowSpan={2}>반영<small>/{evaluation.weight}</small></th>
                     {middleColumns.map(renderColumnTh)}
@@ -569,14 +594,17 @@ function EvaluationEntry({
                     {endColumns.map(renderColumnTh)}
                   </tr>
                   <tr>
-                    {tasks.map(task => (
-                      <Fragment key={task.id}>
-                        <th className="eg-status">미응시</th>
-                        {task.items.map(item => (
-                          <th key={item.id}>{item.name}<small>{item.maxScore}</small></th>
-                        ))}
-                      </Fragment>
-                    ))}
+                    {tasks.map(task => {
+                      if (isTaskCollapsed(task.id)) return null
+                      return (
+                        <Fragment key={task.id}>
+                          <th className="eg-status">미응시</th>
+                          {task.items.map(item => (
+                            <th key={item.id}>{item.name}<small>{item.maxScore}</small></th>
+                          ))}
+                        </Fragment>
+                      )
+                    })}
                   </tr>
                 </thead>
                 <tbody>
@@ -606,6 +634,14 @@ function EvaluationEntry({
                       )}
                       {frontColumns.map(column => renderColumnTd(column, student.id))}
                       {tasks.map(task => {
+                        if (isTaskCollapsed(task.id)) {
+                          const absentCollapsed = isAbsent(data, evaluation.id, task.id, student.id)
+                          return (
+                            <td className="eg-cell eg-task-collapsed-cell" key={task.id}>
+                              {absentCollapsed ? '미응시' : `${taskScore(data, evaluation, task, student.id)}/${taskMax(task)}`}
+                            </td>
+                          )
+                        }
                         const absent = isAbsent(data, evaluation.id, task.id, student.id)
                         return (
                           <Fragment key={task.id}>

@@ -236,6 +236,8 @@ export type Evaluation = {
   columns?: EvalColumn[]
   /** 모둠활동 평가인지. true 일 때만 채점표에 모둠 관련 기능(모둠 열·묶어보기·일괄 채점)이 나온다. */
   groupActivity?: boolean
+  /** 채점표·채점기준 사이드바에서 접어둔 평가 과제 id 목록. 지금 안 쓰는 과제를 접어서 가로 스크롤을 줄이는 용도. */
+  collapsedTaskIds?: string[]
 }
 
 /** 자동 배정된 한 번의 수업 시간 */

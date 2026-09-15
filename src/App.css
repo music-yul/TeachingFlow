@@ -736,6 +736,13 @@ thead th small { display: block; font-weight: 400; }
 .eval-grid thead th[rowspan] { top: 0; }
 .eval-grid thead th small { display: block; font-weight: 400; opacity: 0.75; }
 .eval-grid .eg-task { border-bottom: 1px solid var(--line); font-weight: 600; color: var(--ink); background: var(--chip); }
+.eval-grid .eg-task .eval-fold-button {
+  display: flex; align-items: baseline; gap: 0.25rem; width: 100%; justify-content: center;
+  background: none; border: none; padding: 0; cursor: pointer; color: inherit; font: inherit; font-weight: 600;
+}
+.eval-grid .eg-task-collapsed { min-width: 3.6rem; white-space: normal; font-size: 0.72rem; line-height: 1.2; }
+.eval-grid .eg-task-collapsed .eval-fold-button { white-space: normal; text-align: center; }
+.eval-grid .eg-task-collapsed-cell { color: var(--muted); font-size: 0.74rem; min-width: 3.6rem; }
 
 .eval-grid .eg-sticky { position: sticky; background: var(--card); z-index: 3; }
 .eval-grid thead .eg-sticky { background: var(--subtle); z-index: 4; }
@@ -778,8 +785,13 @@ thead th small { display: block; font-weight: 400; }
 .eval-rubric-sidebar-title { margin: 0 0 0.6rem; font-size: 0.9rem; color: var(--muted); }
 .eval-rubric-task { margin-bottom: 0.9rem; }
 .eval-rubric-task:last-child { margin-bottom: 0; }
-.eval-rubric-task > b { display: block; margin-bottom: 0.3rem; font-size: 0.88rem; }
-.eval-rubric-task > b small { color: var(--muted); font-weight: 400; }
+.eval-rubric-task-toggle {
+  display: flex; align-items: baseline; gap: 0.3rem; width: 100%; text-align: left;
+  background: none; border: none; padding: 0; margin-bottom: 0.3rem; cursor: pointer; color: inherit; font: inherit;
+}
+.eval-rubric-task-toggle b { font-size: 0.88rem; }
+.eval-rubric-task-toggle b small { color: var(--muted); font-weight: 400; }
+.eval-fold-icon { color: var(--muted); font-size: 0.7rem; flex: 0 0 auto; }
 .eval-rubric-item { margin-bottom: 0.5rem; }
 .eval-rubric-item-name { font-size: 0.82rem; font-weight: 600; }
 
