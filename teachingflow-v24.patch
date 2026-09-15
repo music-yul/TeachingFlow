@@ -1,0 +1,85 @@
+diff --git a/src/App.css b/src/App.css
+index a649457..d875809 100644
+--- a/src/App.css
++++ b/src/App.css
+@@ -15,8 +15,8 @@
+   --done-ink: #96a0ae;
+   --mark: #daf2ef;
+   --mark-line: #4ea89c;
+-  --assess: #2f5a8a;
+-  --assess-line: #24466c;
++  --assess: #6a88b6;
++  --assess-line: #5173a6;
+   --today: #fff3c4;
+ }
+ 
+diff --git a/src/theme.ts b/src/theme.ts
+index f6c4d0a..84ae108 100644
+--- a/src/theme.ts
++++ b/src/theme.ts
+@@ -28,8 +28,8 @@ export const themes: Theme[] = [
+       '--done-ink': '#96a0ae',
+       '--mark': '#daf2ef',
+       '--mark-line': '#4ea89c',
+-      '--assess': '#52606d',
+-      '--assess-line': '#3e4852',
++      '--assess': '#7d8895',
++      '--assess-line': '#697480',
+       '--today': '#fff3c4',
+     },
+   },
+@@ -53,8 +53,8 @@ export const themes: Theme[] = [
+       '--done-ink': '#ada59f',
+       '--mark': '#daf2ef',
+       '--mark-line': '#4ea89c',
+-      '--assess': '#8a5a2b',
+-      '--assess-line': '#6b4520',
++      '--assess': '#9c826e',
++      '--assess-line': '#866e5b',
+       '--today': '#f4e2af',
+     },
+   },
+@@ -78,8 +78,8 @@ export const themes: Theme[] = [
+       '--done-ink': '#9fa4ad',
+       '--mark': '#daf2ef',
+       '--mark-line': '#4ea89c',
+-      '--assess': '#2f5a8a',
+-      '--assess-line': '#24466c',
++      '--assess': '#6a88b6',
++      '--assess-line': '#5173a6',
+       '--today': '#f4e2af',
+     },
+   },
+@@ -103,8 +103,8 @@ export const themes: Theme[] = [
+       '--done-ink': '#a7ad9f',
+       '--mark': '#daf2ef',
+       '--mark-line': '#4ea89c',
+-      '--assess': '#46662b',
+-      '--assess-line': '#354e21',
++      '--assess': '#729147',
++      '--assess-line': '#5d753a',
+       '--today': '#f4e2af',
+     },
+   },
+@@ -128,8 +128,8 @@ export const themes: Theme[] = [
+       '--done-ink': '#ad9fad',
+       '--mark': '#daf2ef',
+       '--mark-line': '#4ea89c',
+-      '--assess': '#5c4066',
+-      '--assess-line': '#48324f',
++      '--assess': '#9a7e9a',
++      '--assess-line': '#866986',
+       '--today': '#f4e2af',
+     },
+   },
+@@ -152,8 +152,8 @@ export const themes: Theme[] = [
+       '--done-ink': '#707c8c',
+       '--mark': '#173b37',
+       '--mark-line': '#2f8f83',
+-      '--assess': '#3f74c2',
+-      '--assess-line': '#2f5a99',
++      '--assess': '#5689c9',
++      '--assess-line': '#3b74ba',
+       '--today': '#4a4326',
+     },
+   },
