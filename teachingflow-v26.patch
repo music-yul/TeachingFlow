@@ -1,0 +1,16 @@
+diff --git a/src/components/HelpView.tsx b/src/components/HelpView.tsx
+index 27b9dab..3feb750 100644
+--- a/src/components/HelpView.tsx
++++ b/src/components/HelpView.tsx
+@@ -338,11 +338,6 @@ export default function HelpView() {
+             접속한 상태에서 Ctrl+S 로 페이지를 저장하면, 그 파일 하나가 그대로 프로그램이 됩니다.
+             단 브라우저 저장소가 달라지므로 기록은 따로 관리됩니다. 옮기려면 백업 파일을 쓰세요.
+           </p>
+-
+-          <h3>프로그램 정보 · SNS</h3>
+-          <p>
+-            버전 정보와 만든 사람 SNS 링크는 <b>환경 설정 › 데이터 관리</b> 맨 아래에 있습니다.
+-          </p>
+         </div>
+       )}
+ 
