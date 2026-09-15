@@ -275,10 +275,23 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
                   students: classroom.students.map(item => (item.id === student.id ? { ...item, name: event.target.value } : item)),
                 })}
               />
+              <input
+                className="student-group-input"
+                value={student.group || ''}
+                placeholder="모둠 (예: 1모둠)"
+                onChange={event => editClass(classroom.id, {
+                  students: classroom.students.map(item => (item.id === student.id ? { ...item, group: event.target.value } : item)),
+                })}
+              />
               <button className="ghost-button" onClick={() => editClass(classroom.id, { students: classroom.students.filter(item => item.id !== student.id) })}>삭제</button>
             </div>
           ))}
           {!classroom.students.length && <p className="hint">학생 명단이 비어 있습니다.</p>}
+          {classroom.students.length > 0 && (
+            <p className="hint">
+              모둠은 여기서 정해두는 기본값입니다. 특정 평가에서만 다르게 묶고 싶으면 그 평가의 채점표에서 따로 바꿀 수 있습니다.
+            </p>
+          )}
         </div>
       )}
     </div>

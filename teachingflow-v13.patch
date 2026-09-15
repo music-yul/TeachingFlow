@@ -1,0 +1,650 @@
+diff --git a/src/App.css b/src/App.css
+index 3d929b1..f6e6ce3 100644
+--- a/src/App.css
++++ b/src/App.css
+@@ -673,6 +673,7 @@ thead th small { display: block; font-weight: 400; }
+ .student-row { display: flex; gap: 0.3rem; margin-bottom: 0.25rem; }
+ .student-row input[type='number'] { width: 4rem; }
+ .student-row input:not([type='number']) { width: 9rem; }
++.student-row input.student-group-input { width: 6rem; }
+ 
+ .lesson-row { display: flex; gap: 0.5rem; align-items: flex-start; border-bottom: 1px solid var(--line); padding: 0.4rem 0; flex-wrap: wrap; min-width: 0; }
+ .order { flex: 0 0 1.6rem; text-align: center; color: var(--muted); font-size: 0.85rem; padding-top: 0.4rem; }
+@@ -736,9 +737,12 @@ thead th small { display: block; font-weight: 400; }
+ .eval-grid .eg-sticky { position: sticky; background: var(--card); z-index: 3; }
+ .eval-grid thead .eg-sticky { background: var(--subtle); z-index: 4; }
+ .eval-grid .eg-no { left: 0; min-width: 3.4rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+-.eval-grid .eg-name { left: 3.4rem; min-width: 4.2rem; text-align: left; border-right: 1px solid var(--line-strong, var(--line)); }
++.eval-grid .eg-name { left: 3.4rem; min-width: 4.2rem; text-align: left; }
++.eval-grid .eg-group { left: 7.6rem; min-width: 4.6rem; text-align: left; border-right: 1px solid var(--line-strong, var(--line)); }
++.eval-grid .eg-group .eval-note-input { width: 100%; font-size: 0.76rem; padding: 0.15rem 0.25rem; }
+ .eval-grid tbody tr:hover td { background: var(--today, var(--subtle)); }
+ .eval-grid tbody tr:hover .eg-sticky { background: var(--today, var(--subtle)); }
++.eval-grid .eg-group-row td { background: var(--chip); font-weight: 600; text-align: left; padding: 0.25rem 0.5rem; }
+ 
+ .eval-grid .eg-status { min-width: 4.2rem; }
+ .eval-grid .eg-locked { background: var(--ghost, var(--subtle)); color: var(--muted); font-size: 0.76rem; }
+@@ -749,6 +753,10 @@ thead th small { display: block; font-weight: 400; }
+ .eval-grid .eg-total { min-width: 3.2rem; }
+ .eval-grid .eg-note { min-width: 9rem; }
+ .eval-grid .eg-note .eval-note-input { width: 100%; font-size: 0.76rem; padding: 0.15rem 0.25rem; }
++.eval-column-dropdown { display: flex; flex-direction: column; gap: 0.2rem; }
++.eval-column-dropdown select { width: 100%; font-size: 0.76rem; padding: 0.1rem 0.2rem; }
++.eval-column-editor { margin-bottom: 0.4rem; }
++.eval-column-options-input { width: 100%; margin-top: 0.15rem; font-size: 0.82rem; }
+ .eval-grid tbody .eval-total { font-variant-numeric: tabular-nums; }
+ 
+ /* 채점표 화면: 왼쪽에 채점기준을 항상 띄워둔다(예전 사이드바 자리 활용) */
+@@ -820,6 +828,7 @@ thead th small { display: block; font-weight: 400; }
+   .eval-grid { font-size: 0.76rem; }
+   .eval-grid .eg-no { min-width: 3rem; }
+   .eval-grid .eg-name { left: 3rem; min-width: 3.6rem; }
++  .eval-grid .eg-group { left: 6.6rem; min-width: 3.6rem; }
+   .eval-grid .eg-note { min-width: 6rem; }
+   .eval-task-fallback { gap: 0.4rem; }
+ 
+diff --git a/src/components/ClassesView.tsx b/src/components/ClassesView.tsx
+index fd3a85e..07aa266 100644
+--- a/src/components/ClassesView.tsx
++++ b/src/components/ClassesView.tsx
+@@ -275,10 +275,23 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
+                   students: classroom.students.map(item => (item.id === student.id ? { ...item, name: event.target.value } : item)),
+                 })}
+               />
++              <input
++                className="student-group-input"
++                value={student.group || ''}
++                placeholder="모둠 (예: 1모둠)"
++                onChange={event => editClass(classroom.id, {
++                  students: classroom.students.map(item => (item.id === student.id ? { ...item, group: event.target.value } : item)),
++                })}
++              />
+               <button className="ghost-button" onClick={() => editClass(classroom.id, { students: classroom.students.filter(item => item.id !== student.id) })}>삭제</button>
+             </div>
+           ))}
+           {!classroom.students.length && <p className="hint">학생 명단이 비어 있습니다.</p>}
++          {classroom.students.length > 0 && (
++            <p className="hint">
++              모둠은 여기서 정해두는 기본값입니다. 특정 평가에서만 다르게 묶고 싶으면 그 평가의 채점표에서 따로 바꿀 수 있습니다.
++            </p>
++          )}
+         </div>
+       )}
+     </div>
+diff --git a/src/components/EvaluationsView.tsx b/src/components/EvaluationsView.tsx
+index 9726f9f..9abdd80 100644
+--- a/src/components/EvaluationsView.tsx
++++ b/src/components/EvaluationsView.tsx
+@@ -1,18 +1,22 @@
+ import { Fragment, useEffect, useRef, useState } from 'react'
+-import type { AppData, Evaluation, EvaluationItem, EvaluationTask, Session, TaskStatus } from '../types'
++import type { AppData, EvalColumn, Evaluation, EvaluationItem, EvaluationTask, Session, TaskStatus } from '../types'
+ import { buildLevels, makeId } from '../storage'
+ import {
+   classFillRate,
+   clampScore,
++  columnKey,
+   evalCounts,
+   evaluationClasses,
++  evaluationColumns,
+   evaluationTasks,
++  groupKey,
+   isAbsent,
+   isAbsentAnywhere,
+   maxTotal,
+   noteKey,
+   rawTotal,
+   scoreKey,
++  studentGroup,
+   taskMax,
+   taskScore,
+   taskStatusKey,
+@@ -32,16 +36,20 @@ type Props = {
+ 
+ export default function EvaluationsView({ data, update, sessions, jumpTo, onJumpHandled, onOpenSession }: Props) {
+   const deleteEvaluation = (evaluationId: string) => {
+-    if (!window.confirm('이 평가 영역을 삭제합니다. 여기에 입력한 점수·비고·응시 기록도 함께 지워지며 되돌릴 수 없습니다. 계속할까요?')) return
++    if (!window.confirm('이 평가 영역을 삭제합니다. 여기에 입력한 점수·비고·추가 열·응시 기록도 함께 지워지며 되돌릴 수 없습니다. 계속할까요?')) return
+     const prefix = `${evaluationId}:`
+     const scores = Object.fromEntries(Object.entries(data.scores).filter(([key]) => !key.startsWith(prefix)))
+     const evaluationNotes = Object.fromEntries(Object.entries(data.evaluationNotes).filter(([key]) => !key.startsWith(prefix)))
++    const columnValues = Object.fromEntries(Object.entries(data.columnValues).filter(([key]) => !key.startsWith(prefix)))
++    const evaluationGroups = Object.fromEntries(Object.entries(data.evaluationGroups).filter(([key]) => !key.startsWith(prefix)))
+     const taskStatus = Object.fromEntries(Object.entries(data.taskStatus).filter(([key]) => !key.startsWith(prefix)))
+     const lessons = data.lessons.map(item => (item.evaluationId === evaluationId ? { ...item, evaluationId: undefined } : item))
+     update({
+       evaluations: data.evaluations.filter(item => item.id !== evaluationId),
+       scores,
+       evaluationNotes,
++      columnValues,
++      evaluationGroups,
+       taskStatus,
+       lessons,
+     })
+@@ -270,10 +278,13 @@ function EvaluationEntry({
+   const [classId, setClassId] = useState(initialClassId || classes[0]?.id || '')
+   const [mode, setMode] = useState<'score' | 'settings'>('score')
+   const [onlyAbsent, setOnlyAbsent] = useState(false)
++  const [groupView, setGroupView] = useState(false)
++  const [groupSync, setGroupSync] = useState(false)
+   const classroom = classes.find(item => item.id === classId) || classes[0]
+   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+ 
+   const tasks = evaluationTasks(evaluation)
++  const columns = evaluationColumns(evaluation)
+   const max = maxTotal(evaluation)
+   const students = classroom?.students || []
+   const counts = evalCounts(data, evaluation, students)
+@@ -290,23 +301,45 @@ function EvaluationEntry({
+   }
+ 
+   const setScore = (itemId: string, maxScore: number, studentId: string, raw: string) => {
+-    const key = scoreKey(evaluation.id, itemId, studentId)
+     const scores = { ...data.scores }
+-    if (raw.trim() === '') {
+-      delete scores[key]
+-    } else {
++    const applyTo = (id: string) => {
++      const cellKey = scoreKey(evaluation.id, itemId, id)
++      if (raw.trim() === '') {
++        delete scores[cellKey]
++        return
++      }
+       const num = Number(raw)
+       if (Number.isNaN(num)) return
+-      scores[key] = clampScore(num, maxScore)
++      scores[cellKey] = clampScore(num, maxScore)
++    }
++    applyTo(studentId)
++    if (groupSync) {
++      const group = studentGroup(data, evaluation, students.find(item => item.id === studentId)!)
++      if (group) {
++        students.filter(item => item.id !== studentId && studentGroup(data, evaluation, item) === group)
++          .forEach(item => applyTo(item.id))
++      }
+     }
+     update({ scores })
+   }
+ 
+   const toggleScore = (itemId: string, studentId: string, value: number) => {
+     const key = scoreKey(evaluation.id, itemId, studentId)
++    const turningOff = data.scores[key] === value
+     const scores = { ...data.scores }
+-    if (scores[key] === value) delete scores[key]
+-    else scores[key] = value
++    const applyTo = (id: string) => {
++      const cellKey = scoreKey(evaluation.id, itemId, id)
++      if (turningOff) delete scores[cellKey]
++      else scores[cellKey] = value
++    }
++    applyTo(studentId)
++    if (groupSync) {
++      const group = studentGroup(data, evaluation, students.find(item => item.id === studentId)!)
++      if (group) {
++        students.filter(item => item.id !== studentId && studentGroup(data, evaluation, item) === group)
++          .forEach(item => applyTo(item.id))
++      }
++    }
+     update({ scores })
+   }
+ 
+@@ -314,6 +347,14 @@ function EvaluationEntry({
+     update({ evaluationNotes: { ...data.evaluationNotes, [noteKey(evaluation.id, studentId)]: value } })
+   }
+ 
++  const setColumnValue = (columnId: string, studentId: string, value: string) => {
++    update({ columnValues: { ...data.columnValues, [columnKey(evaluation.id, columnId, studentId)]: value } })
++  }
++
++  const setGroup = (studentId: string, value: string) => {
++    update({ evaluationGroups: { ...data.evaluationGroups, [groupKey(evaluation.id, studentId)]: value } })
++  }
++
+   /**
+    * 미응시 표시를 켜고 끈다. 기본은 응시이므로 미응시만 관리하면 된다.
+    * 미응시로 바꿀 때는 이미 넣어둔 요소 점수를 지운다(과제 점수로 대체되므로 남겨두면 헷갈린다).
+@@ -344,11 +385,28 @@ function EvaluationEntry({
+     onlyAbsent ? isAbsentAnywhere(data, evaluation, student.id) : true
+   ))
+ 
++  /** 모둠별로 묶어 볼 때만 정렬한다. 모둠 없는 학생은 뒤로 보낸다. */
++  const orderedStudents = groupView
++    ? [...visibleStudents].sort((left, right) => {
++        const groupLeft = studentGroup(data, evaluation, left)
++        const groupRight = studentGroup(data, evaluation, right)
++        if (groupLeft === groupRight) return left.number - right.number
++        if (!groupLeft) return 1
++        if (!groupRight) return -1
++        return groupLeft.localeCompare(groupRight, 'ko')
++      })
++    : visibleStudents
++
+   // 요소 칸에 몇 번째 열인지 붙여 키보드 이동을 만든다.
+   let columnCursor = 0
+   const columnIndex: Record<string, number> = {}
+   tasks.forEach(task => task.items.forEach(item => { columnIndex[item.id] = columnCursor++ }))
+ 
++  // 모둠 구분줄에 쓸 전체 열 개수(학번·성명·모둠 + 과제 칸들 + 합계·반영 + 커스텀 열 + 비고).
++  const totalColumnCount = 3
++    + tasks.reduce((sum, task) => sum + task.items.length + 1, 0)
++    + 2 + columns.length + 1
++
+   return (
+     <section className="panel eval-entry">
+       <div className="toolbar">
+@@ -434,6 +492,14 @@ function EvaluationEntry({
+                 <input type="checkbox" checked={onlyAbsent} onChange={event => setOnlyAbsent(event.target.checked)} />
+                 미응시자 보기
+               </label>
++              <label className="eval-only-absent">
++                <input type="checkbox" checked={groupView} onChange={event => setGroupView(event.target.checked)} />
++                모둠별로 묶어 보기
++              </label>
++              <label className="eval-only-absent" title="켜두면 한 학생 점수를 입력할 때 같은 모둠 학생 전원에게도 똑같이 들어갑니다.">
++                <input type="checkbox" checked={groupSync} onChange={event => setGroupSync(event.target.checked)} />
++                모둠 전체 동일 점수 적용
++              </label>
+             </div>
+           )}
+ 
+@@ -452,6 +518,7 @@ function EvaluationEntry({
+                   <tr>
+                     <th className="eg-sticky eg-no" rowSpan={2}>학번</th>
+                     <th className="eg-sticky eg-name" rowSpan={2}>성명</th>
++                    <th className="eg-sticky eg-group" rowSpan={2}>모둠</th>
+                     {tasks.map(task => (
+                       <th className="eg-task" colSpan={task.items.length + 1} key={task.id}>
+                         {task.name || '(과제명 미입력)'} <small>{taskMax(task)}</small>
+@@ -459,6 +526,9 @@ function EvaluationEntry({
+                     ))}
+                     <th className="eg-total" rowSpan={2}>합계<small>/{max}</small></th>
+                     <th className="eg-total" rowSpan={2}>반영<small>/{evaluation.weight}</small></th>
++                    {columns.map(column => (
++                      <th className="eg-note" rowSpan={2} key={column.id}>{column.label || '(이름 없음)'}</th>
++                    ))}
+                     <th className="eg-note" rowSpan={2}>비고</th>
+                   </tr>
+                   <tr>
+@@ -473,10 +543,28 @@ function EvaluationEntry({
+                   </tr>
+                 </thead>
+                 <tbody>
+-                  {visibleStudents.map((student, rowIndex) => (
+-                    <tr key={student.id}>
++                  {orderedStudents.map((student, rowIndex) => {
++                    const group = studentGroup(data, evaluation, student)
++                    const previousGroup = rowIndex > 0 ? studentGroup(data, evaluation, orderedStudents[rowIndex - 1]) : undefined
++                    const showGroupHeader = groupView && group && group !== previousGroup
++                    return (
++                    <Fragment key={student.id}>
++                    {showGroupHeader && (
++                      <tr className="eg-group-row">
++                        <td colSpan={totalColumnCount}>{group}</td>
++                      </tr>
++                    )}
++                    <tr>
+                       <td className="eg-sticky eg-no">{student.number}</td>
+                       <td className="eg-sticky eg-name">{student.name}</td>
++                      <td className="eg-sticky eg-group">
++                        <input
++                          className="eval-note-input"
++                          value={group}
++                          placeholder=""
++                          onChange={event => setGroup(student.id, event.target.value)}
++                        />
++                      </td>
+                       {tasks.map(task => {
+                         const absent = isAbsent(data, evaluation.id, task.id, student.id)
+                         return (
+@@ -538,6 +626,24 @@ function EvaluationEntry({
+                       })}
+                       <td className="eval-total">{rawTotal(data, evaluation, student.id)}</td>
+                       <td className="eval-total">{Math.round(weightedScore(data, evaluation, student.id) * 10) / 10}</td>
++                      {columns.map(column => (
++                        <td className="eg-note" key={column.id}>
++                          {column.options?.length ? (
++                            <ColumnDropdownCell
++                              options={column.options}
++                              value={data.columnValues[columnKey(evaluation.id, column.id, student.id)] || ''}
++                              onChange={value => setColumnValue(column.id, student.id, value)}
++                            />
++                          ) : (
++                            <input
++                              className="eval-note-input"
++                              value={data.columnValues[columnKey(evaluation.id, column.id, student.id)] || ''}
++                              placeholder=""
++                              onChange={event => setColumnValue(column.id, student.id, event.target.value)}
++                            />
++                          )}
++                        </td>
++                      ))}
+                       <td className="eg-note">
+                         <input
+                           className="eval-note-input"
+@@ -547,7 +653,9 @@ function EvaluationEntry({
+                         />
+                       </td>
+                     </tr>
+-                  ))}
++                    </Fragment>
++                    )
++                  })}
+                 </tbody>
+               </table>
+             </div>
+@@ -601,6 +709,8 @@ function EvaluationSettings({
+         <label>반영 비율(%)<input type="number" min={0} max={100} value={evaluation.weight} onChange={event => update({ weight: Number(event.target.value) })} /></label>
+       </div>
+ 
++      <EvalColumnsEditor evaluation={evaluation} update={update} />
++
+       <h3 className="eval-task-heading">평가 과제 <small>배점 합 {maxTotal(evaluation)}점</small></h3>
+       <p className="hint">
+         평가 영역 → <b>평가 과제</b> → 평가 요소 → 채점기준 순서입니다.
+@@ -631,6 +741,116 @@ function EvaluationSettings({
+   )
+ }
+ 
++/**
++ * 채점표에 붙는 커스텀 열(연주 악기, 연주곡 등) 관리.
++ * 값은 학생별 자유 텍스트이고, 여기서는 열 자체(이름)만 추가·수정·삭제한다.
++ */
++function EvalColumnsEditor({
++  evaluation,
++  update,
++}: {
++  evaluation: Evaluation
++  update: (change: Partial<Evaluation>) => void
++}) {
++  const columns = evaluationColumns(evaluation)
++  const [label, setLabel] = useState('')
++
++  const addColumn = () => {
++    if (!label.trim()) return
++    const column: EvalColumn = { id: makeId('col'), label: label.trim() }
++    update({ columns: [...columns, column] })
++    setLabel('')
++  }
++
++  const editColumn = (id: string, value: string) => {
++    update({ columns: columns.map(item => (item.id === id ? { ...item, label: value } : item)) })
++  }
++
++  const editOptions = (id: string, raw: string) => {
++    const options = raw.split(',').map(value => value.trim()).filter(Boolean)
++    update({ columns: columns.map(item => (item.id === id ? { ...item, options: options.length ? options : undefined } : item)) })
++  }
++
++  const removeColumn = (id: string) => {
++    if (!window.confirm('이 열을 지웁니다. 학생별로 적어둔 내용도 함께 지워지며 되돌릴 수 없습니다. 계속할까요?')) return
++    update({ columns: columns.filter(item => item.id !== id) })
++  }
++
++  return (
++    <div className="block">
++      <h3>채점표 추가 열</h3>
++      <p className="hint">
++        연주 악기·연주곡처럼 학생마다 다르게 적어둘 정보를 채점표에 열로 추가합니다. 점수에는 들어가지 않는 참고용 칸입니다.
++        선택지를 넣으면 드롭다운으로, 비워두면 자유 입력 칸으로 나옵니다.
++      </p>
++      {columns.map(column => (
++        <div className="eval-column-editor" key={column.id}>
++          <div className="inline-form">
++            <input value={column.label} placeholder="열 이름 (예: 연주 악기)" onChange={event => editColumn(column.id, event.target.value)} />
++            <button className="ghost-button danger-button" onClick={() => removeColumn(column.id)}>열 삭제</button>
++          </div>
++          <input
++            className="eval-column-options-input"
++            value={(column.options || []).join(', ')}
++            placeholder="선택지(쉼표로 구분, 비우면 자유 입력) — 예: 피아노, 바이올린, 우쿨렐레"
++            onChange={event => editOptions(column.id, event.target.value)}
++          />
++        </div>
++      ))}
++      <div className="inline-form">
++        <input
++          value={label}
++          placeholder="새 열 이름 (예: 연주곡)"
++          onChange={event => setLabel(event.target.value)}
++          onKeyDown={event => { if (event.key === 'Enter') addColumn() }}
++        />
++        <button className="primary-button" onClick={addColumn}>+ 열 추가</button>
++      </div>
++    </div>
++  )
++}
++
++/** 드롭다운 열의 셀. 목록에 없는 값이 이미 들어있으면(또는 "기타"를 고르면) 옆에 직접 입력 칸이 뜬다. */
++function ColumnDropdownCell({
++  options,
++  value,
++  onChange,
++}: {
++  options: string[]
++  value: string
++  onChange: (value: string) => void
++}) {
++  const [customMode, setCustomMode] = useState(value !== '' && !options.includes(value))
++
++  return (
++    <div className="eval-column-dropdown">
++      <select
++        value={customMode ? '__custom__' : value}
++        onChange={event => {
++          if (event.target.value === '__custom__') {
++            setCustomMode(true)
++            return
++          }
++          setCustomMode(false)
++          onChange(event.target.value)
++        }}
++      >
++        <option value="">선택</option>
++        {options.map(option => <option key={option} value={option}>{option}</option>)}
++        <option value="__custom__">기타(직접 입력)</option>
++      </select>
++      {customMode && (
++        <input
++          className="eval-note-input"
++          value={value}
++          placeholder="직접 입력"
++          onChange={event => onChange(event.target.value)}
++        />
++      )}
++    </div>
++  )
++}
++
+ function TaskEditor({
+   index,
+   task,
+diff --git a/src/evaluation.ts b/src/evaluation.ts
+index cb08e74..f20b9f7 100644
+--- a/src/evaluation.ts
++++ b/src/evaluation.ts
+@@ -1,4 +1,4 @@
+-import type { AppData, Evaluation, EvaluationTask, Session, Student, TaskStatus } from './types'
++import type { AppData, EvalColumn, Evaluation, EvaluationTask, Session, Student, TaskStatus } from './types'
+ import { effectiveLessonIds } from './schedule'
+ 
+ export function scoreKey(evaluationId: string, itemId: string, studentId: string) {
+@@ -9,6 +9,26 @@ export function noteKey(evaluationId: string, studentId: string) {
+   return `${evaluationId}:${studentId}`
+ }
+ 
++/** 커스텀 열(연주 악기·연주곡 등) 값 키. */
++export function columnKey(evaluationId: string, columnId: string, studentId: string) {
++  return `${evaluationId}:${columnId}:${studentId}`
++}
++
++/** 이 평가에 등록된 커스텀 열 목록. */
++export function evaluationColumns(evaluation: Evaluation): EvalColumn[] {
++  return evaluation.columns || []
++}
++
++/** 평가별 모둠 값 키. */
++export function groupKey(evaluationId: string, studentId: string) {
++  return `${evaluationId}:${studentId}`
++}
++
++/** 이 평가에서 학생의 모둠. 그 평가에서 따로 정해둔 값이 있으면 그걸 쓰고, 없으면 학급 명단의 기본 모둠을 쓴다. */
++export function studentGroup(data: AppData, evaluation: Evaluation, student: Student): string {
++  return data.evaluationGroups[groupKey(evaluation.id, student.id)] ?? student.group ?? ''
++}
++
+ /** 과제별 응시 상태 키. */
+ export function taskStatusKey(evaluationId: string, taskId: string, studentId: string) {
+   return `${evaluationId}:${taskId}:${studentId}`
+diff --git a/src/exportPrint.ts b/src/exportPrint.ts
+index c45155a..2b6f033 100644
+--- a/src/exportPrint.ts
++++ b/src/exportPrint.ts
+@@ -2,12 +2,15 @@ import * as XLSX from 'xlsx'
+ import type { AppData, Evaluation, Session } from './types'
+ import { coverage, sessionLabel } from './schedule'
+ import {
++  columnKey,
+   evaluationClasses,
++  evaluationColumns,
+   evaluationTasks,
+   isAbsent,
+   noteKey,
+   rawTotal,
+   scoreKey,
++  studentGroup,
+   taskScore,
+   weightedScore,
+ } from './evaluation'
+@@ -138,17 +141,18 @@ export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
+   if (!classes.length) return
+ 
+   const tasks = evaluationTasks(evaluation)
++  const columns = evaluationColumns(evaluation)
+   const workbook = XLSX.utils.book_new()
+   classes.forEach(classroom => {
+     // 과제 행 → 요소 행 순서로 두 줄짜리 머리글을 만든다(학교 채점표와 같은 모양).
+-    const taskRow: (string | number)[] = ['', '']
+-    const itemRow: (string | number)[] = ['학번', '성명']
++    const taskRow: (string | number)[] = ['', '', '']
++    const itemRow: (string | number)[] = ['학번', '성명', '모둠']
+     tasks.forEach(task => {
+       taskRow.push(task.name, ...task.items.map(() => ''))
+       itemRow.push('미응시', ...task.items.map(item => `${item.name}(${item.maxScore})`))
+     })
+-    taskRow.push('', '', '')
+-    itemRow.push('원점수', '반영점수', '비고')
++    taskRow.push('', '', ...columns.map(() => ''), '')
++    itemRow.push('원점수', '반영점수', ...columns.map(column => column.label || '(이름 없음)'), '비고')
+ 
+     const rows: (string | number)[][] = [
+       [`${evaluation.name} (${evaluation.weight}% 반영)`],
+@@ -156,7 +160,7 @@ export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
+       itemRow,
+     ]
+     classroom.students.forEach(student => {
+-      const row: (string | number)[] = [student.number, student.name]
++      const row: (string | number)[] = [student.number, student.name, studentGroup(data, evaluation, student)]
+       tasks.forEach(task => {
+         const absent = isAbsent(data, evaluation.id, task.id, student.id)
+         row.push(absent ? '미응시' : '')
+@@ -170,15 +174,16 @@ export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
+       row.push(
+         rawTotal(data, evaluation, student.id),
+         Math.round(weightedScore(data, evaluation, student.id) * 10) / 10,
++        ...columns.map(column => data.columnValues[columnKey(evaluation.id, column.id, student.id)] || ''),
+         data.evaluationNotes[noteKey(evaluation.id, student.id)] || '',
+       )
+       rows.push(row)
+     })
+     const sheet = XLSX.utils.aoa_to_sheet(rows)
+     sheet['!cols'] = [
+-      { wch: 8 }, { wch: 9 },
++      { wch: 8 }, { wch: 9 }, { wch: 8 },
+       ...tasks.flatMap(task => [{ wch: 7 }, ...task.items.map(() => ({ wch: 11 }))]),
+-      { wch: 8 }, { wch: 9 }, { wch: 24 },
++      { wch: 8 }, { wch: 9 }, ...columns.map(() => ({ wch: 16 })), { wch: 24 },
+     ]
+     XLSX.utils.book_append_sheet(workbook, sheet, classroom.name.slice(0, 31))
+   })
+diff --git a/src/storage.ts b/src/storage.ts
+index a52e5c0..180d966 100644
+--- a/src/storage.ts
++++ b/src/storage.ts
+@@ -1,7 +1,7 @@
+ import type { AppData, Evaluation, EvaluationItem, EvaluationTask, LessonType, EvaluationType, Subject, TaskStatus } from './types'
+ import { subjectColorsForTheme } from './theme'
+ 
+-export const APP_VERSION = 'v4.0'
++export const APP_VERSION = 'v4.1'
+ export const APP_NAME = '티칭플로'
+ export const APP_TAGLINE = 'TEACHING FLOW ― 수업의 흐름을 한눈에'
+ const STORAGE_KEY = 'class-schedule-planner-data'
+@@ -56,6 +56,8 @@ export function emptyData(): AppData {
+     evaluations: [],
+     scores: {},
+     evaluationNotes: {},
++    columnValues: {},
++    evaluationGroups: {},
+     taskStatus: {},
+   }
+ }
+@@ -177,6 +179,8 @@ function normalize(saved: Partial<AppData>): AppData {
+     evaluations,
+     scores: saved.scores || {},
+     evaluationNotes: saved.evaluationNotes || {},
++    columnValues: saved.columnValues || {},
++    evaluationGroups: saved.evaluationGroups || {},
+     taskStatus: migrateTaskStatus(evaluations, saved.taskStatus, saved.evalAttendance),
+   }
+ }
+diff --git a/src/types.ts b/src/types.ts
+index 5be42ef..a00e95f 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -20,6 +20,8 @@ export type Student = {
+   /** 학번. 선택과목 반은 원적반 학번(예: 2104)을 그대로 쓴다. 동명이인 구분의 기준이 된다. */
+   number: number
+   name: string
++  /** 기본 모둠. 학급 명단에서 정해두는 값으로, 평가별로 다르게 쓰고 싶으면 채점표에서 그 평가만 따로 바꿀 수 있다. */
++  group?: string
+ }
+ 
+ export type Classroom = {
+@@ -139,6 +141,13 @@ export type AppData = {
+   scores: Record<string, number>
+   /** 학생별 평가 비고. 키는 `${evaluationId}:${studentId}`. */
+   evaluationNotes: Record<string, string>
++  /** 평가별 커스텀 열(예: 연주 악기, 연주곡) 값. 키는 `${evaluationId}:${columnId}:${studentId}`. */
++  columnValues: Record<string, string>
++  /**
++   * 평가별 모둠 값. 키는 `${evaluationId}:${studentId}`.
++   * 없으면 학생의 기본 모둠(Student.group)을 쓴다. 여기 넣으면 그 평가에서만 다르게 쓴다.
++   */
++  evaluationGroups: Record<string, string>
+   /**
+    * 평가 과제별 미응시 표시. 키는 `${evaluationId}:${taskId}:${studentId}`.
+    * 키가 없으면 응시(기본). 점수를 넣으면 자동으로 응시로 본다.
+@@ -196,6 +205,14 @@ export type EvaluationTask = {
+  */
+ export type TaskStatus = 'absent'
+ 
++/** 채점표에 추가하는 커스텀 열. 예: "연주 악기", "연주곡" 처럼 학생마다 자유 텍스트로 적어두는 정보. */
++export type EvalColumn = {
++  id: string
++  label: string
++  /** 있으면 채점표에서 이 목록 중 하나를 고르는 드롭다운으로 바뀐다. 비어 있으면(또는 없으면) 자유 텍스트 입력. */
++  options?: string[]
++}
++
+ export type Evaluation = {
+   id: string
+   subjectId: string
+@@ -211,6 +228,8 @@ export type Evaluation = {
+   tasks: EvaluationTask[]
+   /** @deprecated tasks 로 옮겨졌다. 예전 데이터를 읽을 때만 쓴다. */
+   items?: EvaluationItem[]
++  /** 채점표에 추가한 커스텀 열(예: 연주 악기, 연주곡). 없으면 빈 배열로 취급. */
++  columns?: EvalColumn[]
+ }
+ 
+ /** 자동 배정된 한 번의 수업 시간 */

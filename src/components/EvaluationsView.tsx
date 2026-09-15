@@ -1,18 +1,22 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import type { AppData, Evaluation, EvaluationItem, EvaluationTask, Session, TaskStatus } from '../types'
+import type { AppData, EvalColumn, Evaluation, EvaluationItem, EvaluationTask, Session, TaskStatus } from '../types'
 import { buildLevels, makeId } from '../storage'
 import {
   classFillRate,
   clampScore,
+  columnKey,
   evalCounts,
   evaluationClasses,
+  evaluationColumns,
   evaluationTasks,
+  groupKey,
   isAbsent,
   isAbsentAnywhere,
   maxTotal,
   noteKey,
   rawTotal,
   scoreKey,
+  studentGroup,
   taskMax,
   taskScore,
   taskStatusKey,
@@ -32,16 +36,20 @@ type Props = {
 
 export default function EvaluationsView({ data, update, sessions, jumpTo, onJumpHandled, onOpenSession }: Props) {
   const deleteEvaluation = (evaluationId: string) => {
-    if (!window.confirm('이 평가 영역을 삭제합니다. 여기에 입력한 점수·비고·응시 기록도 함께 지워지며 되돌릴 수 없습니다. 계속할까요?')) return
+    if (!window.confirm('이 평가 영역을 삭제합니다. 여기에 입력한 점수·비고·추가 열·응시 기록도 함께 지워지며 되돌릴 수 없습니다. 계속할까요?')) return
     const prefix = `${evaluationId}:`
     const scores = Object.fromEntries(Object.entries(data.scores).filter(([key]) => !key.startsWith(prefix)))
     const evaluationNotes = Object.fromEntries(Object.entries(data.evaluationNotes).filter(([key]) => !key.startsWith(prefix)))
+    const columnValues = Object.fromEntries(Object.entries(data.columnValues).filter(([key]) => !key.startsWith(prefix)))
+    const evaluationGroups = Object.fromEntries(Object.entries(data.evaluationGroups).filter(([key]) => !key.startsWith(prefix)))
     const taskStatus = Object.fromEntries(Object.entries(data.taskStatus).filter(([key]) => !key.startsWith(prefix)))
     const lessons = data.lessons.map(item => (item.evaluationId === evaluationId ? { ...item, evaluationId: undefined } : item))
     update({
       evaluations: data.evaluations.filter(item => item.id !== evaluationId),
       scores,
       evaluationNotes,
+      columnValues,
+      evaluationGroups,
       taskStatus,
       lessons,
     })
@@ -270,10 +278,13 @@ function EvaluationEntry({
   const [classId, setClassId] = useState(initialClassId || classes[0]?.id || '')
   const [mode, setMode] = useState<'score' | 'settings'>('score')
   const [onlyAbsent, setOnlyAbsent] = useState(false)
+  const [groupView, setGroupView] = useState(false)
+  const [groupSync, setGroupSync] = useState(false)
   const classroom = classes.find(item => item.id === classId) || classes[0]
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   const tasks = evaluationTasks(evaluation)
+  const columns = evaluationColumns(evaluation)
   const max = maxTotal(evaluation)
   const students = classroom?.students || []
   const counts = evalCounts(data, evaluation, students)
@@ -290,28 +301,58 @@ function EvaluationEntry({
   }
 
   const setScore = (itemId: string, maxScore: number, studentId: string, raw: string) => {
-    const key = scoreKey(evaluation.id, itemId, studentId)
     const scores = { ...data.scores }
-    if (raw.trim() === '') {
-      delete scores[key]
-    } else {
+    const applyTo = (id: string) => {
+      const cellKey = scoreKey(evaluation.id, itemId, id)
+      if (raw.trim() === '') {
+        delete scores[cellKey]
+        return
+      }
       const num = Number(raw)
       if (Number.isNaN(num)) return
-      scores[key] = clampScore(num, maxScore)
+      scores[cellKey] = clampScore(num, maxScore)
+    }
+    applyTo(studentId)
+    if (groupSync) {
+      const group = studentGroup(data, evaluation, students.find(item => item.id === studentId)!)
+      if (group) {
+        students.filter(item => item.id !== studentId && studentGroup(data, evaluation, item) === group)
+          .forEach(item => applyTo(item.id))
+      }
     }
     update({ scores })
   }
 
   const toggleScore = (itemId: string, studentId: string, value: number) => {
     const key = scoreKey(evaluation.id, itemId, studentId)
+    const turningOff = data.scores[key] === value
     const scores = { ...data.scores }
-    if (scores[key] === value) delete scores[key]
-    else scores[key] = value
+    const applyTo = (id: string) => {
+      const cellKey = scoreKey(evaluation.id, itemId, id)
+      if (turningOff) delete scores[cellKey]
+      else scores[cellKey] = value
+    }
+    applyTo(studentId)
+    if (groupSync) {
+      const group = studentGroup(data, evaluation, students.find(item => item.id === studentId)!)
+      if (group) {
+        students.filter(item => item.id !== studentId && studentGroup(data, evaluation, item) === group)
+          .forEach(item => applyTo(item.id))
+      }
+    }
     update({ scores })
   }
 
   const setNote = (studentId: string, value: string) => {
     update({ evaluationNotes: { ...data.evaluationNotes, [noteKey(evaluation.id, studentId)]: value } })
+  }
+
+  const setColumnValue = (columnId: string, studentId: string, value: string) => {
+    update({ columnValues: { ...data.columnValues, [columnKey(evaluation.id, columnId, studentId)]: value } })
+  }
+
+  const setGroup = (studentId: string, value: string) => {
+    update({ evaluationGroups: { ...data.evaluationGroups, [groupKey(evaluation.id, studentId)]: value } })
   }
 
   /**
@@ -344,10 +385,27 @@ function EvaluationEntry({
     onlyAbsent ? isAbsentAnywhere(data, evaluation, student.id) : true
   ))
 
+  /** 모둠별로 묶어 볼 때만 정렬한다. 모둠 없는 학생은 뒤로 보낸다. */
+  const orderedStudents = groupView
+    ? [...visibleStudents].sort((left, right) => {
+        const groupLeft = studentGroup(data, evaluation, left)
+        const groupRight = studentGroup(data, evaluation, right)
+        if (groupLeft === groupRight) return left.number - right.number
+        if (!groupLeft) return 1
+        if (!groupRight) return -1
+        return groupLeft.localeCompare(groupRight, 'ko')
+      })
+    : visibleStudents
+
   // 요소 칸에 몇 번째 열인지 붙여 키보드 이동을 만든다.
   let columnCursor = 0
   const columnIndex: Record<string, number> = {}
   tasks.forEach(task => task.items.forEach(item => { columnIndex[item.id] = columnCursor++ }))
+
+  // 모둠 구분줄에 쓸 전체 열 개수(학번·성명·모둠 + 과제 칸들 + 합계·반영 + 커스텀 열 + 비고).
+  const totalColumnCount = 3
+    + tasks.reduce((sum, task) => sum + task.items.length + 1, 0)
+    + 2 + columns.length + 1
 
   return (
     <section className="panel eval-entry">
@@ -434,6 +492,14 @@ function EvaluationEntry({
                 <input type="checkbox" checked={onlyAbsent} onChange={event => setOnlyAbsent(event.target.checked)} />
                 미응시자 보기
               </label>
+              <label className="eval-only-absent">
+                <input type="checkbox" checked={groupView} onChange={event => setGroupView(event.target.checked)} />
+                모둠별로 묶어 보기
+              </label>
+              <label className="eval-only-absent" title="켜두면 한 학생 점수를 입력할 때 같은 모둠 학생 전원에게도 똑같이 들어갑니다.">
+                <input type="checkbox" checked={groupSync} onChange={event => setGroupSync(event.target.checked)} />
+                모둠 전체 동일 점수 적용
+              </label>
             </div>
           )}
 
@@ -452,6 +518,7 @@ function EvaluationEntry({
                   <tr>
                     <th className="eg-sticky eg-no" rowSpan={2}>학번</th>
                     <th className="eg-sticky eg-name" rowSpan={2}>성명</th>
+                    <th className="eg-sticky eg-group" rowSpan={2}>모둠</th>
                     {tasks.map(task => (
                       <th className="eg-task" colSpan={task.items.length + 1} key={task.id}>
                         {task.name || '(과제명 미입력)'} <small>{taskMax(task)}</small>
@@ -459,6 +526,9 @@ function EvaluationEntry({
                     ))}
                     <th className="eg-total" rowSpan={2}>합계<small>/{max}</small></th>
                     <th className="eg-total" rowSpan={2}>반영<small>/{evaluation.weight}</small></th>
+                    {columns.map(column => (
+                      <th className="eg-note" rowSpan={2} key={column.id}>{column.label || '(이름 없음)'}</th>
+                    ))}
                     <th className="eg-note" rowSpan={2}>비고</th>
                   </tr>
                   <tr>
@@ -473,10 +543,28 @@ function EvaluationEntry({
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleStudents.map((student, rowIndex) => (
-                    <tr key={student.id}>
+                  {orderedStudents.map((student, rowIndex) => {
+                    const group = studentGroup(data, evaluation, student)
+                    const previousGroup = rowIndex > 0 ? studentGroup(data, evaluation, orderedStudents[rowIndex - 1]) : undefined
+                    const showGroupHeader = groupView && group && group !== previousGroup
+                    return (
+                    <Fragment key={student.id}>
+                    {showGroupHeader && (
+                      <tr className="eg-group-row">
+                        <td colSpan={totalColumnCount}>{group}</td>
+                      </tr>
+                    )}
+                    <tr>
                       <td className="eg-sticky eg-no">{student.number}</td>
                       <td className="eg-sticky eg-name">{student.name}</td>
+                      <td className="eg-sticky eg-group">
+                        <input
+                          className="eval-note-input"
+                          value={group}
+                          placeholder=""
+                          onChange={event => setGroup(student.id, event.target.value)}
+                        />
+                      </td>
                       {tasks.map(task => {
                         const absent = isAbsent(data, evaluation.id, task.id, student.id)
                         return (
@@ -538,6 +626,24 @@ function EvaluationEntry({
                       })}
                       <td className="eval-total">{rawTotal(data, evaluation, student.id)}</td>
                       <td className="eval-total">{Math.round(weightedScore(data, evaluation, student.id) * 10) / 10}</td>
+                      {columns.map(column => (
+                        <td className="eg-note" key={column.id}>
+                          {column.options?.length ? (
+                            <ColumnDropdownCell
+                              options={column.options}
+                              value={data.columnValues[columnKey(evaluation.id, column.id, student.id)] || ''}
+                              onChange={value => setColumnValue(column.id, student.id, value)}
+                            />
+                          ) : (
+                            <input
+                              className="eval-note-input"
+                              value={data.columnValues[columnKey(evaluation.id, column.id, student.id)] || ''}
+                              placeholder=""
+                              onChange={event => setColumnValue(column.id, student.id, event.target.value)}
+                            />
+                          )}
+                        </td>
+                      ))}
                       <td className="eg-note">
                         <input
                           className="eval-note-input"
@@ -547,7 +653,9 @@ function EvaluationEntry({
                         />
                       </td>
                     </tr>
-                  ))}
+                    </Fragment>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -601,6 +709,8 @@ function EvaluationSettings({
         <label>반영 비율(%)<input type="number" min={0} max={100} value={evaluation.weight} onChange={event => update({ weight: Number(event.target.value) })} /></label>
       </div>
 
+      <EvalColumnsEditor evaluation={evaluation} update={update} />
+
       <h3 className="eval-task-heading">평가 과제 <small>배점 합 {maxTotal(evaluation)}점</small></h3>
       <p className="hint">
         평가 영역 → <b>평가 과제</b> → 평가 요소 → 채점기준 순서입니다.
@@ -627,6 +737,116 @@ function EvaluationSettings({
         <button className="primary-button" onClick={addTask}>+ 평가 과제 추가</button>
       </div>
       {!tasks.length && <p className="hint">평가 과제를 하나 이상 추가해야 점수를 입력할 수 있습니다.</p>}
+    </div>
+  )
+}
+
+/**
+ * 채점표에 붙는 커스텀 열(연주 악기, 연주곡 등) 관리.
+ * 값은 학생별 자유 텍스트이고, 여기서는 열 자체(이름)만 추가·수정·삭제한다.
+ */
+function EvalColumnsEditor({
+  evaluation,
+  update,
+}: {
+  evaluation: Evaluation
+  update: (change: Partial<Evaluation>) => void
+}) {
+  const columns = evaluationColumns(evaluation)
+  const [label, setLabel] = useState('')
+
+  const addColumn = () => {
+    if (!label.trim()) return
+    const column: EvalColumn = { id: makeId('col'), label: label.trim() }
+    update({ columns: [...columns, column] })
+    setLabel('')
+  }
+
+  const editColumn = (id: string, value: string) => {
+    update({ columns: columns.map(item => (item.id === id ? { ...item, label: value } : item)) })
+  }
+
+  const editOptions = (id: string, raw: string) => {
+    const options = raw.split(',').map(value => value.trim()).filter(Boolean)
+    update({ columns: columns.map(item => (item.id === id ? { ...item, options: options.length ? options : undefined } : item)) })
+  }
+
+  const removeColumn = (id: string) => {
+    if (!window.confirm('이 열을 지웁니다. 학생별로 적어둔 내용도 함께 지워지며 되돌릴 수 없습니다. 계속할까요?')) return
+    update({ columns: columns.filter(item => item.id !== id) })
+  }
+
+  return (
+    <div className="block">
+      <h3>채점표 추가 열</h3>
+      <p className="hint">
+        연주 악기·연주곡처럼 학생마다 다르게 적어둘 정보를 채점표에 열로 추가합니다. 점수에는 들어가지 않는 참고용 칸입니다.
+        선택지를 넣으면 드롭다운으로, 비워두면 자유 입력 칸으로 나옵니다.
+      </p>
+      {columns.map(column => (
+        <div className="eval-column-editor" key={column.id}>
+          <div className="inline-form">
+            <input value={column.label} placeholder="열 이름 (예: 연주 악기)" onChange={event => editColumn(column.id, event.target.value)} />
+            <button className="ghost-button danger-button" onClick={() => removeColumn(column.id)}>열 삭제</button>
+          </div>
+          <input
+            className="eval-column-options-input"
+            value={(column.options || []).join(', ')}
+            placeholder="선택지(쉼표로 구분, 비우면 자유 입력) — 예: 피아노, 바이올린, 우쿨렐레"
+            onChange={event => editOptions(column.id, event.target.value)}
+          />
+        </div>
+      ))}
+      <div className="inline-form">
+        <input
+          value={label}
+          placeholder="새 열 이름 (예: 연주곡)"
+          onChange={event => setLabel(event.target.value)}
+          onKeyDown={event => { if (event.key === 'Enter') addColumn() }}
+        />
+        <button className="primary-button" onClick={addColumn}>+ 열 추가</button>
+      </div>
+    </div>
+  )
+}
+
+/** 드롭다운 열의 셀. 목록에 없는 값이 이미 들어있으면(또는 "기타"를 고르면) 옆에 직접 입력 칸이 뜬다. */
+function ColumnDropdownCell({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[]
+  value: string
+  onChange: (value: string) => void
+}) {
+  const [customMode, setCustomMode] = useState(value !== '' && !options.includes(value))
+
+  return (
+    <div className="eval-column-dropdown">
+      <select
+        value={customMode ? '__custom__' : value}
+        onChange={event => {
+          if (event.target.value === '__custom__') {
+            setCustomMode(true)
+            return
+          }
+          setCustomMode(false)
+          onChange(event.target.value)
+        }}
+      >
+        <option value="">선택</option>
+        {options.map(option => <option key={option} value={option}>{option}</option>)}
+        <option value="__custom__">기타(직접 입력)</option>
+      </select>
+      {customMode && (
+        <input
+          className="eval-note-input"
+          value={value}
+          placeholder="직접 입력"
+          onChange={event => onChange(event.target.value)}
+        />
+      )}
     </div>
   )
 }

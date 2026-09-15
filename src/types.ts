@@ -20,6 +20,8 @@ export type Student = {
   /** 학번. 선택과목 반은 원적반 학번(예: 2104)을 그대로 쓴다. 동명이인 구분의 기준이 된다. */
   number: number
   name: string
+  /** 기본 모둠. 학급 명단에서 정해두는 값으로, 평가별로 다르게 쓰고 싶으면 채점표에서 그 평가만 따로 바꿀 수 있다. */
+  group?: string
 }
 
 export type Classroom = {
@@ -139,6 +141,13 @@ export type AppData = {
   scores: Record<string, number>
   /** 학생별 평가 비고. 키는 `${evaluationId}:${studentId}`. */
   evaluationNotes: Record<string, string>
+  /** 평가별 커스텀 열(예: 연주 악기, 연주곡) 값. 키는 `${evaluationId}:${columnId}:${studentId}`. */
+  columnValues: Record<string, string>
+  /**
+   * 평가별 모둠 값. 키는 `${evaluationId}:${studentId}`.
+   * 없으면 학생의 기본 모둠(Student.group)을 쓴다. 여기 넣으면 그 평가에서만 다르게 쓴다.
+   */
+  evaluationGroups: Record<string, string>
   /**
    * 평가 과제별 미응시 표시. 키는 `${evaluationId}:${taskId}:${studentId}`.
    * 키가 없으면 응시(기본). 점수를 넣으면 자동으로 응시로 본다.
@@ -196,6 +205,14 @@ export type EvaluationTask = {
  */
 export type TaskStatus = 'absent'
 
+/** 채점표에 추가하는 커스텀 열. 예: "연주 악기", "연주곡" 처럼 학생마다 자유 텍스트로 적어두는 정보. */
+export type EvalColumn = {
+  id: string
+  label: string
+  /** 있으면 채점표에서 이 목록 중 하나를 고르는 드롭다운으로 바뀐다. 비어 있으면(또는 없으면) 자유 텍스트 입력. */
+  options?: string[]
+}
+
 export type Evaluation = {
   id: string
   subjectId: string
@@ -211,6 +228,8 @@ export type Evaluation = {
   tasks: EvaluationTask[]
   /** @deprecated tasks 로 옮겨졌다. 예전 데이터를 읽을 때만 쓴다. */
   items?: EvaluationItem[]
+  /** 채점표에 추가한 커스텀 열(예: 연주 악기, 연주곡). 없으면 빈 배열로 취급. */
+  columns?: EvalColumn[]
 }
 
 /** 자동 배정된 한 번의 수업 시간 */

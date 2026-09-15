@@ -1,4 +1,4 @@
-import type { AppData, Evaluation, EvaluationTask, Session, Student, TaskStatus } from './types'
+import type { AppData, EvalColumn, Evaluation, EvaluationTask, Session, Student, TaskStatus } from './types'
 import { effectiveLessonIds } from './schedule'
 
 export function scoreKey(evaluationId: string, itemId: string, studentId: string) {
@@ -7,6 +7,26 @@ export function scoreKey(evaluationId: string, itemId: string, studentId: string
 
 export function noteKey(evaluationId: string, studentId: string) {
   return `${evaluationId}:${studentId}`
+}
+
+/** 커스텀 열(연주 악기·연주곡 등) 값 키. */
+export function columnKey(evaluationId: string, columnId: string, studentId: string) {
+  return `${evaluationId}:${columnId}:${studentId}`
+}
+
+/** 이 평가에 등록된 커스텀 열 목록. */
+export function evaluationColumns(evaluation: Evaluation): EvalColumn[] {
+  return evaluation.columns || []
+}
+
+/** 평가별 모둠 값 키. */
+export function groupKey(evaluationId: string, studentId: string) {
+  return `${evaluationId}:${studentId}`
+}
+
+/** 이 평가에서 학생의 모둠. 그 평가에서 따로 정해둔 값이 있으면 그걸 쓰고, 없으면 학급 명단의 기본 모둠을 쓴다. */
+export function studentGroup(data: AppData, evaluation: Evaluation, student: Student): string {
+  return data.evaluationGroups[groupKey(evaluation.id, student.id)] ?? student.group ?? ''
 }
 
 /** 과제별 응시 상태 키. */

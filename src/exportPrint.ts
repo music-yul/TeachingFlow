@@ -2,12 +2,15 @@ import * as XLSX from 'xlsx'
 import type { AppData, Evaluation, Session } from './types'
 import { coverage, sessionLabel } from './schedule'
 import {
+  columnKey,
   evaluationClasses,
+  evaluationColumns,
   evaluationTasks,
   isAbsent,
   noteKey,
   rawTotal,
   scoreKey,
+  studentGroup,
   taskScore,
   weightedScore,
 } from './evaluation'
@@ -138,17 +141,18 @@ export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
   if (!classes.length) return
 
   const tasks = evaluationTasks(evaluation)
+  const columns = evaluationColumns(evaluation)
   const workbook = XLSX.utils.book_new()
   classes.forEach(classroom => {
     // 과제 행 → 요소 행 순서로 두 줄짜리 머리글을 만든다(학교 채점표와 같은 모양).
-    const taskRow: (string | number)[] = ['', '']
-    const itemRow: (string | number)[] = ['학번', '성명']
+    const taskRow: (string | number)[] = ['', '', '']
+    const itemRow: (string | number)[] = ['학번', '성명', '모둠']
     tasks.forEach(task => {
       taskRow.push(task.name, ...task.items.map(() => ''))
       itemRow.push('미응시', ...task.items.map(item => `${item.name}(${item.maxScore})`))
     })
-    taskRow.push('', '', '')
-    itemRow.push('원점수', '반영점수', '비고')
+    taskRow.push('', '', ...columns.map(() => ''), '')
+    itemRow.push('원점수', '반영점수', ...columns.map(column => column.label || '(이름 없음)'), '비고')
 
     const rows: (string | number)[][] = [
       [`${evaluation.name} (${evaluation.weight}% 반영)`],
@@ -156,7 +160,7 @@ export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
       itemRow,
     ]
     classroom.students.forEach(student => {
-      const row: (string | number)[] = [student.number, student.name]
+      const row: (string | number)[] = [student.number, student.name, studentGroup(data, evaluation, student)]
       tasks.forEach(task => {
         const absent = isAbsent(data, evaluation.id, task.id, student.id)
         row.push(absent ? '미응시' : '')
@@ -170,15 +174,16 @@ export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
       row.push(
         rawTotal(data, evaluation, student.id),
         Math.round(weightedScore(data, evaluation, student.id) * 10) / 10,
+        ...columns.map(column => data.columnValues[columnKey(evaluation.id, column.id, student.id)] || ''),
         data.evaluationNotes[noteKey(evaluation.id, student.id)] || '',
       )
       rows.push(row)
     })
     const sheet = XLSX.utils.aoa_to_sheet(rows)
     sheet['!cols'] = [
-      { wch: 8 }, { wch: 9 },
+      { wch: 8 }, { wch: 9 }, { wch: 8 },
       ...tasks.flatMap(task => [{ wch: 7 }, ...task.items.map(() => ({ wch: 11 }))]),
-      { wch: 8 }, { wch: 9 }, { wch: 24 },
+      { wch: 8 }, { wch: 9 }, ...columns.map(() => ({ wch: 16 })), { wch: 24 },
     ]
     XLSX.utils.book_append_sheet(workbook, sheet, classroom.name.slice(0, 31))
   })
