@@ -195,8 +195,8 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .calendar-day.outside { background: var(--subtle); color: #b6bcc7; }
 .calendar-day.today { background: var(--today); }
 .calendar-day-head { display: flex; align-items: center; justify-content: space-between; }
-.calendar-day-head > strong { font-size: 0.74rem; }
-.calendar-day-actions { display: flex; align-items: center; gap: 0.2rem; }
+.calendar-day-head strong { font-size: 0.74rem; }
+.calendar-day-date { display: flex; align-items: center; gap: 0.15rem; }
 .day-note-add {
   background: none; border: none; color: var(--muted); font-size: 0.85rem; line-height: 1;
   padding: 0 0.15rem; opacity: 0.45;
@@ -514,8 +514,8 @@ thead th small { display: block; font-weight: 400; }
 
 /* ---------- 공휴일 ---------- */
 
-.calendar-day.holiday .calendar-day-head > strong { color: var(--danger); }
-.calendar-day.saturday .calendar-day-head > strong { color: #4a72b8; }
+.calendar-day.holiday .calendar-day-head strong { color: var(--danger); }
+.calendar-day.saturday .calendar-day-head strong { color: #4a72b8; }
 .calendar-event.holiday-tag { background: #fdecec; color: var(--danger); font-weight: 600; }
 .switch-row { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.6rem; font-size: 0.85rem; color: var(--muted); }
 .switch-row input { margin: 0; }
