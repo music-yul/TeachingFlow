@@ -196,6 +196,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .calendar-day.today { background: var(--today); }
 .calendar-day-head { display: flex; align-items: center; justify-content: space-between; }
 .calendar-day-head > strong { font-size: 0.74rem; }
+.calendar-day-actions { display: flex; align-items: center; gap: 0.2rem; }
 .day-note-add {
   background: none; border: none; color: var(--muted); font-size: 0.85rem; line-height: 1;
   padding: 0 0.15rem; opacity: 0.45;

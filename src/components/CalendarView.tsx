@@ -71,14 +71,16 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
             <div className={classNames.join(' ')} key={key}>
               <div className="calendar-day-head">
                 <strong>{date.getDate()}</strong>
-                <button
-                  className="day-note-add no-print"
-                  title="이 날짜에 보강·이동 수업 추가"
-                  onClick={() => setExtraDate(key)}
-                >
-                  📚+
-                </button>
-                <button className="day-note-add no-print" title="이 날짜에 메모 추가" onClick={() => setNoteDate(key)}>+</button>
+                <div className="calendar-day-actions">
+                  <button
+                    className="day-note-add no-print"
+                    title="수업 시간표 변경"
+                    onClick={() => setExtraDate(key)}
+                  >
+                    🔄
+                  </button>
+                  <button className="day-note-add no-print" title="이 날짜에 메모 추가" onClick={() => setNoteDate(key)}>📝</button>
+                </div>
               </div>
               {holiday && <div className="calendar-event holiday-tag">{holiday}</div>}
               {dayEvents.map(event => (
@@ -204,16 +206,19 @@ function AddExtraSessionModal({
       <section className="modal narrow" onClick={event => event.stopPropagation()}>
         <header className="modal-head">
           <div>
-            <p className="eyebrow">보강·이동 수업 추가</p>
+            <p className="eyebrow">수업 시간표 변경</p>
             <h2>{date}</h2>
           </div>
           <button className="ghost-button" onClick={onClose}>닫기</button>
         </header>
         <div className="modal-body">
           <p className="hint">
-            정규 시간표에 없는 이 날짜만의 일정을 추가합니다. 조퇴·지각으로 다른 교시로 옮겨간 수업이라면,
-            여기서 옮겨간 교시에 하나 추가한 뒤 <b>원래 교시 수업</b>은 열어서 &lsquo;수업 없음&rsquo;으로 바꾸고
-            사유(예: &ldquo;2교시로 이동&rdquo;)를 적어 두면 됩니다.
+            정규 시간표와 다른 수업이 있는 경우 해당 날짜의 시간표를 변경합니다.<br />
+            보강 수업을 추가하거나, 다른 교시로 이동한 수업을 등록할 수 있습니다.
+          </p>
+          <p className="hint">
+            💡 수업을 다른 교시로 옮긴 경우<br />
+            이동한 교시에 수업을 추가하고, 원래 교시는 &lsquo;수업 없음&rsquo;으로 변경해 주세요.
           </p>
           <div className="mode-picker">
             <button className={kind === 'class' ? 'mode on' : 'mode'} onClick={() => setKind('class')}>
@@ -222,7 +227,7 @@ function AddExtraSessionModal({
             </button>
             <button className={kind === 'personal' ? 'mode on' : 'mode'} onClick={() => setKind('personal')}>
               <b>개인 일정</b>
-              <small>다른 선생님 수업 보강, 회의 등 — 학급에 안 걸리는 시간</small>
+              <small>다른 선생님 수업 보강, 회의 등 학급에 속하지 않는 일정</small>
             </button>
           </div>
 
