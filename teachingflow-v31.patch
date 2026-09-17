@@ -1,0 +1,363 @@
+diff --git a/src/App.css b/src/App.css
+index 61dd36c..a5335fc 100644
+--- a/src/App.css
++++ b/src/App.css
+@@ -176,6 +176,8 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
+ 
+ .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.6rem; }
+ .field-grid label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; color: var(--muted); }
++.adjustment-kind-picker { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.6rem; }
++.adjustment-kind-picker select { color: var(--ink); }
+ .field-grid label.eval-checkbox-field { flex-direction: row; align-items: center; gap: 0.4rem; }
+ .field-grid input { color: var(--ink); }
+ 
+diff --git a/src/components/CalendarView.tsx b/src/components/CalendarView.tsx
+index 64e75e3..4a7ae6c 100644
+--- a/src/components/CalendarView.tsx
++++ b/src/components/CalendarView.tsx
+@@ -117,8 +117,8 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+                   >
+                     <span className="cl-left">
+                       {item.period}교시 {classroom?.name}
+-                      {item.swappedFrom && <em className="swap-tag">대체</em>}
+-                      {item.extra && <em className="swap-tag" title={item.extraNote}>{item.extraNote || '추가'}</em>}
++                      {item.swappedFrom && <em className="swap-tag">요일대체</em>}
++                      {item.extra && <em className="swap-tag" title={item.extraNote}>{item.extraNote || '보강'}</em>}
+                     </span>
+                     <span className="cl-right">{hasEvaluation && '🎯 '}{sessionLabel(data, item)}</span>
+                   </button>
+@@ -133,7 +133,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+                 >
+                   <span className="cl-left">
+                     {block.period}교시
+-                    <em className="swap-tag">개인 일정</em>
++                    <em className="swap-tag">대강</em>
+                   </span>
+                   <span className="cl-right">{block.title}</span>
+                 </button>
+@@ -153,9 +153,10 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+       )}
+ 
+       {extraDate && (
+-        <AddExtraSessionModal
++        <AdjustmentModal
+           date={extraDate}
+           data={data}
++          todaySessions={sessions.filter(item => item.date === extraDate && !item.cancelled && item.mode !== 'none')}
+           update={update}
+           onClose={() => setExtraDate(null)}
+           onCreated={id => { setExtraDate(null); onSelect(id) }}
+@@ -163,9 +164,10 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+       )}
+ 
+       {editBlock && (
+-        <AddExtraSessionModal
++        <AdjustmentModal
+           date={editBlock.date}
+           data={data}
++          todaySessions={[]}
+           update={update}
+           editBlock={editBlock}
+           onClose={() => setEditBlock(null)}
+@@ -176,9 +178,25 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+   )
+ }
+ 
+-function AddExtraSessionModal({
++type AdjustmentKind = 'makeup' | 'covering' | 'moved' | 'swapped'
++
++const KIND_OPTIONS: { id: AdjustmentKind; label: string }[] = [
++  { id: 'makeup', label: '보강' },
++  { id: 'covering', label: '대강' },
++  { id: 'moved', label: '이동' },
++  { id: 'swapped', label: '교체' },
++]
++
++function sessionOptionLabel(data: AppData, session: Session) {
++  const classroom = data.classes.find(item => item.id === session.classId)
++  const subject = data.subjects.find(item => item.id === session.subjectId)
++  return `${session.period}교시 · ${subject?.name ? `${subject.name} ` : ''}${classroom?.name || ''}`
++}
++
++function AdjustmentModal({
+   date,
+   data,
++  todaySessions,
+   update,
+   onClose,
+   onCreated,
+@@ -186,17 +204,23 @@ function AddExtraSessionModal({
+ }: {
+   date: string
+   data: AppData
++  todaySessions: Session[]
+   update: (change: Partial<AppData>) => void
+   onClose: () => void
+   onCreated: (id: string) => void
+   editBlock?: PersonalBlock
+ }) {
+   const active = data.classes.filter(item => !item.archived)
+-  const [kind, setKind] = useState<'class' | 'personal'>('class')
++  // 대강(개인 일정) 수정 화면에서는 유형을 고를 필요가 없다 — 항상 대강이다.
++  const [kind, setKind] = useState<AdjustmentKind>('makeup')
+   const [classId, setClassId] = useState(active[0]?.id || '')
+   const [period, setPeriod] = useState(editBlock?.period ?? 1)
+-  const [note, setNote] = useState(editBlock?.note ?? '보강')
++  const [note, setNote] = useState(editBlock?.note ?? '')
+   const [title, setTitle] = useState(editBlock?.title ?? '')
++  const [sourceId, setSourceId] = useState(todaySessions[0]?.id || '')
++  const [newPeriod, setNewPeriod] = useState(1)
++  const [sessionAId, setSessionAId] = useState(todaySessions[0]?.id || '')
++  const [sessionBId, setSessionBId] = useState(todaySessions[1]?.id || '')
+ 
+   const create = () => {
+     if (editBlock) {
+@@ -209,32 +233,93 @@ function AddExtraSessionModal({
+       onClose()
+       return
+     }
+-    if (kind === 'class') {
++
++    if (kind === 'makeup') {
+       if (!classId) return
+       const id = makeId('extra')
+       update({ extraSessions: [...data.extraSessions, { id, date, classId, period, note: note.trim() || undefined }] })
+       onCreated(id)
+       return
+     }
+-    if (!title.trim()) return
+-    const id = makeId('block')
+-    update({ personalBlocks: [...data.personalBlocks, { id, date, period, title: title.trim(), note: note.trim() || undefined }] })
++
++    if (kind === 'covering') {
++      if (!title.trim()) return
++      const id = makeId('block')
++      update({ personalBlocks: [...data.personalBlocks, { id, date, period, title: title.trim(), note: note.trim() || undefined }] })
++      onClose()
++      return
++    }
++
++    if (kind === 'moved') {
++      const source = todaySessions.find(item => item.id === sourceId)
++      if (!source || !newPeriod) return
++      const overrides = {
++        ...data.overrides,
++        [source.id]: { ...(data.overrides[source.id] || {}), mode: 'none' as const, label: note.trim() || `${newPeriod}교시로 이동` },
++      }
++      const extra = {
++        id: makeId('extra'),
++        date,
++        classId: source.classId,
++        period: newPeriod,
++        note: note.trim() || `${source.period}교시에서 이동`,
++      }
++      update({ overrides, extraSessions: [...data.extraSessions, extra] })
++      onClose()
++      return
++    }
++
++    // kind === 'swapped'
++    const a = todaySessions.find(item => item.id === sessionAId)
++    const b = todaySessions.find(item => item.id === sessionBId)
++    if (!a || !b || a.id === b.id) return
++    const overrides = {
++      ...data.overrides,
++      [a.id]: { ...(data.overrides[a.id] || {}), mode: 'none' as const, label: note.trim() || `${b.period}교시와 교체` },
++      [b.id]: { ...(data.overrides[b.id] || {}), mode: 'none' as const, label: note.trim() || `${a.period}교시와 교체` },
++    }
++    const extraSessions = [
++      ...data.extraSessions,
++      { id: makeId('extra'), date, classId: a.classId, period: b.period, note: note.trim() || `${a.period}교시와 교체` },
++      { id: makeId('extra'), date, classId: b.classId, period: a.period, note: note.trim() || `${b.period}교시와 교체` },
++    ]
++    update({ overrides, extraSessions })
+     onClose()
+   }
+ 
+   const remove = () => {
+     if (!editBlock) return
+-    if (!window.confirm(`"${editBlock.title}"(${editBlock.period}교시) 개인 일정을 삭제할까요?`)) return
++    if (!window.confirm(`"${editBlock.title}"(${editBlock.period}교시) 일정을 삭제할까요?`)) return
+     update({ personalBlocks: data.personalBlocks.filter(item => item.id !== editBlock.id) })
+     onClose()
+   }
+ 
++  const disabled = editBlock
++    ? !title.trim()
++    : kind === 'makeup'
++      ? !classId
++      : kind === 'covering'
++        ? !title.trim()
++        : kind === 'moved'
++          ? !sourceId || !newPeriod
++          : !sessionAId || !sessionBId || sessionAId === sessionBId
++
++  const primaryLabel = editBlock
++    ? '저장'
++    : kind === 'makeup'
++      ? '추가하고 채점표·진도 열기'
++      : kind === 'covering'
++        ? '추가'
++        : kind === 'moved'
++          ? '이동 적용'
++          : '교체 적용'
++
+   return (
+     <div className="modal-backdrop" onClick={onClose}>
+       <section className="modal narrow" onClick={event => event.stopPropagation()}>
+         <header className="modal-head">
+           <div>
+-            <p className="eyebrow">{editBlock ? '개인 일정 수정' : '수업 시간표 변경'}</p>
++            <p className="eyebrow">{editBlock ? '대강 일정 수정' : '수업조정'}</p>
+             <h2>{date}</h2>
+           </div>
+           <button className="ghost-button" onClick={onClose}>닫기</button>
+@@ -246,24 +331,18 @@ function AddExtraSessionModal({
+                 정규 시간표와 다른 수업이 있는 경우 해당 날짜의 시간표를 변경합니다.<br />
+                 보강 수업을 추가하거나, 다른 교시로 이동한 수업을 등록할 수 있습니다.
+               </p>
+-              <p className="hint">
+-                <b>💡 수업을 다른 교시로 옮기는 경우</b><br />
+-                이동한 교시에 수업을 추가하고, 원래 교시는 &lsquo;수업 없음&rsquo;으로 변경해 주세요.
+-              </p>
+-              <div className="mode-picker">
+-                <button className={kind === 'class' ? 'mode on' : 'mode'} onClick={() => setKind('class')}>
+-                  <b>내 학급 수업</b>
+-                  <small>등록된 학급 중 하나를 골라 진도·채점까지 이어서 기록</small>
+-                </button>
+-                <button className={kind === 'personal' ? 'mode on' : 'mode'} onClick={() => setKind('personal')}>
+-                  <b>개인 일정</b>
+-                  <small>다른 선생님 수업 보강, 회의 등 학급에 속하지 않는 일정</small>
+-                </button>
+-              </div>
++              <label className="adjustment-kind-picker">
++                유형
++                <select value={kind} onChange={event => setKind(event.target.value as AdjustmentKind)}>
++                  {KIND_OPTIONS.map(item => (
++                    <option key={item.id} value={item.id}>{item.label}</option>
++                  ))}
++                </select>
++              </label>
+             </>
+           )}
+ 
+-          {!editBlock && kind === 'class' && (
++          {!editBlock && kind === 'makeup' && (
+             <div className="field-grid">
+               {!active.length && <p className="hint">등록된 학급이 없습니다.</p>}
+               {active.length > 0 && (
+@@ -287,12 +366,12 @@ function AddExtraSessionModal({
+               </label>
+               <label>
+                 사유
+-                <input value={note} placeholder="예: 보강, 2교시로 이동" onChange={event => setNote(event.target.value)} />
++                <input value={note} placeholder="예: 보강" onChange={event => setNote(event.target.value)} />
+               </label>
+             </div>
+           )}
+ 
+-          {(editBlock || kind === 'personal') && (
++          {(editBlock || kind === 'covering') && (
+             <div className="field-grid">
+               <label>
+                 제목
+@@ -308,17 +387,67 @@ function AddExtraSessionModal({
+               </label>
+             </div>
+           )}
++
++          {!editBlock && kind === 'moved' && (
++            <div className="field-grid">
++              {!todaySessions.length && <p className="hint">이 날짜에 옮길 수 있는 수업이 없습니다.</p>}
++              {todaySessions.length > 0 && (
++                <>
++                  <label>
++                    이동할 수업
++                    <select value={sourceId} onChange={event => setSourceId(event.target.value)}>
++                      {todaySessions.map(session => (
++                        <option key={session.id} value={session.id}>{sessionOptionLabel(data, session)}</option>
++                      ))}
++                    </select>
++                  </label>
++                  <label>
++                    새 교시
++                    <input type="number" min={1} max={12} value={newPeriod} onChange={event => setNewPeriod(Number(event.target.value) || 1)} />
++                  </label>
++                  <label>
++                    메모
++                    <input value={note} placeholder="선택" onChange={event => setNote(event.target.value)} />
++                  </label>
++                </>
++              )}
++            </div>
++          )}
++
++          {!editBlock && kind === 'swapped' && (
++            <div className="field-grid">
++              {todaySessions.length < 2 && <p className="hint">이 날짜에 서로 바꿀 수업이 2개 이상 있어야 합니다.</p>}
++              {todaySessions.length >= 2 && (
++                <>
++                  <label>
++                    수업 A
++                    <select value={sessionAId} onChange={event => setSessionAId(event.target.value)}>
++                      {todaySessions.map(session => (
++                        <option key={session.id} value={session.id}>{sessionOptionLabel(data, session)}</option>
++                      ))}
++                    </select>
++                  </label>
++                  <label>
++                    수업 B
++                    <select value={sessionBId} onChange={event => setSessionBId(event.target.value)}>
++                      {todaySessions.map(session => (
++                        <option key={session.id} value={session.id}>{sessionOptionLabel(data, session)}</option>
++                      ))}
++                    </select>
++                  </label>
++                  <label>
++                    메모
++                    <input value={note} placeholder="선택" onChange={event => setNote(event.target.value)} />
++                  </label>
++                </>
++              )}
++            </div>
++          )}
+         </div>
+         <footer className="modal-foot">
+           {editBlock && <button className="ghost-button danger-button" onClick={remove}>삭제</button>}
+           <button className="ghost-button" onClick={onClose}>취소</button>
+-          <button
+-            className="primary-button"
+-            onClick={create}
+-            disabled={editBlock ? !title.trim() : (kind === 'class' ? !classId : !title.trim())}
+-          >
+-            {editBlock ? '저장' : kind === 'class' ? '추가하고 채점표·진도 열기' : '추가'}
+-          </button>
++          <button className="primary-button" onClick={create} disabled={disabled}>{primaryLabel}</button>
+         </footer>
+       </section>
+     </div>
+diff --git a/src/components/MiniTimetable.tsx b/src/components/MiniTimetable.tsx
+index 1409c58..8aaaa42 100644
+--- a/src/components/MiniTimetable.tsx
++++ b/src/components/MiniTimetable.tsx
+@@ -23,9 +23,9 @@ function todayRows(data: AppData, sessions: Session[]): TodayRow[] {
+       const tag = item.mode === 'none'
+         ? '휴강'
+         : item.extra
+-          ? (item.extraNote || '추가')
++          ? (item.extraNote || '보강')
+           : item.swappedFrom
+-            ? '대체'
++            ? '요일대체'
+             : item.mode === 'extend'
+               ? '이어서'
+               : item.mode === 'merge'
+@@ -42,7 +42,7 @@ function todayRows(data: AppData, sessions: Session[]): TodayRow[] {
+ 
+   const fromBlocks: TodayRow[] = data.personalBlocks
+     .filter(item => item.date === today)
+-    .map(item => ({ key: item.id, period: item.period, text: item.title, tag: '개인 일정' }))
++    .map(item => ({ key: item.id, period: item.period, text: item.title, tag: '대강' }))
+ 
+   return [...fromSessions, ...fromBlocks].sort((left, right) => left.period - right.period)
+ }

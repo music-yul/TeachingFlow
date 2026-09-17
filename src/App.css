@@ -176,6 +176,8 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.6rem; }
 .field-grid label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; color: var(--muted); }
+.adjustment-kind-picker { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.6rem; }
+.adjustment-kind-picker select { color: var(--ink); }
 .field-grid label.eval-checkbox-field { flex-direction: row; align-items: center; gap: 0.4rem; }
 .field-grid input { color: var(--ink); }
 

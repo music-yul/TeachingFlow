@@ -23,9 +23,9 @@ function todayRows(data: AppData, sessions: Session[]): TodayRow[] {
       const tag = item.mode === 'none'
         ? '휴강'
         : item.extra
-          ? (item.extraNote || '추가')
+          ? (item.extraNote || '보강')
           : item.swappedFrom
-            ? '대체'
+            ? '요일대체'
             : item.mode === 'extend'
               ? '이어서'
               : item.mode === 'merge'
@@ -42,7 +42,7 @@ function todayRows(data: AppData, sessions: Session[]): TodayRow[] {
 
   const fromBlocks: TodayRow[] = data.personalBlocks
     .filter(item => item.date === today)
-    .map(item => ({ key: item.id, period: item.period, text: item.title, tag: '개인 일정' }))
+    .map(item => ({ key: item.id, period: item.period, text: item.title, tag: '대강' }))
 
   return [...fromSessions, ...fromBlocks].sort((left, right) => left.period - right.period)
 }
