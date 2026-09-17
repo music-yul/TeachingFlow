@@ -1,48 +1,58 @@
-import type { AppData } from '../types'
+import type { AppData, Session } from '../types'
 import { DAYS } from '../types'
 import { readableOn } from '../theme'
-import { coversDate, dateKey } from '../schedule'
-import { holidayName } from '../holidays'
+import { todayKey } from '../schedule'
 
-const eventTypeLabel: Record<string, string> = {
-  closed: '휴업',
-  blocked: '수업 불가',
-  swap: '요일 변경',
+type TodayRow = {
+  key: string
+  period: number
+  text: string
+  tag?: string
+  color?: string
 }
 
-/** 이번 주(월~금)에 이 시간표(기본 요일별 슬롯)와 다르게 운영되는 날이 있으면 알려준다. */
-function thisWeekChanges(data: AppData) {
-  const today = new Date()
-  const monday = new Date(today)
-  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7))
-  const weekdays = Array.from({ length: 5 }, (_, index) => {
-    const date = new Date(monday)
-    date.setDate(monday.getDate() + index)
-    return date
-  })
+/** 오늘 실제로 있는 수업(요일 변경·보강·이동·취소가 전부 반영된 값)을 교시 순서로 정리한다. */
+function todayRows(data: AppData, sessions: Session[]): TodayRow[] {
+  const today = todayKey()
 
-  return weekdays.flatMap(date => {
-    const key = dateKey(date)
-    const label = `${date.getMonth() + 1}/${date.getDate()}(${DAYS[date.getDay() - 1] || ''})`
-    const holiday = data.settings.useHolidays !== false ? holidayName(key) : undefined
-    if (holiday) return [{ key, label, text: holiday }]
-    const events = data.events.filter(event => coversDate(event, key) && event.type !== 'note')
-    return events.map(event => ({
-      key: `${key}-${event.id}`,
-      label,
-      text: event.type === 'swap' && event.sourceDay
-        ? `${event.sourceDay}요일 시간표로 운영`
-        : `${eventTypeLabel[event.type] || event.type}${event.title ? ` · ${event.title}` : ''}`,
-    }))
-  })
+  const fromSessions: TodayRow[] = sessions
+    .filter(item => item.date === today && !item.cancelled)
+    .map(item => {
+      const classroom = data.classes.find(value => value.id === item.classId)
+      const subject = data.subjects.find(value => value.id === item.subjectId)
+      const tag = item.mode === 'none'
+        ? '휴강'
+        : item.extra
+          ? (item.extraNote || '추가')
+          : item.swappedFrom
+            ? '대체'
+            : item.mode === 'extend'
+              ? '이어서'
+              : item.mode === 'merge'
+                ? '합반'
+                : undefined
+      return {
+        key: item.id,
+        period: item.period,
+        text: `${subject?.name ? `${subject.name} ` : ''}${classroom?.name || ''}`.trim() || '(학급 없음)',
+        tag,
+        color: subject?.color,
+      }
+    })
+
+  const fromBlocks: TodayRow[] = data.personalBlocks
+    .filter(item => item.date === today)
+    .map(item => ({ key: item.id, period: item.period, text: item.title, tag: '개인 일정' }))
+
+  return [...fromSessions, ...fromBlocks].sort((left, right) => left.period - right.period)
 }
 
-export default function MiniTimetable({ data }: { data: AppData }) {
+export default function MiniTimetable({ data, sessions }: { data: AppData; sessions: Session[] }) {
   const active = data.classes.filter(item => !item.archived)
   const used = active.flatMap(item => item.slots.map(slot => slot.period))
   const maxPeriod = used.length ? Math.max(...used) : 7
   const periods = Array.from({ length: Math.max(maxPeriod, 4) }, (_, index) => index + 1)
-  const changes = thisWeekChanges(data)
+  const today = todayRows(data, sessions)
 
   return (
     <div className="mini-timetable">
@@ -58,16 +68,25 @@ export default function MiniTimetable({ data }: { data: AppData }) {
         </span>
         {data.settings.teacherName && <span className="mini-teacher">{data.settings.teacherName}</span>}
       </p>
-      <p className="hint mini-note">
-        이 표는 기본 주간 시간표입니다. 요일 변경·휴업 등 날짜별 변경사항은 아래 달력에서 확인하세요.
-      </p>
-      {changes.length > 0 && (
-        <ul className="mini-week-changes">
-          {changes.map(item => (
-            <li key={item.key}><b>{item.label}</b> {item.text}</li>
-          ))}
-        </ul>
-      )}
+
+      <div className="mini-today">
+        <p className="mini-today-title">오늘 수업</p>
+        {!today.length && <p className="hint">오늘 등록된 수업이 없습니다.</p>}
+        {today.length > 0 && (
+          <ul className="mini-today-list">
+            {today.map(row => (
+              <li key={row.key}>
+                <span className="mini-today-period">{row.period}교시</span>
+                <span className="mini-today-text" style={row.color ? { borderLeftColor: row.color } : undefined}>
+                  {row.text}
+                </span>
+                {row.tag && <em className="swap-tag">{row.tag}</em>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {!active.length && <p className="hint">학급을 등록하면 표시됩니다.</p>}
       {active.length > 0 && (
         <table>

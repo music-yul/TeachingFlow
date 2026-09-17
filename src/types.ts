@@ -121,6 +121,18 @@ export type DayNote = {
   text: string
 }
 
+/**
+ * 정규 학급 수업이 아닌, 그날그날의 개인 일정(다른 선생님 수업 보강, 회의 등).
+ * 학급·과목에 안 걸리므로 진도·채점·출결에는 들어가지 않는다. 오늘 시간표를 한눈에 보기 위한 용도.
+ */
+export type PersonalBlock = {
+  id: string
+  date: string
+  period: number
+  title: string
+  note?: string
+}
+
 export type AppData = {
   version: number
   settings: Settings
@@ -133,6 +145,8 @@ export type AppData = {
   overrides: Record<string, SessionOverride>
   /** 정규 시간표에 없는 하루짜리 추가 수업(보강, 조퇴·지각으로 인한 교시 이동 등). */
   extraSessions: ExtraSession[]
+  /** 학급에 안 걸리는 개인 일정(다른 선생님 수업 보강 등). 오늘 시간표 표시용. */
+  personalBlocks: PersonalBlock[]
   attendance: Record<string, AttendanceStatus>
   activities: Record<string, string>
   /** 날짜별 자유 메모. 학사일정과 달리 진도·시간표에 영향을 주지 않는 개인 기록용. 키는 YYYY-MM-DD. */

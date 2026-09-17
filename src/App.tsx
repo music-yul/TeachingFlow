@@ -180,13 +180,13 @@ export default function App() {
 
           {tab === '수업 일정' && (
             <div className="timetable-layout">
-              <MiniTimetable data={data} />
+              <MiniTimetable data={data} sessions={sessions} />
               <CalendarView data={data} sessions={sessions} month={month} setMonth={setMonth} onSelect={setSelected} update={update} />
             </div>
           )}
           {tab === '진도 관리' && (
             <div className="timetable-layout">
-              <MiniTimetable data={data} />
+              <MiniTimetable data={data} sessions={sessions} />
               <ProgressHub data={data} sessions={sessions} update={update} onSelect={setSelected} onOpenEvaluation={openEvaluation} />
             </div>
           )}

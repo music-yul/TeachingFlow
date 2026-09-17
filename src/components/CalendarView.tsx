@@ -65,6 +65,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
             .filter(item => item.date === key && !item.cancelled)
             .sort((left, right) => left.period - right.period)
           const notes = data.dayNotes[key] || []
+          const blocks = data.personalBlocks.filter(item => item.date === key).sort((left, right) => left.period - right.period)
 
           return (
             <div className={classNames.join(' ')} key={key}>
@@ -120,6 +121,23 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                   </button>
                 )
               })}
+              {blocks.map(block => (
+                <button
+                  className="calendar-lesson"
+                  key={block.id}
+                  style={{ borderLeftColor: '#8b93a2' }}
+                  onClick={() => {
+                    if (!window.confirm(`"${block.title}"(${block.period}교시) 개인 일정을 삭제할까요?`)) return
+                    update({ personalBlocks: data.personalBlocks.filter(item => item.id !== block.id) })
+                  }}
+                >
+                  <span className="cl-left">
+                    {block.period}교시
+                    <em className="swap-tag">개인 일정</em>
+                  </span>
+                  <span className="cl-right">{block.title}</span>
+                </button>
+              ))}
             </div>
           )
         })}
@@ -161,15 +179,24 @@ function AddExtraSessionModal({
   onCreated: (id: string) => void
 }) {
   const active = data.classes.filter(item => !item.archived)
+  const [kind, setKind] = useState<'class' | 'personal'>('class')
   const [classId, setClassId] = useState(active[0]?.id || '')
   const [period, setPeriod] = useState(1)
   const [note, setNote] = useState('보강')
+  const [title, setTitle] = useState('')
 
   const create = () => {
-    if (!classId) return
-    const id = makeId('extra')
-    update({ extraSessions: [...data.extraSessions, { id, date, classId, period, note: note.trim() || undefined }] })
-    onCreated(id)
+    if (kind === 'class') {
+      if (!classId) return
+      const id = makeId('extra')
+      update({ extraSessions: [...data.extraSessions, { id, date, classId, period, note: note.trim() || undefined }] })
+      onCreated(id)
+      return
+    }
+    if (!title.trim()) return
+    const id = makeId('block')
+    update({ personalBlocks: [...data.personalBlocks, { id, date, period, title: title.trim(), note: note.trim() || undefined }] })
+    onClose()
   }
 
   return (
@@ -184,40 +211,76 @@ function AddExtraSessionModal({
         </header>
         <div className="modal-body">
           <p className="hint">
-            정규 시간표에 없는 이 날짜만의 수업을 추가합니다. 조퇴·지각으로 다른 교시로 옮겨간 수업이라면,
+            정규 시간표에 없는 이 날짜만의 일정을 추가합니다. 조퇴·지각으로 다른 교시로 옮겨간 수업이라면,
             여기서 옮겨간 교시에 하나 추가한 뒤 <b>원래 교시 수업</b>은 열어서 &lsquo;수업 없음&rsquo;으로 바꾸고
-            사유(예: &ldquo;8교시로 이동&rdquo;)를 적어 두면 됩니다.
+            사유(예: &ldquo;2교시로 이동&rdquo;)를 적어 두면 됩니다.
           </p>
-          {!active.length && <p className="hint">등록된 학급이 없습니다.</p>}
-          {active.length > 0 && (
+          <div className="mode-picker">
+            <button className={kind === 'class' ? 'mode on' : 'mode'} onClick={() => setKind('class')}>
+              <b>내 학급 수업</b>
+              <small>등록된 학급 중 하나를 골라 진도·채점까지 이어서 기록</small>
+            </button>
+            <button className={kind === 'personal' ? 'mode on' : 'mode'} onClick={() => setKind('personal')}>
+              <b>개인 일정</b>
+              <small>다른 선생님 수업 보강, 회의 등 — 학급에 안 걸리는 시간</small>
+            </button>
+          </div>
+
+          {kind === 'class' && (
             <div className="field-grid">
-              <label>
-                학급
-                <select value={classId} onChange={event => setClassId(event.target.value)}>
-                  {active.map(classroom => {
-                    const subject = data.subjects.find(item => item.id === classroom.subjectId)
-                    return (
-                      <option key={classroom.id} value={classroom.id}>
-                        {subject?.name} {classroom.name}
-                      </option>
-                    )
-                  })}
-                </select>
-              </label>
+              {!active.length && <p className="hint">등록된 학급이 없습니다.</p>}
+              {active.length > 0 && (
+                <label>
+                  학급
+                  <select value={classId} onChange={event => setClassId(event.target.value)}>
+                    {active.map(classroom => {
+                      const subject = data.subjects.find(item => item.id === classroom.subjectId)
+                      return (
+                        <option key={classroom.id} value={classroom.id}>
+                          {subject?.name} {classroom.name}
+                        </option>
+                      )
+                    })}
+                  </select>
+                </label>
+              )}
               <label>
                 교시
                 <input type="number" min={1} max={12} value={period} onChange={event => setPeriod(Number(event.target.value) || 1)} />
               </label>
               <label>
                 사유
-                <input value={note} placeholder="예: 보강, 8교시로 이동" onChange={event => setNote(event.target.value)} />
+                <input value={note} placeholder="예: 보강, 2교시로 이동" onChange={event => setNote(event.target.value)} />
+              </label>
+            </div>
+          )}
+
+          {kind === 'personal' && (
+            <div className="field-grid">
+              <label>
+                제목
+                <input value={title} placeholder="예: 2학년 3반 보강(김OO 선생님)" onChange={event => setTitle(event.target.value)} />
+              </label>
+              <label>
+                교시
+                <input type="number" min={1} max={12} value={period} onChange={event => setPeriod(Number(event.target.value) || 1)} />
+              </label>
+              <label>
+                메모
+                <input value={note} placeholder="선택" onChange={event => setNote(event.target.value)} />
               </label>
             </div>
           )}
         </div>
         <footer className="modal-foot">
           <button className="ghost-button" onClick={onClose}>취소</button>
-          <button className="primary-button" onClick={create} disabled={!classId}>추가하고 채점표·진도 열기</button>
+          <button
+            className="primary-button"
+            onClick={create}
+            disabled={kind === 'class' ? !classId : !title.trim()}
+          >
+            {kind === 'class' ? '추가하고 채점표·진도 열기' : '추가'}
+          </button>
         </footer>
       </section>
     </div>
