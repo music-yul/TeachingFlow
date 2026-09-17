@@ -68,10 +68,36 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
             <p className="eyebrow">
               {session.date} · {session.period}교시
               {session.swappedFrom && ` · ${session.swappedFrom}요일 시간표로 변경 운영`}
+              {session.extra && ` · 추가 수업${session.extraNote ? ` (${session.extraNote})` : ''}`}
             </p>
             <h2>{classroom.name}</h2>
           </div>
-          <button className="ghost-button" onClick={onClose}>닫기</button>
+          <div className="modal-head-actions">
+            {session.extra && (
+              <button
+                className="ghost-button danger-button"
+                onClick={() => {
+                  if (!window.confirm('이 추가 수업을 삭제합니다. 여기서 입력한 채점·출결·메모도 함께 지워지며 되돌릴 수 없습니다. 계속할까요?')) return
+                  const overrides = { ...data.overrides }
+                  delete overrides[session.id]
+                  const attendance = { ...data.attendance }
+                  const activities = { ...data.activities }
+                  Object.keys(attendance).forEach(key => { if (key.startsWith(`${session.id}:`)) delete attendance[key] })
+                  Object.keys(activities).forEach(key => { if (key.startsWith(`${session.id}:`)) delete activities[key] })
+                  update({
+                    extraSessions: data.extraSessions.filter(item => item.id !== session.id),
+                    overrides,
+                    attendance,
+                    activities,
+                  })
+                  onClose()
+                }}
+              >
+                이 추가 수업 삭제
+              </button>
+            )}
+            <button className="ghost-button" onClick={onClose}>닫기</button>
+          </div>
         </header>
 
         <div className="modal-body">

@@ -1,4 +1,4 @@
-import type { AppData, Classroom, Day, Session, SessionMode } from './types'
+import type { AppData, Classroom, Day, ExtraSession, Session, SessionMode } from './types'
 import { DAYS, DAY_NUMBER } from './types'
 import { holidayName } from './holidays'
 
@@ -124,42 +124,52 @@ export function buildSessions(data: AppData): Session[] {
           })
       }
 
-      classroom.slots
+      // 정규 슬롯과, 이 날짜·이 반에 등록된 추가 수업(보강, 교시 이동 등)을 교시 순서로 합쳐서 진도를 배정한다.
+      // 추가 수업은 학사일정(휴업·수업불가)의 영향을 받지 않는다 — 교사가 이 시간에 하겠다고 직접 등록한 것이기 때문이다.
+      type Slotted = { period: number; extra?: ExtraSession }
+      const regular: Slotted[] = classroom.slots
         .filter(slot => slot.day === runDay)
-        .sort((left, right) => left.period - right.period)
-        .forEach(slot => {
-          if (blockedBy(data, key, classroom, slot.period)) return
-          const id = sessionId(key, classroom.id, slot.period)
-          const override = data.overrides[id]
-          const mode = readMode(override)
-          const list = queue[classroom.id]
-          const lessonIds: string[] = []
+        .filter(slot => !blockedBy(data, key, classroom, slot.period))
+        .map(slot => ({ period: slot.period }))
+      const extras: Slotted[] = data.extraSessions
+        .filter(item => item.date === key && item.classId === classroom.id)
+        .map(item => ({ period: item.period, extra: item }))
+      const combined = [...regular, ...extras].sort((left, right) => left.period - right.period)
 
-          if (mode === 'normal' || mode === 'merge') {
-            const take = mode === 'merge' ? 2 : 1
-            for (let step = 0; step < take; step += 1) {
-              const index = cursorIndex[classroom.id]
-              if (index < list.length) {
-                lessonIds.push(list[index])
-                cursorIndex[classroom.id] = index + 1
-              }
+      combined.forEach(({ period, extra }) => {
+        const id = extra ? extra.id : sessionId(key, classroom.id, period)
+        const override = data.overrides[id]
+        const mode = readMode(override)
+        const list = queue[classroom.id]
+        const lessonIds: string[] = []
+
+        if (mode === 'normal' || mode === 'merge') {
+          const take = mode === 'merge' ? 2 : 1
+          for (let step = 0; step < take; step += 1) {
+            const index = cursorIndex[classroom.id]
+            if (index < list.length) {
+              lessonIds.push(list[index])
+              cursorIndex[classroom.id] = index + 1
             }
-            if (lessonIds.length) lastLesson[classroom.id] = lessonIds[lessonIds.length - 1]
           }
+          if (lessonIds.length) lastLesson[classroom.id] = lessonIds[lessonIds.length - 1]
+        }
 
-          sessions.push({
-            id,
-            date: key,
-            classId: classroom.id,
-            subjectId: classroom.subjectId,
-            period: slot.period,
-            lessonIds,
-            mode,
-            continuedFrom: mode === 'extend' ? lastLesson[classroom.id] : undefined,
-            label: override?.label,
-            swappedFrom,
-          })
+        sessions.push({
+          id,
+          date: key,
+          classId: classroom.id,
+          subjectId: classroom.subjectId,
+          period,
+          lessonIds,
+          mode,
+          continuedFrom: mode === 'extend' ? lastLesson[classroom.id] : undefined,
+          label: override?.label,
+          swappedFrom: extra ? undefined : swappedFrom,
+          extra: Boolean(extra),
+          extraNote: extra?.note,
         })
+      })
     })
     day.setDate(day.getDate() + 1)
   }

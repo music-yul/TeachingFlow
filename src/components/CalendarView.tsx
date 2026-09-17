@@ -17,6 +17,7 @@ type Props = {
 
 export default function CalendarView({ data, sessions, month, setMonth, onSelect, update }: Props) {
   const [noteDate, setNoteDate] = useState<string | null>(null)
+  const [extraDate, setExtraDate] = useState<string | null>(null)
 
   const first = new Date(month.getFullYear(), month.getMonth(), 1)
   const start = new Date(first)
@@ -69,6 +70,13 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
             <div className={classNames.join(' ')} key={key}>
               <div className="calendar-day-head">
                 <strong>{date.getDate()}</strong>
+                <button
+                  className="day-note-add no-print"
+                  title="이 날짜에 보강·이동 수업 추가"
+                  onClick={() => setExtraDate(key)}
+                >
+                  📚+
+                </button>
                 <button className="day-note-add no-print" title="이 날짜에 메모 추가" onClick={() => setNoteDate(key)}>+</button>
               </div>
               {holiday && <div className="calendar-event holiday-tag">{holiday}</div>}
@@ -106,6 +114,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                     <span className="cl-left">
                       {item.period}교시 {classroom?.name}
                       {item.swappedFrom && <em className="swap-tag">대체</em>}
+                      {item.extra && <em className="swap-tag" title={item.extraNote}>{item.extraNote || '추가'}</em>}
                     </span>
                     <span className="cl-right">{hasEvaluation && '🎯 '}{sessionLabel(data, item)}</span>
                   </button>
@@ -124,7 +133,94 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
           onChange={next => update({ dayNotes: { ...data.dayNotes, [noteDate]: next } })}
         />
       )}
+
+      {extraDate && (
+        <AddExtraSessionModal
+          date={extraDate}
+          data={data}
+          update={update}
+          onClose={() => setExtraDate(null)}
+          onCreated={id => { setExtraDate(null); onSelect(id) }}
+        />
+      )}
     </section>
+  )
+}
+
+function AddExtraSessionModal({
+  date,
+  data,
+  update,
+  onClose,
+  onCreated,
+}: {
+  date: string
+  data: AppData
+  update: (change: Partial<AppData>) => void
+  onClose: () => void
+  onCreated: (id: string) => void
+}) {
+  const active = data.classes.filter(item => !item.archived)
+  const [classId, setClassId] = useState(active[0]?.id || '')
+  const [period, setPeriod] = useState(1)
+  const [note, setNote] = useState('보강')
+
+  const create = () => {
+    if (!classId) return
+    const id = makeId('extra')
+    update({ extraSessions: [...data.extraSessions, { id, date, classId, period, note: note.trim() || undefined }] })
+    onCreated(id)
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <section className="modal narrow" onClick={event => event.stopPropagation()}>
+        <header className="modal-head">
+          <div>
+            <p className="eyebrow">보강·이동 수업 추가</p>
+            <h2>{date}</h2>
+          </div>
+          <button className="ghost-button" onClick={onClose}>닫기</button>
+        </header>
+        <div className="modal-body">
+          <p className="hint">
+            정규 시간표에 없는 이 날짜만의 수업을 추가합니다. 조퇴·지각으로 다른 교시로 옮겨간 수업이라면,
+            여기서 옮겨간 교시에 하나 추가한 뒤 <b>원래 교시 수업</b>은 열어서 &lsquo;수업 없음&rsquo;으로 바꾸고
+            사유(예: &ldquo;8교시로 이동&rdquo;)를 적어 두면 됩니다.
+          </p>
+          {!active.length && <p className="hint">등록된 학급이 없습니다.</p>}
+          {active.length > 0 && (
+            <div className="field-grid">
+              <label>
+                학급
+                <select value={classId} onChange={event => setClassId(event.target.value)}>
+                  {active.map(classroom => {
+                    const subject = data.subjects.find(item => item.id === classroom.subjectId)
+                    return (
+                      <option key={classroom.id} value={classroom.id}>
+                        {subject?.name} {classroom.name}
+                      </option>
+                    )
+                  })}
+                </select>
+              </label>
+              <label>
+                교시
+                <input type="number" min={1} max={12} value={period} onChange={event => setPeriod(Number(event.target.value) || 1)} />
+              </label>
+              <label>
+                사유
+                <input value={note} placeholder="예: 보강, 8교시로 이동" onChange={event => setNote(event.target.value)} />
+              </label>
+            </div>
+          )}
+        </div>
+        <footer className="modal-foot">
+          <button className="ghost-button" onClick={onClose}>취소</button>
+          <button className="primary-button" onClick={create} disabled={!classId}>추가하고 채점표·진도 열기</button>
+        </footer>
+      </section>
+    </div>
   )
 }
 

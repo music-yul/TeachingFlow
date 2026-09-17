@@ -131,6 +131,8 @@ export type AppData = {
   events: SchoolEvent[]
   progress: Record<string, Progress>
   overrides: Record<string, SessionOverride>
+  /** 정규 시간표에 없는 하루짜리 추가 수업(보강, 조퇴·지각으로 인한 교시 이동 등). */
+  extraSessions: ExtraSession[]
   attendance: Record<string, AttendanceStatus>
   activities: Record<string, string>
   /** 날짜별 자유 메모. 학사일정과 달리 진도·시간표에 영향을 주지 않는 개인 기록용. 키는 YYYY-MM-DD. */
@@ -240,6 +242,21 @@ export type Evaluation = {
   collapsedTaskIds?: string[]
 }
 
+/**
+ * 정규 시간표(학급 슬롯)에 없는 하루짜리 추가 수업.
+ * 보강처럼 새로 생기는 시간, 또는 조퇴·지각 등으로 다른 교시로 옮겨간 수업을 표현할 때 쓴다.
+ * "이동"은 별도 개념을 두지 않고, 원래 자리는 세션 개별조정(overrides)에서 "수업 없음 + 사유"로 두고
+ * 옮겨간 자리를 이 추가 수업으로 등록하는 두 조작의 조합으로 처리한다.
+ */
+export type ExtraSession = {
+  id: string
+  date: string
+  classId: string
+  period: number
+  /** 예: "보강", "8교시로 이동" 등 이 한 번만의 사유. 세션 상세창에 그대로 보인다. */
+  note?: string
+}
+
 /** 자동 배정된 한 번의 수업 시간 */
 export type Session = {
   id: string
@@ -257,4 +274,8 @@ export type Session = {
   swappedFrom?: Day
   /** 요일 변경으로 사라진 자리. 표시만 하고 진도·출석에는 넣지 않는다. */
   cancelled?: boolean
+  /** 정규 시간표에 없는 추가 수업(보강 등)이면 true. 원본은 data.extraSessions 에 있다. */
+  extra?: boolean
+  /** extra 가 true 일 때만: 이 한 번만의 등록 사유(예: "보강", "8교시로 이동"). */
+  extraNote?: string
 }

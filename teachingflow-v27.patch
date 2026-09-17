@@ -1,0 +1,426 @@
+diff --git a/src/App.css b/src/App.css
+index d875809..71930f0 100644
+--- a/src/App.css
++++ b/src/App.css
+@@ -295,6 +295,10 @@ thead th small { display: block; font-weight: 400; }
+ /* ---------- mini timetable ---------- */
+ 
+ .mini-timetable { margin-top: 0.9rem; background: var(--card); border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.5rem; }
++.mini-timetable .mini-note { margin: 0.2rem 0 0.4rem; font-size: 0.7rem; }
++.mini-week-changes { list-style: none; margin: 0 0 0.5rem; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
++.mini-week-changes li { font-size: 0.72rem; background: var(--warn-bg, #fff3cd); border-radius: 0.3rem; padding: 0.2rem 0.4rem; color: var(--text); }
++.mini-week-changes li b { margin-right: 0.3rem; }
+ .mini-title {
+   margin: 0 0 0.35rem;
+   font-size: 0.76rem;
+@@ -727,6 +731,7 @@ thead th small { display: block; font-weight: 400; }
+ }
+ .modal { background: var(--card); border-radius: 0.6rem; width: min(46rem, 100%); max-height: 88vh; display: flex; flex-direction: column; }
+ .modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 0.9rem 1rem; border-bottom: 1px solid var(--line); }
++.modal-head-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+ .modal-head h2 { margin: 0.1rem 0 0; font-size: 1.15rem; }
+ .modal-body { padding: 0.9rem 1rem; overflow-y: auto; }
+ .modal-foot { display: flex; justify-content: flex-end; gap: 0.4rem; padding: 0.75rem 1rem; border-top: 1px solid var(--line); }
+diff --git a/src/components/CalendarView.tsx b/src/components/CalendarView.tsx
+index 3cd1907..88d383f 100644
+--- a/src/components/CalendarView.tsx
++++ b/src/components/CalendarView.tsx
+@@ -17,6 +17,7 @@ type Props = {
+ 
+ export default function CalendarView({ data, sessions, month, setMonth, onSelect, update }: Props) {
+   const [noteDate, setNoteDate] = useState<string | null>(null)
++  const [extraDate, setExtraDate] = useState<string | null>(null)
+ 
+   const first = new Date(month.getFullYear(), month.getMonth(), 1)
+   const start = new Date(first)
+@@ -69,6 +70,13 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+             <div className={classNames.join(' ')} key={key}>
+               <div className="calendar-day-head">
+                 <strong>{date.getDate()}</strong>
++                <button
++                  className="day-note-add no-print"
++                  title="이 날짜에 보강·이동 수업 추가"
++                  onClick={() => setExtraDate(key)}
++                >
++                  📚+
++                </button>
+                 <button className="day-note-add no-print" title="이 날짜에 메모 추가" onClick={() => setNoteDate(key)}>+</button>
+               </div>
+               {holiday && <div className="calendar-event holiday-tag">{holiday}</div>}
+@@ -106,6 +114,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+                     <span className="cl-left">
+                       {item.period}교시 {classroom?.name}
+                       {item.swappedFrom && <em className="swap-tag">대체</em>}
++                      {item.extra && <em className="swap-tag" title={item.extraNote}>{item.extraNote || '추가'}</em>}
+                     </span>
+                     <span className="cl-right">{hasEvaluation && '🎯 '}{sessionLabel(data, item)}</span>
+                   </button>
+@@ -124,10 +133,97 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+           onChange={next => update({ dayNotes: { ...data.dayNotes, [noteDate]: next } })}
+         />
+       )}
++
++      {extraDate && (
++        <AddExtraSessionModal
++          date={extraDate}
++          data={data}
++          update={update}
++          onClose={() => setExtraDate(null)}
++          onCreated={id => { setExtraDate(null); onSelect(id) }}
++        />
++      )}
+     </section>
+   )
+ }
+ 
++function AddExtraSessionModal({
++  date,
++  data,
++  update,
++  onClose,
++  onCreated,
++}: {
++  date: string
++  data: AppData
++  update: (change: Partial<AppData>) => void
++  onClose: () => void
++  onCreated: (id: string) => void
++}) {
++  const active = data.classes.filter(item => !item.archived)
++  const [classId, setClassId] = useState(active[0]?.id || '')
++  const [period, setPeriod] = useState(1)
++  const [note, setNote] = useState('보강')
++
++  const create = () => {
++    if (!classId) return
++    const id = makeId('extra')
++    update({ extraSessions: [...data.extraSessions, { id, date, classId, period, note: note.trim() || undefined }] })
++    onCreated(id)
++  }
++
++  return (
++    <div className="modal-backdrop" onClick={onClose}>
++      <section className="modal narrow" onClick={event => event.stopPropagation()}>
++        <header className="modal-head">
++          <div>
++            <p className="eyebrow">보강·이동 수업 추가</p>
++            <h2>{date}</h2>
++          </div>
++          <button className="ghost-button" onClick={onClose}>닫기</button>
++        </header>
++        <div className="modal-body">
++          <p className="hint">
++            정규 시간표에 없는 이 날짜만의 수업을 추가합니다. 조퇴·지각으로 다른 교시로 옮겨간 수업이라면,
++            여기서 옮겨간 교시에 하나 추가한 뒤 <b>원래 교시 수업</b>은 열어서 &lsquo;수업 없음&rsquo;으로 바꾸고
++            사유(예: &ldquo;8교시로 이동&rdquo;)를 적어 두면 됩니다.
++          </p>
++          {!active.length && <p className="hint">등록된 학급이 없습니다.</p>}
++          {active.length > 0 && (
++            <div className="field-grid">
++              <label>
++                학급
++                <select value={classId} onChange={event => setClassId(event.target.value)}>
++                  {active.map(classroom => {
++                    const subject = data.subjects.find(item => item.id === classroom.subjectId)
++                    return (
++                      <option key={classroom.id} value={classroom.id}>
++                        {subject?.name} {classroom.name}
++                      </option>
++                    )
++                  })}
++                </select>
++              </label>
++              <label>
++                교시
++                <input type="number" min={1} max={12} value={period} onChange={event => setPeriod(Number(event.target.value) || 1)} />
++              </label>
++              <label>
++                사유
++                <input value={note} placeholder="예: 보강, 8교시로 이동" onChange={event => setNote(event.target.value)} />
++              </label>
++            </div>
++          )}
++        </div>
++        <footer className="modal-foot">
++          <button className="ghost-button" onClick={onClose}>취소</button>
++          <button className="primary-button" onClick={create} disabled={!classId}>추가하고 채점표·진도 열기</button>
++        </footer>
++      </section>
++    </div>
++  )
++}
++
+ function DayNoteModal({
+   date,
+   notes,
+diff --git a/src/components/MiniTimetable.tsx b/src/components/MiniTimetable.tsx
+index ae611ac..16cdfe5 100644
+--- a/src/components/MiniTimetable.tsx
++++ b/src/components/MiniTimetable.tsx
+@@ -1,12 +1,48 @@
+ import type { AppData } from '../types'
+ import { DAYS } from '../types'
+ import { readableOn } from '../theme'
++import { coversDate, dateKey } from '../schedule'
++import { holidayName } from '../holidays'
++
++const eventTypeLabel: Record<string, string> = {
++  closed: '휴업',
++  blocked: '수업 불가',
++  swap: '요일 변경',
++}
++
++/** 이번 주(월~금)에 이 시간표(기본 요일별 슬롯)와 다르게 운영되는 날이 있으면 알려준다. */
++function thisWeekChanges(data: AppData) {
++  const today = new Date()
++  const monday = new Date(today)
++  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7))
++  const weekdays = Array.from({ length: 5 }, (_, index) => {
++    const date = new Date(monday)
++    date.setDate(monday.getDate() + index)
++    return date
++  })
++
++  return weekdays.flatMap(date => {
++    const key = dateKey(date)
++    const label = `${date.getMonth() + 1}/${date.getDate()}(${DAYS[date.getDay() - 1] || ''})`
++    const holiday = data.settings.useHolidays !== false ? holidayName(key) : undefined
++    if (holiday) return [{ key, label, text: holiday }]
++    const events = data.events.filter(event => coversDate(event, key) && event.type !== 'note')
++    return events.map(event => ({
++      key: `${key}-${event.id}`,
++      label,
++      text: event.type === 'swap' && event.sourceDay
++        ? `${event.sourceDay}요일 시간표로 운영`
++        : `${eventTypeLabel[event.type] || event.type}${event.title ? ` · ${event.title}` : ''}`,
++    }))
++  })
++}
+ 
+ export default function MiniTimetable({ data }: { data: AppData }) {
+   const active = data.classes.filter(item => !item.archived)
+   const used = active.flatMap(item => item.slots.map(slot => slot.period))
+   const maxPeriod = used.length ? Math.max(...used) : 7
+   const periods = Array.from({ length: Math.max(maxPeriod, 4) }, (_, index) => index + 1)
++  const changes = thisWeekChanges(data)
+ 
+   return (
+     <div className="mini-timetable">
+@@ -22,6 +58,16 @@ export default function MiniTimetable({ data }: { data: AppData }) {
+         </span>
+         {data.settings.teacherName && <span className="mini-teacher">{data.settings.teacherName}</span>}
+       </p>
++      <p className="hint mini-note">
++        이 표는 기본 주간 시간표입니다. 요일 변경·휴업 등 날짜별 변경사항은 아래 달력에서 확인하세요.
++      </p>
++      {changes.length > 0 && (
++        <ul className="mini-week-changes">
++          {changes.map(item => (
++            <li key={item.key}><b>{item.label}</b> {item.text}</li>
++          ))}
++        </ul>
++      )}
+       {!active.length && <p className="hint">학급을 등록하면 표시됩니다.</p>}
+       {active.length > 0 && (
+         <table>
+diff --git a/src/components/SessionModal.tsx b/src/components/SessionModal.tsx
+index b419a31..8e81445 100644
+--- a/src/components/SessionModal.tsx
++++ b/src/components/SessionModal.tsx
+@@ -68,10 +68,36 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
+             <p className="eyebrow">
+               {session.date} · {session.period}교시
+               {session.swappedFrom && ` · ${session.swappedFrom}요일 시간표로 변경 운영`}
++              {session.extra && ` · 추가 수업${session.extraNote ? ` (${session.extraNote})` : ''}`}
+             </p>
+             <h2>{classroom.name}</h2>
+           </div>
+-          <button className="ghost-button" onClick={onClose}>닫기</button>
++          <div className="modal-head-actions">
++            {session.extra && (
++              <button
++                className="ghost-button danger-button"
++                onClick={() => {
++                  if (!window.confirm('이 추가 수업을 삭제합니다. 여기서 입력한 채점·출결·메모도 함께 지워지며 되돌릴 수 없습니다. 계속할까요?')) return
++                  const overrides = { ...data.overrides }
++                  delete overrides[session.id]
++                  const attendance = { ...data.attendance }
++                  const activities = { ...data.activities }
++                  Object.keys(attendance).forEach(key => { if (key.startsWith(`${session.id}:`)) delete attendance[key] })
++                  Object.keys(activities).forEach(key => { if (key.startsWith(`${session.id}:`)) delete activities[key] })
++                  update({
++                    extraSessions: data.extraSessions.filter(item => item.id !== session.id),
++                    overrides,
++                    attendance,
++                    activities,
++                  })
++                  onClose()
++                }}
++              >
++                이 추가 수업 삭제
++              </button>
++            )}
++            <button className="ghost-button" onClick={onClose}>닫기</button>
++          </div>
+         </header>
+ 
+         <div className="modal-body">
+diff --git a/src/schedule.ts b/src/schedule.ts
+index d4435ff..076e208 100644
+--- a/src/schedule.ts
++++ b/src/schedule.ts
+@@ -1,4 +1,4 @@
+-import type { AppData, Classroom, Day, Session, SessionMode } from './types'
++import type { AppData, Classroom, Day, ExtraSession, Session, SessionMode } from './types'
+ import { DAYS, DAY_NUMBER } from './types'
+ import { holidayName } from './holidays'
+ 
+@@ -124,42 +124,52 @@ export function buildSessions(data: AppData): Session[] {
+           })
+       }
+ 
+-      classroom.slots
++      // 정규 슬롯과, 이 날짜·이 반에 등록된 추가 수업(보강, 교시 이동 등)을 교시 순서로 합쳐서 진도를 배정한다.
++      // 추가 수업은 학사일정(휴업·수업불가)의 영향을 받지 않는다 — 교사가 이 시간에 하겠다고 직접 등록한 것이기 때문이다.
++      type Slotted = { period: number; extra?: ExtraSession }
++      const regular: Slotted[] = classroom.slots
+         .filter(slot => slot.day === runDay)
+-        .sort((left, right) => left.period - right.period)
+-        .forEach(slot => {
+-          if (blockedBy(data, key, classroom, slot.period)) return
+-          const id = sessionId(key, classroom.id, slot.period)
+-          const override = data.overrides[id]
+-          const mode = readMode(override)
+-          const list = queue[classroom.id]
+-          const lessonIds: string[] = []
+-
+-          if (mode === 'normal' || mode === 'merge') {
+-            const take = mode === 'merge' ? 2 : 1
+-            for (let step = 0; step < take; step += 1) {
+-              const index = cursorIndex[classroom.id]
+-              if (index < list.length) {
+-                lessonIds.push(list[index])
+-                cursorIndex[classroom.id] = index + 1
+-              }
++        .filter(slot => !blockedBy(data, key, classroom, slot.period))
++        .map(slot => ({ period: slot.period }))
++      const extras: Slotted[] = data.extraSessions
++        .filter(item => item.date === key && item.classId === classroom.id)
++        .map(item => ({ period: item.period, extra: item }))
++      const combined = [...regular, ...extras].sort((left, right) => left.period - right.period)
++
++      combined.forEach(({ period, extra }) => {
++        const id = extra ? extra.id : sessionId(key, classroom.id, period)
++        const override = data.overrides[id]
++        const mode = readMode(override)
++        const list = queue[classroom.id]
++        const lessonIds: string[] = []
++
++        if (mode === 'normal' || mode === 'merge') {
++          const take = mode === 'merge' ? 2 : 1
++          for (let step = 0; step < take; step += 1) {
++            const index = cursorIndex[classroom.id]
++            if (index < list.length) {
++              lessonIds.push(list[index])
++              cursorIndex[classroom.id] = index + 1
+             }
+-            if (lessonIds.length) lastLesson[classroom.id] = lessonIds[lessonIds.length - 1]
+           }
+-
+-          sessions.push({
+-            id,
+-            date: key,
+-            classId: classroom.id,
+-            subjectId: classroom.subjectId,
+-            period: slot.period,
+-            lessonIds,
+-            mode,
+-            continuedFrom: mode === 'extend' ? lastLesson[classroom.id] : undefined,
+-            label: override?.label,
+-            swappedFrom,
+-          })
++          if (lessonIds.length) lastLesson[classroom.id] = lessonIds[lessonIds.length - 1]
++        }
++
++        sessions.push({
++          id,
++          date: key,
++          classId: classroom.id,
++          subjectId: classroom.subjectId,
++          period,
++          lessonIds,
++          mode,
++          continuedFrom: mode === 'extend' ? lastLesson[classroom.id] : undefined,
++          label: override?.label,
++          swappedFrom: extra ? undefined : swappedFrom,
++          extra: Boolean(extra),
++          extraNote: extra?.note,
+         })
++      })
+     })
+     day.setDate(day.getDate() + 1)
+   }
+diff --git a/src/storage.ts b/src/storage.ts
+index 180d966..ce2a150 100644
+--- a/src/storage.ts
++++ b/src/storage.ts
+@@ -49,6 +49,7 @@ export function emptyData(): AppData {
+     events: [],
+     progress: {},
+     overrides: {},
++    extraSessions: [],
+     attendance: {},
+     activities: {},
+     dayNotes: {},
+@@ -172,6 +173,7 @@ function normalize(saved: Partial<AppData>): AppData {
+     events: (saved.events || []).map(item => ({ ...item, periods: item.periods || [], classIds: item.classIds || [] })),
+     progress: saved.progress || {},
+     overrides: saved.overrides || {},
++    extraSessions: saved.extraSessions || [],
+     attendance: saved.attendance || {},
+     activities: saved.activities || {},
+     dayNotes: saved.dayNotes || {},
+diff --git a/src/types.ts b/src/types.ts
+index 11cb1c3..f47b49b 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -131,6 +131,8 @@ export type AppData = {
+   events: SchoolEvent[]
+   progress: Record<string, Progress>
+   overrides: Record<string, SessionOverride>
++  /** 정규 시간표에 없는 하루짜리 추가 수업(보강, 조퇴·지각으로 인한 교시 이동 등). */
++  extraSessions: ExtraSession[]
+   attendance: Record<string, AttendanceStatus>
+   activities: Record<string, string>
+   /** 날짜별 자유 메모. 학사일정과 달리 진도·시간표에 영향을 주지 않는 개인 기록용. 키는 YYYY-MM-DD. */
+@@ -240,6 +242,21 @@ export type Evaluation = {
+   collapsedTaskIds?: string[]
+ }
+ 
++/**
++ * 정규 시간표(학급 슬롯)에 없는 하루짜리 추가 수업.
++ * 보강처럼 새로 생기는 시간, 또는 조퇴·지각 등으로 다른 교시로 옮겨간 수업을 표현할 때 쓴다.
++ * "이동"은 별도 개념을 두지 않고, 원래 자리는 세션 개별조정(overrides)에서 "수업 없음 + 사유"로 두고
++ * 옮겨간 자리를 이 추가 수업으로 등록하는 두 조작의 조합으로 처리한다.
++ */
++export type ExtraSession = {
++  id: string
++  date: string
++  classId: string
++  period: number
++  /** 예: "보강", "8교시로 이동" 등 이 한 번만의 사유. 세션 상세창에 그대로 보인다. */
++  note?: string
++}
++
+ /** 자동 배정된 한 번의 수업 시간 */
+ export type Session = {
+   id: string
+@@ -257,4 +274,8 @@ export type Session = {
+   swappedFrom?: Day
+   /** 요일 변경으로 사라진 자리. 표시만 하고 진도·출석에는 넣지 않는다. */
+   cancelled?: boolean
++  /** 정규 시간표에 없는 추가 수업(보강 등)이면 true. 원본은 data.extraSessions 에 있다. */
++  extra?: boolean
++  /** extra 가 true 일 때만: 이 한 번만의 등록 사유(예: "보강", "8교시로 이동"). */
++  extraNote?: string
+ }
