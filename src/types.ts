@@ -93,6 +93,12 @@ export type SessionOverride = {
   label?: string
   /** 예전 형식 호환용 */
   skip?: boolean
+  /**
+   * true 면 이 취소는 "수업조정"(이동·교체)으로 자동 발생한 것 — 원래 자리가 다른 교시로
+   * 옮겨갔을 뿐이므로 달력·오늘 시간표에는 아예 표시하지 않는다. 사람이 직접 지정한 "수업 없음"과
+   * 구분하기 위한 값으로, 그 경우는 계속 화면에 보여야 한다.
+   */
+  silent?: boolean
 }
 
 export type AttendanceStatus = '출석' | '지각' | '조퇴' | '결석' | '기타'
@@ -258,9 +264,9 @@ export type Evaluation = {
 
 /**
  * 정규 시간표(학급 슬롯)에 없는 하루짜리 추가 수업.
- * 보강처럼 새로 생기는 시간, 또는 조퇴·지각 등으로 다른 교시로 옮겨간 수업을 표현할 때 쓴다.
- * "이동"은 별도 개념을 두지 않고, 원래 자리는 세션 개별조정(overrides)에서 "수업 없음 + 사유"로 두고
- * 옮겨간 자리를 이 추가 수업으로 등록하는 두 조작의 조합으로 처리한다.
+ * 보강처럼 새로 생기는 시간, 또는 이동·교체로 옮겨간 수업을 표현할 때 쓴다.
+ * "이동"·"교체"는 별도 개념을 두지 않고, 원래 자리는 세션 개별조정(overrides)에서 "수업 없음(+silent)"으로 두고
+ * 옮겨간(또는 맞바꾼) 자리를 이 추가 수업으로 등록하는 조합으로 처리한다.
  */
 export type ExtraSession = {
   id: string
@@ -269,6 +275,8 @@ export type ExtraSession = {
   period: number
   /** 예: "보강", "8교시로 이동" 등 이 한 번만의 사유. 세션 상세창에 그대로 보인다. */
   note?: string
+  /** 이동·교체로 자동 생성된 것이면 표시한다. 없으면(보강으로 직접 등록) 표시하지 않는다. 달력 배지 문구를 정할 때만 쓴다. */
+  origin?: 'moved' | 'swapped'
 }
 
 /** 자동 배정된 한 번의 수업 시간 */
@@ -292,4 +300,8 @@ export type Session = {
   extra?: boolean
   /** extra 가 true 일 때만: 이 한 번만의 등록 사유(예: "보강", "8교시로 이동"). */
   extraNote?: string
+  /** extra 가 true 일 때만: 이동·교체로 자동 생성된 것인지. */
+  extraOrigin?: 'moved' | 'swapped'
+  /** true 면 달력·오늘 시간표에는 표시하지 않는다(이동·교체로 자동 비워진 자리). */
+  hidden?: boolean
 }

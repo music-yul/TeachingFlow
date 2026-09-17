@@ -63,7 +63,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
           if (weekday === 6) classNames.push('saturday')
           const dayEvents = data.events.filter(event => coversDate(event, key))
           const daySessions = sessions
-            .filter(item => item.date === key && !item.cancelled)
+            .filter(item => item.date === key && !item.cancelled && !item.hidden)
             .sort((left, right) => left.period - right.period)
           const notes = data.dayNotes[key] || []
           const blocks = data.personalBlocks.filter(item => item.date === key).sort((left, right) => left.period - right.period)
@@ -118,7 +118,11 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                     <span className="cl-left">
                       {item.period}교시 {classroom?.name}
                       {item.swappedFrom && <em className="swap-tag">요일대체</em>}
-                      {item.extra && <em className="swap-tag" title={item.extraNote}>{item.extraNote || '보강'}</em>}
+                      {item.extra && (
+                        <em className="swap-tag" title={item.extraNote}>
+                          {item.extraOrigin === 'moved' ? '이동' : item.extraOrigin === 'swapped' ? '교체' : (item.extraNote || '보강')}
+                        </em>
+                      )}
                     </span>
                     <span className="cl-right">{hasEvaluation && '🎯 '}{sessionLabel(data, item)}</span>
                   </button>
@@ -255,7 +259,12 @@ function AdjustmentModal({
       if (!source || !newPeriod) return
       const overrides = {
         ...data.overrides,
-        [source.id]: { ...(data.overrides[source.id] || {}), mode: 'none' as const, label: note.trim() || `${newPeriod}교시로 이동` },
+        [source.id]: {
+          ...(data.overrides[source.id] || {}),
+          mode: 'none' as const,
+          label: note.trim() || `${newPeriod}교시로 이동`,
+          silent: true,
+        },
       }
       const extra = {
         id: makeId('extra'),
@@ -263,6 +272,7 @@ function AdjustmentModal({
         classId: source.classId,
         period: newPeriod,
         note: note.trim() || `${source.period}교시에서 이동`,
+        origin: 'moved' as const,
       }
       update({ overrides, extraSessions: [...data.extraSessions, extra] })
       onClose()
@@ -275,13 +285,13 @@ function AdjustmentModal({
     if (!a || !b || a.id === b.id) return
     const overrides = {
       ...data.overrides,
-      [a.id]: { ...(data.overrides[a.id] || {}), mode: 'none' as const, label: note.trim() || `${b.period}교시와 교체` },
-      [b.id]: { ...(data.overrides[b.id] || {}), mode: 'none' as const, label: note.trim() || `${a.period}교시와 교체` },
+      [a.id]: { ...(data.overrides[a.id] || {}), mode: 'none' as const, label: note.trim() || `${b.period}교시와 교체`, silent: true },
+      [b.id]: { ...(data.overrides[b.id] || {}), mode: 'none' as const, label: note.trim() || `${a.period}교시와 교체`, silent: true },
     }
     const extraSessions = [
       ...data.extraSessions,
-      { id: makeId('extra'), date, classId: a.classId, period: b.period, note: note.trim() || `${a.period}교시와 교체` },
-      { id: makeId('extra'), date, classId: b.classId, period: a.period, note: note.trim() || `${b.period}교시와 교체` },
+      { id: makeId('extra'), date, classId: a.classId, period: b.period, note: note.trim() || `${a.period}교시와 교체`, origin: 'swapped' as const },
+      { id: makeId('extra'), date, classId: b.classId, period: a.period, note: note.trim() || `${b.period}교시와 교체`, origin: 'swapped' as const },
     ]
     update({ overrides, extraSessions })
     onClose()

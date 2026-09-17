@@ -16,14 +16,14 @@ function todayRows(data: AppData, sessions: Session[]): TodayRow[] {
   const today = todayKey()
 
   const fromSessions: TodayRow[] = sessions
-    .filter(item => item.date === today && !item.cancelled)
+    .filter(item => item.date === today && !item.cancelled && !item.hidden)
     .map(item => {
       const classroom = data.classes.find(value => value.id === item.classId)
       const subject = data.subjects.find(value => value.id === item.subjectId)
       const tag = item.mode === 'none'
         ? '휴강'
         : item.extra
-          ? (item.extraNote || '보강')
+          ? (item.extraOrigin === 'moved' ? '이동' : item.extraOrigin === 'swapped' ? '교체' : (item.extraNote || '보강'))
           : item.swappedFrom
             ? '요일대체'
             : item.mode === 'extend'

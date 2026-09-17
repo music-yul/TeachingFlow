@@ -1,0 +1,161 @@
+diff --git a/src/components/CalendarView.tsx b/src/components/CalendarView.tsx
+index 4a7ae6c..3f98a02 100644
+--- a/src/components/CalendarView.tsx
++++ b/src/components/CalendarView.tsx
+@@ -63,7 +63,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+           if (weekday === 6) classNames.push('saturday')
+           const dayEvents = data.events.filter(event => coversDate(event, key))
+           const daySessions = sessions
+-            .filter(item => item.date === key && !item.cancelled)
++            .filter(item => item.date === key && !item.cancelled && !item.hidden)
+             .sort((left, right) => left.period - right.period)
+           const notes = data.dayNotes[key] || []
+           const blocks = data.personalBlocks.filter(item => item.date === key).sort((left, right) => left.period - right.period)
+@@ -118,7 +118,11 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+                     <span className="cl-left">
+                       {item.period}교시 {classroom?.name}
+                       {item.swappedFrom && <em className="swap-tag">요일대체</em>}
+-                      {item.extra && <em className="swap-tag" title={item.extraNote}>{item.extraNote || '보강'}</em>}
++                      {item.extra && (
++                        <em className="swap-tag" title={item.extraNote}>
++                          {item.extraOrigin === 'moved' ? '이동' : item.extraOrigin === 'swapped' ? '교체' : (item.extraNote || '보강')}
++                        </em>
++                      )}
+                     </span>
+                     <span className="cl-right">{hasEvaluation && '🎯 '}{sessionLabel(data, item)}</span>
+                   </button>
+@@ -255,7 +259,12 @@ function AdjustmentModal({
+       if (!source || !newPeriod) return
+       const overrides = {
+         ...data.overrides,
+-        [source.id]: { ...(data.overrides[source.id] || {}), mode: 'none' as const, label: note.trim() || `${newPeriod}교시로 이동` },
++        [source.id]: {
++          ...(data.overrides[source.id] || {}),
++          mode: 'none' as const,
++          label: note.trim() || `${newPeriod}교시로 이동`,
++          silent: true,
++        },
+       }
+       const extra = {
+         id: makeId('extra'),
+@@ -263,6 +272,7 @@ function AdjustmentModal({
+         classId: source.classId,
+         period: newPeriod,
+         note: note.trim() || `${source.period}교시에서 이동`,
++        origin: 'moved' as const,
+       }
+       update({ overrides, extraSessions: [...data.extraSessions, extra] })
+       onClose()
+@@ -275,13 +285,13 @@ function AdjustmentModal({
+     if (!a || !b || a.id === b.id) return
+     const overrides = {
+       ...data.overrides,
+-      [a.id]: { ...(data.overrides[a.id] || {}), mode: 'none' as const, label: note.trim() || `${b.period}교시와 교체` },
+-      [b.id]: { ...(data.overrides[b.id] || {}), mode: 'none' as const, label: note.trim() || `${a.period}교시와 교체` },
++      [a.id]: { ...(data.overrides[a.id] || {}), mode: 'none' as const, label: note.trim() || `${b.period}교시와 교체`, silent: true },
++      [b.id]: { ...(data.overrides[b.id] || {}), mode: 'none' as const, label: note.trim() || `${a.period}교시와 교체`, silent: true },
+     }
+     const extraSessions = [
+       ...data.extraSessions,
+-      { id: makeId('extra'), date, classId: a.classId, period: b.period, note: note.trim() || `${a.period}교시와 교체` },
+-      { id: makeId('extra'), date, classId: b.classId, period: a.period, note: note.trim() || `${b.period}교시와 교체` },
++      { id: makeId('extra'), date, classId: a.classId, period: b.period, note: note.trim() || `${a.period}교시와 교체`, origin: 'swapped' as const },
++      { id: makeId('extra'), date, classId: b.classId, period: a.period, note: note.trim() || `${b.period}교시와 교체`, origin: 'swapped' as const },
+     ]
+     update({ overrides, extraSessions })
+     onClose()
+diff --git a/src/components/MiniTimetable.tsx b/src/components/MiniTimetable.tsx
+index 8aaaa42..51f0c62 100644
+--- a/src/components/MiniTimetable.tsx
++++ b/src/components/MiniTimetable.tsx
+@@ -16,14 +16,14 @@ function todayRows(data: AppData, sessions: Session[]): TodayRow[] {
+   const today = todayKey()
+ 
+   const fromSessions: TodayRow[] = sessions
+-    .filter(item => item.date === today && !item.cancelled)
++    .filter(item => item.date === today && !item.cancelled && !item.hidden)
+     .map(item => {
+       const classroom = data.classes.find(value => value.id === item.classId)
+       const subject = data.subjects.find(value => value.id === item.subjectId)
+       const tag = item.mode === 'none'
+         ? '휴강'
+         : item.extra
+-          ? (item.extraNote || '보강')
++          ? (item.extraOrigin === 'moved' ? '이동' : item.extraOrigin === 'swapped' ? '교체' : (item.extraNote || '보강'))
+           : item.swappedFrom
+             ? '요일대체'
+             : item.mode === 'extend'
+diff --git a/src/exportPrint.ts b/src/exportPrint.ts
+index cf81880..d53d0e2 100644
+--- a/src/exportPrint.ts
++++ b/src/exportPrint.ts
+@@ -62,7 +62,7 @@ export function exportCalendarXlsx(data: AppData, sessions: Session[], month: Da
+   const monthNumber = month.getMonth() + 1
+   const prefix = `${year}-${String(monthNumber).padStart(2, '0')}`
+   const monthSessions = sessions
+-    .filter(item => item.date.startsWith(prefix) && !item.cancelled)
++    .filter(item => item.date.startsWith(prefix) && !item.cancelled && !item.hidden)
+     .sort((left, right) => (left.date + String(left.period)).localeCompare(right.date + String(right.period)))
+ 
+   const rows: (string | number)[][] = [['날짜', '교시', '학급', '내용']]
+diff --git a/src/schedule.ts b/src/schedule.ts
+index 076e208..6119e31 100644
+--- a/src/schedule.ts
++++ b/src/schedule.ts
+@@ -168,6 +168,8 @@ export function buildSessions(data: AppData): Session[] {
+           swappedFrom: extra ? undefined : swappedFrom,
+           extra: Boolean(extra),
+           extraNote: extra?.note,
++          extraOrigin: extra?.origin,
++          hidden: mode === 'none' && Boolean(override?.silent),
+         })
+       })
+     })
+diff --git a/src/types.ts b/src/types.ts
+index 02b9b08..2126a1c 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -93,6 +93,12 @@ export type SessionOverride = {
+   label?: string
+   /** 예전 형식 호환용 */
+   skip?: boolean
++  /**
++   * true 면 이 취소는 "수업조정"(이동·교체)으로 자동 발생한 것 — 원래 자리가 다른 교시로
++   * 옮겨갔을 뿐이므로 달력·오늘 시간표에는 아예 표시하지 않는다. 사람이 직접 지정한 "수업 없음"과
++   * 구분하기 위한 값으로, 그 경우는 계속 화면에 보여야 한다.
++   */
++  silent?: boolean
+ }
+ 
+ export type AttendanceStatus = '출석' | '지각' | '조퇴' | '결석' | '기타'
+@@ -258,9 +264,9 @@ export type Evaluation = {
+ 
+ /**
+  * 정규 시간표(학급 슬롯)에 없는 하루짜리 추가 수업.
+- * 보강처럼 새로 생기는 시간, 또는 조퇴·지각 등으로 다른 교시로 옮겨간 수업을 표현할 때 쓴다.
+- * "이동"은 별도 개념을 두지 않고, 원래 자리는 세션 개별조정(overrides)에서 "수업 없음 + 사유"로 두고
+- * 옮겨간 자리를 이 추가 수업으로 등록하는 두 조작의 조합으로 처리한다.
++ * 보강처럼 새로 생기는 시간, 또는 이동·교체로 옮겨간 수업을 표현할 때 쓴다.
++ * "이동"·"교체"는 별도 개념을 두지 않고, 원래 자리는 세션 개별조정(overrides)에서 "수업 없음(+silent)"으로 두고
++ * 옮겨간(또는 맞바꾼) 자리를 이 추가 수업으로 등록하는 조합으로 처리한다.
+  */
+ export type ExtraSession = {
+   id: string
+@@ -269,6 +275,8 @@ export type ExtraSession = {
+   period: number
+   /** 예: "보강", "8교시로 이동" 등 이 한 번만의 사유. 세션 상세창에 그대로 보인다. */
+   note?: string
++  /** 이동·교체로 자동 생성된 것이면 표시한다. 없으면(보강으로 직접 등록) 표시하지 않는다. 달력 배지 문구를 정할 때만 쓴다. */
++  origin?: 'moved' | 'swapped'
+ }
+ 
+ /** 자동 배정된 한 번의 수업 시간 */
+@@ -292,4 +300,8 @@ export type Session = {
+   extra?: boolean
+   /** extra 가 true 일 때만: 이 한 번만의 등록 사유(예: "보강", "8교시로 이동"). */
+   extraNote?: string
++  /** extra 가 true 일 때만: 이동·교체로 자동 생성된 것인지. */
++  extraOrigin?: 'moved' | 'swapped'
++  /** true 면 달력·오늘 시간표에는 표시하지 않는다(이동·교체로 자동 비워진 자리). */
++  hidden?: boolean
+ }

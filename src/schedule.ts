@@ -168,6 +168,8 @@ export function buildSessions(data: AppData): Session[] {
           swappedFrom: extra ? undefined : swappedFrom,
           extra: Boolean(extra),
           extraNote: extra?.note,
+          extraOrigin: extra?.origin,
+          hidden: mode === 'none' && Boolean(override?.silent),
         })
       })
     })

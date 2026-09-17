@@ -62,7 +62,7 @@ export function exportCalendarXlsx(data: AppData, sessions: Session[], month: Da
   const monthNumber = month.getMonth() + 1
   const prefix = `${year}-${String(monthNumber).padStart(2, '0')}`
   const monthSessions = sessions
-    .filter(item => item.date.startsWith(prefix) && !item.cancelled)
+    .filter(item => item.date.startsWith(prefix) && !item.cancelled && !item.hidden)
     .sort((left, right) => (left.date + String(left.period)).localeCompare(right.date + String(right.period)))
 
   const rows: (string | number)[][] = [['날짜', '교시', '학급', '내용']]
