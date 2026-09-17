@@ -1,0 +1,385 @@
+diff --git a/src/App.css b/src/App.css
+index 71930f0..72f037e 100644
+--- a/src/App.css
++++ b/src/App.css
+@@ -295,10 +295,12 @@ thead th small { display: block; font-weight: 400; }
+ /* ---------- mini timetable ---------- */
+ 
+ .mini-timetable { margin-top: 0.9rem; background: var(--card); border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.5rem; }
+-.mini-timetable .mini-note { margin: 0.2rem 0 0.4rem; font-size: 0.7rem; }
+-.mini-week-changes { list-style: none; margin: 0 0 0.5rem; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+-.mini-week-changes li { font-size: 0.72rem; background: var(--warn-bg, #fff3cd); border-radius: 0.3rem; padding: 0.2rem 0.4rem; color: var(--text); }
+-.mini-week-changes li b { margin-right: 0.3rem; }
++.mini-today { margin: 0 0 0.6rem; padding-bottom: 0.5rem; border-bottom: 1px dashed var(--line); }
++.mini-today-title { margin: 0 0 0.3rem; font-size: 0.72rem; font-weight: 700; color: var(--muted); }
++.mini-today-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
++.mini-today-list li { display: flex; align-items: center; gap: 0.35rem; font-size: 0.76rem; }
++.mini-today-period { flex: 0 0 auto; color: var(--muted); font-variant-numeric: tabular-nums; }
++.mini-today-text { flex: 1; min-width: 0; border-left: 3px solid var(--line); padding-left: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+ .mini-title {
+   margin: 0 0 0.35rem;
+   font-size: 0.76rem;
+diff --git a/src/App.tsx b/src/App.tsx
+index fa05f17..9ea390d 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -180,13 +180,13 @@ export default function App() {
+ 
+           {tab === '수업 일정' && (
+             <div className="timetable-layout">
+-              <MiniTimetable data={data} />
++              <MiniTimetable data={data} sessions={sessions} />
+               <CalendarView data={data} sessions={sessions} month={month} setMonth={setMonth} onSelect={setSelected} update={update} />
+             </div>
+           )}
+           {tab === '진도 관리' && (
+             <div className="timetable-layout">
+-              <MiniTimetable data={data} />
++              <MiniTimetable data={data} sessions={sessions} />
+               <ProgressHub data={data} sessions={sessions} update={update} onSelect={setSelected} onOpenEvaluation={openEvaluation} />
+             </div>
+           )}
+diff --git a/src/components/CalendarView.tsx b/src/components/CalendarView.tsx
+index 88d383f..1065129 100644
+--- a/src/components/CalendarView.tsx
++++ b/src/components/CalendarView.tsx
+@@ -65,6 +65,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+             .filter(item => item.date === key && !item.cancelled)
+             .sort((left, right) => left.period - right.period)
+           const notes = data.dayNotes[key] || []
++          const blocks = data.personalBlocks.filter(item => item.date === key).sort((left, right) => left.period - right.period)
+ 
+           return (
+             <div className={classNames.join(' ')} key={key}>
+@@ -120,6 +121,23 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+                   </button>
+                 )
+               })}
++              {blocks.map(block => (
++                <button
++                  className="calendar-lesson"
++                  key={block.id}
++                  style={{ borderLeftColor: '#8b93a2' }}
++                  onClick={() => {
++                    if (!window.confirm(`"${block.title}"(${block.period}교시) 개인 일정을 삭제할까요?`)) return
++                    update({ personalBlocks: data.personalBlocks.filter(item => item.id !== block.id) })
++                  }}
++                >
++                  <span className="cl-left">
++                    {block.period}교시
++                    <em className="swap-tag">개인 일정</em>
++                  </span>
++                  <span className="cl-right">{block.title}</span>
++                </button>
++              ))}
+             </div>
+           )
+         })}
+@@ -161,15 +179,24 @@ function AddExtraSessionModal({
+   onCreated: (id: string) => void
+ }) {
+   const active = data.classes.filter(item => !item.archived)
++  const [kind, setKind] = useState<'class' | 'personal'>('class')
+   const [classId, setClassId] = useState(active[0]?.id || '')
+   const [period, setPeriod] = useState(1)
+   const [note, setNote] = useState('보강')
++  const [title, setTitle] = useState('')
+ 
+   const create = () => {
+-    if (!classId) return
+-    const id = makeId('extra')
+-    update({ extraSessions: [...data.extraSessions, { id, date, classId, period, note: note.trim() || undefined }] })
+-    onCreated(id)
++    if (kind === 'class') {
++      if (!classId) return
++      const id = makeId('extra')
++      update({ extraSessions: [...data.extraSessions, { id, date, classId, period, note: note.trim() || undefined }] })
++      onCreated(id)
++      return
++    }
++    if (!title.trim()) return
++    const id = makeId('block')
++    update({ personalBlocks: [...data.personalBlocks, { id, date, period, title: title.trim(), note: note.trim() || undefined }] })
++    onClose()
+   }
+ 
+   return (
+@@ -184,40 +211,76 @@ function AddExtraSessionModal({
+         </header>
+         <div className="modal-body">
+           <p className="hint">
+-            정규 시간표에 없는 이 날짜만의 수업을 추가합니다. 조퇴·지각으로 다른 교시로 옮겨간 수업이라면,
++            정규 시간표에 없는 이 날짜만의 일정을 추가합니다. 조퇴·지각으로 다른 교시로 옮겨간 수업이라면,
+             여기서 옮겨간 교시에 하나 추가한 뒤 <b>원래 교시 수업</b>은 열어서 &lsquo;수업 없음&rsquo;으로 바꾸고
+-            사유(예: &ldquo;8교시로 이동&rdquo;)를 적어 두면 됩니다.
++            사유(예: &ldquo;2교시로 이동&rdquo;)를 적어 두면 됩니다.
+           </p>
+-          {!active.length && <p className="hint">등록된 학급이 없습니다.</p>}
+-          {active.length > 0 && (
++          <div className="mode-picker">
++            <button className={kind === 'class' ? 'mode on' : 'mode'} onClick={() => setKind('class')}>
++              <b>내 학급 수업</b>
++              <small>등록된 학급 중 하나를 골라 진도·채점까지 이어서 기록</small>
++            </button>
++            <button className={kind === 'personal' ? 'mode on' : 'mode'} onClick={() => setKind('personal')}>
++              <b>개인 일정</b>
++              <small>다른 선생님 수업 보강, 회의 등 — 학급에 안 걸리는 시간</small>
++            </button>
++          </div>
++
++          {kind === 'class' && (
++            <div className="field-grid">
++              {!active.length && <p className="hint">등록된 학급이 없습니다.</p>}
++              {active.length > 0 && (
++                <label>
++                  학급
++                  <select value={classId} onChange={event => setClassId(event.target.value)}>
++                    {active.map(classroom => {
++                      const subject = data.subjects.find(item => item.id === classroom.subjectId)
++                      return (
++                        <option key={classroom.id} value={classroom.id}>
++                          {subject?.name} {classroom.name}
++                        </option>
++                      )
++                    })}
++                  </select>
++                </label>
++              )}
++              <label>
++                교시
++                <input type="number" min={1} max={12} value={period} onChange={event => setPeriod(Number(event.target.value) || 1)} />
++              </label>
++              <label>
++                사유
++                <input value={note} placeholder="예: 보강, 2교시로 이동" onChange={event => setNote(event.target.value)} />
++              </label>
++            </div>
++          )}
++
++          {kind === 'personal' && (
+             <div className="field-grid">
+               <label>
+-                학급
+-                <select value={classId} onChange={event => setClassId(event.target.value)}>
+-                  {active.map(classroom => {
+-                    const subject = data.subjects.find(item => item.id === classroom.subjectId)
+-                    return (
+-                      <option key={classroom.id} value={classroom.id}>
+-                        {subject?.name} {classroom.name}
+-                      </option>
+-                    )
+-                  })}
+-                </select>
++                제목
++                <input value={title} placeholder="예: 2학년 3반 보강(김OO 선생님)" onChange={event => setTitle(event.target.value)} />
+               </label>
+               <label>
+                 교시
+                 <input type="number" min={1} max={12} value={period} onChange={event => setPeriod(Number(event.target.value) || 1)} />
+               </label>
+               <label>
+-                사유
+-                <input value={note} placeholder="예: 보강, 8교시로 이동" onChange={event => setNote(event.target.value)} />
++                메모
++                <input value={note} placeholder="선택" onChange={event => setNote(event.target.value)} />
+               </label>
+             </div>
+           )}
+         </div>
+         <footer className="modal-foot">
+           <button className="ghost-button" onClick={onClose}>취소</button>
+-          <button className="primary-button" onClick={create} disabled={!classId}>추가하고 채점표·진도 열기</button>
++          <button
++            className="primary-button"
++            onClick={create}
++            disabled={kind === 'class' ? !classId : !title.trim()}
++          >
++            {kind === 'class' ? '추가하고 채점표·진도 열기' : '추가'}
++          </button>
+         </footer>
+       </section>
+     </div>
+diff --git a/src/components/MiniTimetable.tsx b/src/components/MiniTimetable.tsx
+index 16cdfe5..1409c58 100644
+--- a/src/components/MiniTimetable.tsx
++++ b/src/components/MiniTimetable.tsx
+@@ -1,48 +1,58 @@
+-import type { AppData } from '../types'
++import type { AppData, Session } from '../types'
+ import { DAYS } from '../types'
+ import { readableOn } from '../theme'
+-import { coversDate, dateKey } from '../schedule'
+-import { holidayName } from '../holidays'
++import { todayKey } from '../schedule'
+ 
+-const eventTypeLabel: Record<string, string> = {
+-  closed: '휴업',
+-  blocked: '수업 불가',
+-  swap: '요일 변경',
++type TodayRow = {
++  key: string
++  period: number
++  text: string
++  tag?: string
++  color?: string
+ }
+ 
+-/** 이번 주(월~금)에 이 시간표(기본 요일별 슬롯)와 다르게 운영되는 날이 있으면 알려준다. */
+-function thisWeekChanges(data: AppData) {
+-  const today = new Date()
+-  const monday = new Date(today)
+-  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7))
+-  const weekdays = Array.from({ length: 5 }, (_, index) => {
+-    const date = new Date(monday)
+-    date.setDate(monday.getDate() + index)
+-    return date
+-  })
++/** 오늘 실제로 있는 수업(요일 변경·보강·이동·취소가 전부 반영된 값)을 교시 순서로 정리한다. */
++function todayRows(data: AppData, sessions: Session[]): TodayRow[] {
++  const today = todayKey()
+ 
+-  return weekdays.flatMap(date => {
+-    const key = dateKey(date)
+-    const label = `${date.getMonth() + 1}/${date.getDate()}(${DAYS[date.getDay() - 1] || ''})`
+-    const holiday = data.settings.useHolidays !== false ? holidayName(key) : undefined
+-    if (holiday) return [{ key, label, text: holiday }]
+-    const events = data.events.filter(event => coversDate(event, key) && event.type !== 'note')
+-    return events.map(event => ({
+-      key: `${key}-${event.id}`,
+-      label,
+-      text: event.type === 'swap' && event.sourceDay
+-        ? `${event.sourceDay}요일 시간표로 운영`
+-        : `${eventTypeLabel[event.type] || event.type}${event.title ? ` · ${event.title}` : ''}`,
+-    }))
+-  })
++  const fromSessions: TodayRow[] = sessions
++    .filter(item => item.date === today && !item.cancelled)
++    .map(item => {
++      const classroom = data.classes.find(value => value.id === item.classId)
++      const subject = data.subjects.find(value => value.id === item.subjectId)
++      const tag = item.mode === 'none'
++        ? '휴강'
++        : item.extra
++          ? (item.extraNote || '추가')
++          : item.swappedFrom
++            ? '대체'
++            : item.mode === 'extend'
++              ? '이어서'
++              : item.mode === 'merge'
++                ? '합반'
++                : undefined
++      return {
++        key: item.id,
++        period: item.period,
++        text: `${subject?.name ? `${subject.name} ` : ''}${classroom?.name || ''}`.trim() || '(학급 없음)',
++        tag,
++        color: subject?.color,
++      }
++    })
++
++  const fromBlocks: TodayRow[] = data.personalBlocks
++    .filter(item => item.date === today)
++    .map(item => ({ key: item.id, period: item.period, text: item.title, tag: '개인 일정' }))
++
++  return [...fromSessions, ...fromBlocks].sort((left, right) => left.period - right.period)
+ }
+ 
+-export default function MiniTimetable({ data }: { data: AppData }) {
++export default function MiniTimetable({ data, sessions }: { data: AppData; sessions: Session[] }) {
+   const active = data.classes.filter(item => !item.archived)
+   const used = active.flatMap(item => item.slots.map(slot => slot.period))
+   const maxPeriod = used.length ? Math.max(...used) : 7
+   const periods = Array.from({ length: Math.max(maxPeriod, 4) }, (_, index) => index + 1)
+-  const changes = thisWeekChanges(data)
++  const today = todayRows(data, sessions)
+ 
+   return (
+     <div className="mini-timetable">
+@@ -58,16 +68,25 @@ export default function MiniTimetable({ data }: { data: AppData }) {
+         </span>
+         {data.settings.teacherName && <span className="mini-teacher">{data.settings.teacherName}</span>}
+       </p>
+-      <p className="hint mini-note">
+-        이 표는 기본 주간 시간표입니다. 요일 변경·휴업 등 날짜별 변경사항은 아래 달력에서 확인하세요.
+-      </p>
+-      {changes.length > 0 && (
+-        <ul className="mini-week-changes">
+-          {changes.map(item => (
+-            <li key={item.key}><b>{item.label}</b> {item.text}</li>
+-          ))}
+-        </ul>
+-      )}
++
++      <div className="mini-today">
++        <p className="mini-today-title">오늘 수업</p>
++        {!today.length && <p className="hint">오늘 등록된 수업이 없습니다.</p>}
++        {today.length > 0 && (
++          <ul className="mini-today-list">
++            {today.map(row => (
++              <li key={row.key}>
++                <span className="mini-today-period">{row.period}교시</span>
++                <span className="mini-today-text" style={row.color ? { borderLeftColor: row.color } : undefined}>
++                  {row.text}
++                </span>
++                {row.tag && <em className="swap-tag">{row.tag}</em>}
++              </li>
++            ))}
++          </ul>
++        )}
++      </div>
++
+       {!active.length && <p className="hint">학급을 등록하면 표시됩니다.</p>}
+       {active.length > 0 && (
+         <table>
+diff --git a/src/storage.ts b/src/storage.ts
+index ce2a150..42054ea 100644
+--- a/src/storage.ts
++++ b/src/storage.ts
+@@ -50,6 +50,7 @@ export function emptyData(): AppData {
+     progress: {},
+     overrides: {},
+     extraSessions: [],
++    personalBlocks: [],
+     attendance: {},
+     activities: {},
+     dayNotes: {},
+@@ -174,6 +175,7 @@ function normalize(saved: Partial<AppData>): AppData {
+     progress: saved.progress || {},
+     overrides: saved.overrides || {},
+     extraSessions: saved.extraSessions || [],
++    personalBlocks: saved.personalBlocks || [],
+     attendance: saved.attendance || {},
+     activities: saved.activities || {},
+     dayNotes: saved.dayNotes || {},
+diff --git a/src/types.ts b/src/types.ts
+index f47b49b..02b9b08 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -121,6 +121,18 @@ export type DayNote = {
+   text: string
+ }
+ 
++/**
++ * 정규 학급 수업이 아닌, 그날그날의 개인 일정(다른 선생님 수업 보강, 회의 등).
++ * 학급·과목에 안 걸리므로 진도·채점·출결에는 들어가지 않는다. 오늘 시간표를 한눈에 보기 위한 용도.
++ */
++export type PersonalBlock = {
++  id: string
++  date: string
++  period: number
++  title: string
++  note?: string
++}
++
+ export type AppData = {
+   version: number
+   settings: Settings
+@@ -133,6 +145,8 @@ export type AppData = {
+   overrides: Record<string, SessionOverride>
+   /** 정규 시간표에 없는 하루짜리 추가 수업(보강, 조퇴·지각으로 인한 교시 이동 등). */
+   extraSessions: ExtraSession[]
++  /** 학급에 안 걸리는 개인 일정(다른 선생님 수업 보강 등). 오늘 시간표 표시용. */
++  personalBlocks: PersonalBlock[]
+   attendance: Record<string, AttendanceStatus>
+   activities: Record<string, string>
+   /** 날짜별 자유 메모. 학사일정과 달리 진도·시간표에 영향을 주지 않는 개인 기록용. 키는 YYYY-MM-DD. */
