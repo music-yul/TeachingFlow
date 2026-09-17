@@ -169,6 +169,7 @@ export function buildSessions(data: AppData): Session[] {
           extra: Boolean(extra),
           extraNote: extra?.note,
           extraOrigin: extra?.origin,
+          groupId: extra?.groupId,
           hidden: mode === 'none' && Boolean(override?.silent),
         })
       })

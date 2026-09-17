@@ -73,7 +73,34 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
             <h2>{classroom.name}</h2>
           </div>
           <div className="modal-head-actions">
-            {session.extra && (
+            {session.extra && session.groupId && (
+              <button
+                className="ghost-button danger-button"
+                onClick={() => {
+                  if (!window.confirm('이동/교체를 취소하고 원래대로 되돌립니다. 계속할까요?')) return
+                  const groupId = session.groupId
+                  const removedIds = data.extraSessions.filter(item => item.groupId === groupId).map(item => item.id)
+                  const overrides = { ...data.overrides }
+                  Object.keys(overrides).forEach(key => { if (overrides[key].groupId === groupId) delete overrides[key] })
+                  const attendance = { ...data.attendance }
+                  const activities = { ...data.activities }
+                  removedIds.forEach(id => {
+                    Object.keys(attendance).forEach(key => { if (key.startsWith(`${id}:`)) delete attendance[key] })
+                    Object.keys(activities).forEach(key => { if (key.startsWith(`${id}:`)) delete activities[key] })
+                  })
+                  update({
+                    extraSessions: data.extraSessions.filter(item => item.groupId !== groupId),
+                    overrides,
+                    attendance,
+                    activities,
+                  })
+                  onClose()
+                }}
+              >
+                {session.extraOrigin === 'swapped' ? '교체 되돌리기' : '이동 되돌리기'}
+              </button>
+            )}
+            {session.extra && !session.groupId && (
               <button
                 className="ghost-button danger-button"
                 onClick={() => {

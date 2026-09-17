@@ -1,0 +1,165 @@
+diff --git a/src/App.css b/src/App.css
+index a5335fc..1726b01 100644
+--- a/src/App.css
++++ b/src/App.css
+@@ -204,6 +204,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
+   padding: 0 0.15rem; opacity: 0.45;
+ }
+ .day-note-add:hover, .day-note-add:focus { opacity: 1; }
++.day-note-add.adjustment-add { font-size: 0.68rem; }
+ .day-note-chip {
+   text-align: left; background: var(--accent-soft); border: 1px dashed var(--accent); color: var(--ink);
+   font-size: 0.66rem; padding: 0.05rem 0.25rem; border-radius: 0.2rem; line-height: 1.2;
+diff --git a/src/components/CalendarView.tsx b/src/components/CalendarView.tsx
+index 3f98a02..c52404c 100644
+--- a/src/components/CalendarView.tsx
++++ b/src/components/CalendarView.tsx
+@@ -74,7 +74,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+                 <span className="calendar-day-date">
+                   <strong>{date.getDate()}</strong>
+                   <button
+-                    className="day-note-add no-print"
++                    className="day-note-add adjustment-add no-print"
+                     title="수업 시간표 변경"
+                     onClick={() => setExtraDate(key)}
+                   >
+@@ -130,7 +130,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
+               })}
+               {blocks.map(block => (
+                 <button
+-                  className="calendar-lesson"
++                  className={['calendar-lesson', block.date < today ? 'done' : ''].filter(Boolean).join(' ')}
+                   key={block.id}
+                   style={{ borderLeftColor: '#8b93a2' }}
+                   onClick={() => setEditBlock(block)}
+@@ -257,6 +257,7 @@ function AdjustmentModal({
+     if (kind === 'moved') {
+       const source = todaySessions.find(item => item.id === sourceId)
+       if (!source || !newPeriod) return
++      const groupId = makeId('adj')
+       const overrides = {
+         ...data.overrides,
+         [source.id]: {
+@@ -264,6 +265,7 @@ function AdjustmentModal({
+           mode: 'none' as const,
+           label: note.trim() || `${newPeriod}교시로 이동`,
+           silent: true,
++          groupId,
+         },
+       }
+       const extra = {
+@@ -273,6 +275,7 @@ function AdjustmentModal({
+         period: newPeriod,
+         note: note.trim() || `${source.period}교시에서 이동`,
+         origin: 'moved' as const,
++        groupId,
+       }
+       update({ overrides, extraSessions: [...data.extraSessions, extra] })
+       onClose()
+@@ -283,15 +286,16 @@ function AdjustmentModal({
+     const a = todaySessions.find(item => item.id === sessionAId)
+     const b = todaySessions.find(item => item.id === sessionBId)
+     if (!a || !b || a.id === b.id) return
++    const groupId = makeId('adj')
+     const overrides = {
+       ...data.overrides,
+-      [a.id]: { ...(data.overrides[a.id] || {}), mode: 'none' as const, label: note.trim() || `${b.period}교시와 교체`, silent: true },
+-      [b.id]: { ...(data.overrides[b.id] || {}), mode: 'none' as const, label: note.trim() || `${a.period}교시와 교체`, silent: true },
++      [a.id]: { ...(data.overrides[a.id] || {}), mode: 'none' as const, label: note.trim() || `${b.period}교시와 교체`, silent: true, groupId },
++      [b.id]: { ...(data.overrides[b.id] || {}), mode: 'none' as const, label: note.trim() || `${a.period}교시와 교체`, silent: true, groupId },
+     }
+     const extraSessions = [
+       ...data.extraSessions,
+-      { id: makeId('extra'), date, classId: a.classId, period: b.period, note: note.trim() || `${a.period}교시와 교체`, origin: 'swapped' as const },
+-      { id: makeId('extra'), date, classId: b.classId, period: a.period, note: note.trim() || `${b.period}교시와 교체`, origin: 'swapped' as const },
++      { id: makeId('extra'), date, classId: a.classId, period: b.period, note: note.trim() || `${a.period}교시와 교체`, origin: 'swapped' as const, groupId },
++      { id: makeId('extra'), date, classId: b.classId, period: a.period, note: note.trim() || `${b.period}교시와 교체`, origin: 'swapped' as const, groupId },
+     ]
+     update({ overrides, extraSessions })
+     onClose()
+diff --git a/src/components/SessionModal.tsx b/src/components/SessionModal.tsx
+index 8e81445..e1e4d18 100644
+--- a/src/components/SessionModal.tsx
++++ b/src/components/SessionModal.tsx
+@@ -73,7 +73,34 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
+             <h2>{classroom.name}</h2>
+           </div>
+           <div className="modal-head-actions">
+-            {session.extra && (
++            {session.extra && session.groupId && (
++              <button
++                className="ghost-button danger-button"
++                onClick={() => {
++                  if (!window.confirm('이동/교체를 취소하고 원래대로 되돌립니다. 계속할까요?')) return
++                  const groupId = session.groupId
++                  const removedIds = data.extraSessions.filter(item => item.groupId === groupId).map(item => item.id)
++                  const overrides = { ...data.overrides }
++                  Object.keys(overrides).forEach(key => { if (overrides[key].groupId === groupId) delete overrides[key] })
++                  const attendance = { ...data.attendance }
++                  const activities = { ...data.activities }
++                  removedIds.forEach(id => {
++                    Object.keys(attendance).forEach(key => { if (key.startsWith(`${id}:`)) delete attendance[key] })
++                    Object.keys(activities).forEach(key => { if (key.startsWith(`${id}:`)) delete activities[key] })
++                  })
++                  update({
++                    extraSessions: data.extraSessions.filter(item => item.groupId !== groupId),
++                    overrides,
++                    attendance,
++                    activities,
++                  })
++                  onClose()
++                }}
++              >
++                {session.extraOrigin === 'swapped' ? '교체 되돌리기' : '이동 되돌리기'}
++              </button>
++            )}
++            {session.extra && !session.groupId && (
+               <button
+                 className="ghost-button danger-button"
+                 onClick={() => {
+diff --git a/src/schedule.ts b/src/schedule.ts
+index 6119e31..3d22450 100644
+--- a/src/schedule.ts
++++ b/src/schedule.ts
+@@ -169,6 +169,7 @@ export function buildSessions(data: AppData): Session[] {
+           extra: Boolean(extra),
+           extraNote: extra?.note,
+           extraOrigin: extra?.origin,
++          groupId: extra?.groupId,
+           hidden: mode === 'none' && Boolean(override?.silent),
+         })
+       })
+diff --git a/src/types.ts b/src/types.ts
+index 2126a1c..b166990 100644
+--- a/src/types.ts
++++ b/src/types.ts
+@@ -99,6 +99,11 @@ export type SessionOverride = {
+    * 구분하기 위한 값으로, 그 경우는 계속 화면에 보여야 한다.
+    */
+   silent?: boolean
++  /**
++   * "수업조정"(이동·교체) 한 번의 조작으로 함께 생긴 override·추가수업들을 묶는 값.
++   * 되돌리기를 누르면 이 값이 같은 override·extraSessions 를 한꺼번에 지워 원래대로 되돌린다.
++   */
++  groupId?: string
+ }
+ 
+ export type AttendanceStatus = '출석' | '지각' | '조퇴' | '결석' | '기타'
+@@ -277,6 +282,8 @@ export type ExtraSession = {
+   note?: string
+   /** 이동·교체로 자동 생성된 것이면 표시한다. 없으면(보강으로 직접 등록) 표시하지 않는다. 달력 배지 문구를 정할 때만 쓴다. */
+   origin?: 'moved' | 'swapped'
++  /** 이동·교체 한 번의 조작으로 함께 생긴 override 와 짝지어주는 값. "되돌리기"에 쓴다. */
++  groupId?: string
+ }
+ 
+ /** 자동 배정된 한 번의 수업 시간 */
+@@ -302,6 +309,8 @@ export type Session = {
+   extraNote?: string
+   /** extra 가 true 일 때만: 이동·교체로 자동 생성된 것인지. */
+   extraOrigin?: 'moved' | 'swapped'
++  /** extra 가 true 이고 이동·교체로 생겼을 때만: "되돌리기"가 짝을 찾는 값. */
++  groupId?: string
+   /** true 면 달력·오늘 시간표에는 표시하지 않는다(이동·교체로 자동 비워진 자리). */
+   hidden?: boolean
+ }

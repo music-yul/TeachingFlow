@@ -204,6 +204,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   padding: 0 0.15rem; opacity: 0.45;
 }
 .day-note-add:hover, .day-note-add:focus { opacity: 1; }
+.day-note-add.adjustment-add { font-size: 0.68rem; }
 .day-note-chip {
   text-align: left; background: var(--accent-soft); border: 1px dashed var(--accent); color: var(--ink);
   font-size: 0.66rem; padding: 0.05rem 0.25rem; border-radius: 0.2rem; line-height: 1.2;

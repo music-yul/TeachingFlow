@@ -99,6 +99,11 @@ export type SessionOverride = {
    * 구분하기 위한 값으로, 그 경우는 계속 화면에 보여야 한다.
    */
   silent?: boolean
+  /**
+   * "수업조정"(이동·교체) 한 번의 조작으로 함께 생긴 override·추가수업들을 묶는 값.
+   * 되돌리기를 누르면 이 값이 같은 override·extraSessions 를 한꺼번에 지워 원래대로 되돌린다.
+   */
+  groupId?: string
 }
 
 export type AttendanceStatus = '출석' | '지각' | '조퇴' | '결석' | '기타'
@@ -277,6 +282,8 @@ export type ExtraSession = {
   note?: string
   /** 이동·교체로 자동 생성된 것이면 표시한다. 없으면(보강으로 직접 등록) 표시하지 않는다. 달력 배지 문구를 정할 때만 쓴다. */
   origin?: 'moved' | 'swapped'
+  /** 이동·교체 한 번의 조작으로 함께 생긴 override 와 짝지어주는 값. "되돌리기"에 쓴다. */
+  groupId?: string
 }
 
 /** 자동 배정된 한 번의 수업 시간 */
@@ -302,6 +309,8 @@ export type Session = {
   extraNote?: string
   /** extra 가 true 일 때만: 이동·교체로 자동 생성된 것인지. */
   extraOrigin?: 'moved' | 'swapped'
+  /** extra 가 true 이고 이동·교체로 생겼을 때만: "되돌리기"가 짝을 찾는 값. */
+  groupId?: string
   /** true 면 달력·오늘 시간표에는 표시하지 않는다(이동·교체로 자동 비워진 자리). */
   hidden?: boolean
 }
