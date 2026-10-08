@@ -31,6 +31,17 @@ export default function ProgressView({ data, sessions, update, onSelect, onOpenE
   const lessons = data.lessons.filter(item => item.subjectId === subject.id)
   const today = todayKey()
   const stats = coverage(data, sessions)
+  const changedSessions = sessions
+    .filter(item => shownClasses.some(classroom => classroom.id === item.classId)
+      && !item.cancelled && !item.hidden && !item.extra
+      && !data.overrides[item.id]?.groupId && item.mode !== 'normal')
+    .sort((left, right) => left.date.localeCompare(right.date) || left.period - right.period)
+
+  const restoreSession = (session: Session) => {
+    const overrides = { ...data.overrides }
+    delete overrides[session.id]
+    update({ overrides })
+  }
 
   const setProgress = (key: string, change: Progress) => {
     update({ progress: { ...data.progress, [key]: { ...data.progress[key], ...change } } })
@@ -61,6 +72,29 @@ export default function ProgressView({ data, sessions, update, onSelect, onOpenE
 
       {!classes.length && <p className="hint">이 과목에 등록된 학급이 없습니다.</p>}
       {!lessons.length && <p className="hint">수업 목록이 비어 있습니다. <b>수업 목록</b> 탭에서 진도를 먼저 등록해 주세요.</p>}
+
+      {changedSessions.length > 0 && (
+        <details className="block" open>
+          <summary><b>변경한 수업 ({changedSessions.length})</b></summary>
+          <p className="hint">자습 등으로 진도표에서 빠진 시간도 여기서 확인할 수 있습니다. 원래대로 되돌리면 이후 진도 일정도 자동으로 다시 배정됩니다. 완료·채점·출결 기록은 유지됩니다.</p>
+          <div className="table-wrap">
+            <table className="progress-table">
+              <thead><tr><th>날짜 · 교시</th><th>학급</th><th>변경 내용</th><th>사유</th><th>변경 취소</th></tr></thead>
+              <tbody>
+                {changedSessions.map(session => (
+                  <tr key={session.id}>
+                    <td><button className="link-button" onClick={() => onSelect(session.id)}>{session.date} · {session.period}교시</button></td>
+                    <td>{classes.find(item => item.id === session.classId)?.name}</td>
+                    <td>{session.mode === 'none' ? '수업 없음 · 뒤 진도 미룸' : session.mode === 'extend' ? '앞 차시 이어서 · 뒤 진도 미룸' : '두 차시 한 번에 · 뒤 진도 당김'}</td>
+                    <td>{session.label || '—'}</td>
+                    <td><button className="ghost-button" onClick={() => restoreSession(session)}>원래대로</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      )}
 
       {classes.length > 0 && lessons.length > 0 && (
         <div className="table-wrap">
