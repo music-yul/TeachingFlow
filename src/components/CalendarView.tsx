@@ -1,12 +1,21 @@
-import { useState } from 'react'
-import type { AppData, PersonalBlock, Session } from '../types'
+import { taskDateLabel } from '../taskDates'
+import CalendarAddDialog from './CalendarAddDialog'
+import { calendarItemStyle, schoolEventStyle, lessonLabelStyle } from '../calendarAppearance'
+import { useRef, useState } from 'react'
+import type { AppData, CalendarFilter, CalendarRange, PersonalBlock, Session } from '../types'
 import { coversDate, dateKey, effectiveLessonIds, sessionLabel, todayKey } from '../schedule'
 import { linkedEvaluation } from '../evaluation'
 import { holidayName } from '../holidays'
 import { makeId } from '../storage'
-import { exportCalendarXlsx, printCurrentView } from '../exportPrint'
+import { exportVisibleCalendarXlsx, printCurrentView } from '../exportPrint'
+
+import { calendarDates, calendarPeriodLabel, deskCalendarItems, shiftCalendar } from '../workspace'
 
 type Props = {
+  context?: 'home' | 'schedule' | 'work' | 'school'
+  onDateSelect?: (date: string) => void
+  onTaskSelect?: (id: string) => void
+  onOpenArea?: (area: '담임' | '업무' | '동아리', reference?:string) => void
   data: AppData
   sessions: Session[]
   month: Date
@@ -15,45 +24,76 @@ type Props = {
   update: (change: Partial<AppData>) => void
 }
 
-export default function CalendarView({ data, sessions, month, setMonth, onSelect, update }: Props) {
+export default function CalendarView({ data, sessions, month, setMonth, onSelect, update, context = 'schedule', onOpenArea, onDateSelect, onTaskSelect }: Props) {
+  const [add,setAdd]=useState<{date:string;mode:'menu'|'work'|'homeroom'}|null>(null)
   const [noteDate, setNoteDate] = useState<string | null>(null)
   const [extraDate, setExtraDate] = useState<string | null>(null)
   const [editBlock, setEditBlock] = useState<PersonalBlock | null>(null)
 
-  const first = new Date(month.getFullYear(), month.getMonth(), 1)
-  const start = new Date(first)
-  start.setDate(1 - first.getDay())
-  const cells = Array.from({ length: 42 }, (_, index) => {
-    const date = new Date(start)
-    date.setDate(start.getDate() + index)
-    return date
-  })
+  const preferenceKey = context === 'home' ? 'homeCalendar' : context === 'work' ? 'workCalendar' : 'scheduleCalendar'
+  const preferences = context === 'home' ? data.workspacePreferences.homeCalendar : context === 'work' ? { ...data.workspacePreferences.workCalendar, filter: 'work' as const } : { ...data.workspacePreferences.scheduleCalendar, filter: 'teaching' as const }
+  const homeMode=preferences.homeMode||'weeks'
+  const range=context==='home'?(homeMode==='month'?'month':'week'):preferences.range
+  const disabledFilter=(preferences.filter==='homeroom'&&!data.settings.features.homeroom)||(preferences.filter==='teaching'&&!data.settings.features.teaching)||(preferences.filter==='work'&&!data.settings.features.work)||(preferences.filter==='club'&&!data.settings.features.clubs)
+  const filter=context==='school'?'teaching':disabledFilter?'all':preferences.filter
+  const showCompleted=preferences.showCompleted
+  const shownPreferences={...preferences,filter}
+  const teaching = context!=='school' && data.settings.features.teaching && (filter === 'all' || filter === 'teaching')
+  const weeks = context==='home' ? homeMode==='month'?undefined:homeMode==='week'?1:homeMode==='fortnight'?2:4 : context==='work'&&range!=='month'?Math.min(5,preferences.weekCount||(range==='fortnight'?2:1)):undefined
+  const showWeekends=preferences.showWeekends!==false
+  const cells = calendarDates(month, range, weeks).filter(date=>showWeekends||(date.getDay()!==0&&date.getDay()!==6))
+  const columns=showWeekends?7:5
   const monthPrefix = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`
   const today = todayKey()
-
-  const shift = (step: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + step, 1))
+  const changePreferences = (values: Partial<typeof preferences>) => update({
+    workspacePreferences: { ...data.workspacePreferences, [preferenceKey]: { ...preferences, ...values } },
+  })
+  const taskDialog=useRef<HTMLDialogElement>(null)
+  const [taskDetail,setTaskDetail]=useState<{id:string;kind:'tasks'|'notices'}|null>(null)
+  const detailTask=taskDetail?data.teacherDesk[taskDetail.kind].find(task=>task.id===taskDetail.id):undefined
+  const settingsDialog=useRef<HTMLDialogElement>(null)
+  const shift = (step: number) => setMonth(shiftCalendar(month, range, step, weeks))
+  const rangeUnit = weeks ? `${weeks}주` : range === 'month' ? '달' : range === 'week' ? '주' : '2주'
 
   return (
-    <section className="panel calendar-panel">
-      <div className="toolbar">
-        <button className="ghost-button" onClick={() => shift(-1)}>‹ 이전 달</button>
-        <h2>{month.getFullYear()}년 {month.getMonth() + 1}월</h2>
-        <button className="ghost-button" onClick={() => shift(1)}>다음 달 ›</button>
+    <section className={`panel calendar-panel ${context==='home'?'home-calendar':''}`} data-weeks={weeks} data-home-mode={context==='home'?homeMode:undefined}>
+      <div className="toolbar calendar-toolbar">
+        <button className="ghost-button" onClick={() => shift(-1)}>‹ 이전 {rangeUnit}</button>
+        <h2>{!showWeekends&&range!=='month'?`${dateKey(cells[0])} ~ ${dateKey(cells.at(-1)!)}`:calendarPeriodLabel(month, range, weeks)}</h2>
+        <button className="ghost-button" onClick={() => shift(1)}>다음 {rangeUnit} ›</button>
         <button className="ghost-button" onClick={() => setMonth(new Date())}>오늘</button>
+        {(context==='home'||context==='work')&&<label className="calendar-completed-toggle no-print"><input type="checkbox" checked={showCompleted} onChange={e=>changePreferences({showCompleted:e.target.checked})}/> 완료 포함</label>}
+        <button className="ghost-button no-print" onClick={()=>settingsDialog.current?.showModal()}>설정</button>
+      </div>
+      <dialog className="calendar-options-dialog no-print" ref={settingsDialog}><div className="desk-heading"><h2>달력 설정</h2><button className="ghost-button" onClick={()=>settingsDialog.current?.close()}>닫기</button></div>
+      <div className="calendar-controls no-print">
+        {context === 'schedule' && <label>보기 기간 <select aria-label="달력 보기 기간" value={range} onChange={event => { changePreferences({ range: event.target.value as CalendarRange }); setMonth(new Date()) }}>
+          <option value="month">한 달</option><option value="week">이번 주 · 1주</option><option value="fortnight">이번 주 + 다음 주 · 2주</option>
+        </select></label>}
+        {context==='work'&&<><label>달력 형태<select aria-label="업무 달력 형태" value={range==='month'?'month':'weeks'} onChange={e=>changePreferences({range:e.target.value==='month'?'month':'week'})}><option value="month">월별 달력</option><option value="weeks">주간 달력 · 이어보기</option></select></label>{range!=='month'&&<label>이어볼 주<select aria-label="업무 달력 주 수" value={weeks} onChange={e=>changePreferences({weekCount:Number(e.target.value)})}>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n}주</option>)}</select></label>}</>}
+        {context === 'home' && <><label>달력 형태<select aria-label="메인화면 달력 형태" value={homeMode} onChange={event=>{changePreferences({homeMode:event.target.value as 'month'|'week'|'fortnight'|'weeks'});setMonth(new Date())}}><option value="month">월별 달력</option><option value="week">주간 달력</option><option value="fortnight">2주 달력</option><option value="weeks">주간 달력(연속)</option></select></label><label>표시할 일정 <select aria-label="달력 일정 구분" value={filter} onChange={event => changePreferences({ filter: event.target.value as CalendarFilter })}>
+          <option value="all">전체</option>{data.settings.features.teaching&&<option value="teaching">교과</option>}{data.settings.features.homeroom&&<option value="homeroom">담임</option>}{data.settings.features.work&&<option value="work">업무</option>}{data.settings.features.clubs&&<option value="club">동아리</option>}
+        </select></label>
+        </>}
+        <label>주말<select aria-label="달력 주말 표시" value={showWeekends?'include':'exclude'} onChange={e=>changePreferences({showWeekends:e.target.value==='include'})}><option value="include">주말 포함</option><option value="exclude">주말 제외</option></select></label>
+
+      </div>
         <div className="toolbar-actions no-print">
-          <button className="ghost-button" onClick={() => exportCalendarXlsx(data, sessions, month)}>엑셀로 내보내기</button>
-          <button className="ghost-button" onClick={printCurrentView}>인쇄</button>
+          <button className="ghost-button" onClick={() => exportVisibleCalendarXlsx(context==='school'?{...data,dayNotes:{},personalBlocks:[]}:data, sessions, cells, shownPreferences, context === 'work')}>엑셀로 내보내기</button>
+          <button className="ghost-button" onClick={()=>{settingsDialog.current?.close();printCurrentView()}}>인쇄</button>
         </div>
+      </dialog>
+
+      <dialog ref={taskDialog} className="calendar-task-dialog no-print" onClose={()=>setTaskDetail(null)} aria-label="일정 내용">{detailTask&&<><div className="desk-heading"><h2>{detailTask.title}</h2><button className="ghost-button" onClick={()=>taskDialog.current?.close()}>닫기</button></div><p className="hint">{taskDateLabel(detailTask,taskDetail?.kind==='notices')}</p>{detailTask.category&&<p>{detailTask.category}</p>}<p className="desk-pre">{detailTask.note||'추가 내용이 없습니다.'}</p><div className="calendar-task-footer"><label>완료 <input type="checkbox" aria-label="일정 완료" checked={detailTask.done} onChange={e=>{if(!taskDetail)return;update({teacherDesk:{...data.teacherDesk,[taskDetail.kind]:data.teacherDesk[taskDetail.kind].map(task=>task.id===taskDetail.id?{...task,done:e.target.checked}:task)}})}}/></label></div></>}</dialog>
+      <div className="calendar-scroll"><div className="calendar-content">
+      <div className="calendar-grid weekday-row" style={{gridTemplateColumns:`repeat(${columns},minmax(0,1fr))`}}>
+        {(showWeekends?['일', '월', '화', '수', '목', '금', '토']:['월','화','수','목','금']).map(day => <b key={day}>{day}</b>)}
       </div>
 
-      <div className="calendar-grid weekday-row">
-        {['일', '월', '화', '수', '목', '금', '토'].map(day => <b key={day}>{day}</b>)}
-      </div>
-
-      <div className="calendar-grid">
+      <div className="calendar-grid calendar-dates" style={{gridTemplateColumns:`repeat(${columns},minmax(0,1fr))`,...(weeks?{gridTemplateRows:`repeat(${weeks},minmax(5.8rem,auto))`}:{})}}>
         {cells.map(date => {
           const key = dateKey(date)
-          const outside = !key.startsWith(monthPrefix)
+          const outside = !weeks && range === 'month' && !key.startsWith(monthPrefix)
           const holiday = data.settings.useHolidays !== false ? holidayName(key) : undefined
           const weekday = date.getDay()
           const classNames = ['calendar-day']
@@ -61,36 +101,36 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
           if (key === today) classNames.push('today')
           if (holiday || weekday === 0) classNames.push('holiday')
           if (weekday === 6) classNames.push('saturday')
-          const dayEvents = data.events.filter(event => coversDate(event, key))
+          const dayEvents = filter==='all' || teaching || context === 'work' || context === 'school' ? data.events.filter(event => coversDate(event, key)) : []
           const daySessions = sessions
-            .filter(item => item.date === key && !item.cancelled && !item.hidden)
+            .filter(item => teaching && item.date === key && !item.cancelled && !item.hidden)
             .sort((left, right) => left.period - right.period)
-          const notes = data.dayNotes[key] || []
-          const blocks = data.personalBlocks.filter(item => item.date === key).sort((left, right) => left.period - right.period)
+          const notes = context==='school'?[]:data.dayNotes[key] || []
+          const blocks = data.personalBlocks.filter(item => teaching && item.date === key).sort((left, right) => left.period - right.period)
 
           return (
             <div className={classNames.join(' ')} key={key}>
               <div className="calendar-day-head">
                 <span className="calendar-day-date">
-                  <strong>{date.getDate()}</strong>
-                  <button
+                  {onDateSelect ? <button className="calendar-date-button" onClick={() => onDateSelect(key)} title={context==='school'?'이 날짜에 학사일정 등록':'이 날짜에 업무 등록'}>{date.getDate()}</button> : <strong><span className="calendar-day-number">{date.getDate()}</span><span className="compact-date-label">{date.getMonth()+1}/{date.getDate()} {'일월화수목금토'[date.getDay()]}</span></strong>}
+                  {teaching && <button
                     className="day-note-add adjustment-add no-print"
                     title="수업 시간표 변경"
                     onClick={() => setExtraDate(key)}
                   >
                     ⇆
-                  </button>
+                  </button>}
                 </span>
-                <button className="day-note-add no-print" title="이 날짜에 메모 추가" onClick={() => setNoteDate(key)}>+</button>
+                <button className="day-note-add no-print" title="이 날짜에 일정 추가" aria-label={`${key} 일정 추가`} onClick={()=>context==='school'?onDateSelect?.(key):setAdd({date:key,mode:'menu'})}>+</button>
               </div>
-              {holiday && <div className="calendar-event holiday-tag">{holiday}</div>}
+              {holiday && <div className="calendar-event holiday-tag" style={calendarItemStyle(data,'holiday')}>{holiday}</div>}
               {dayEvents.map(event => (
-                <div className={`calendar-event ${event.type}`} key={event.id}>
+                <div className={`calendar-event ${event.type}`} key={event.id} style={schoolEventStyle(data,event)}>
                   {event.type === 'swap' && event.sourceDay ? `${event.sourceDay}요일 시간표` : event.title}
                 </div>
               ))}
               {notes.map(note => (
-                <button className="day-note-chip" key={note.id} onClick={() => setNoteDate(key)}>
+                <button className="day-note-chip" style={calendarItemStyle(data,'school')} key={note.id} onClick={() => setNoteDate(key)}>
                   📌 {note.text}
                 </button>
               ))}
@@ -100,7 +140,6 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                 const lessons = effectiveLessonIds(item)
                   .map(id => data.lessons.find(value => value.id === id))
                   .filter(Boolean)
-                const type = data.types.find(value => value.id === lessons[0]?.typeId)
                 const marked = lessons.some(lesson => data.types.find(value => value.id === lesson!.typeId)?.emphasis)
                 const hasEvaluation = Boolean(linkedEvaluation(data, item))
                 // 진도표를 쓰지 않는 과목(CA·HR 등)은 체크할 진도 자체가 없다.
@@ -112,12 +151,12 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                   <button
                     className={['calendar-lesson', done ? 'done' : '', marked ? 'marked' : ''].filter(Boolean).join(' ')}
                     key={item.id}
-                    style={{ borderLeftColor: type?.color || '#c7ccd6' }}
+                    style={{...calendarItemStyle(data,'teaching',marked),}}
                     onClick={() => onSelect(item.id)}
                   >
-                    <span className="cl-left">
+                    <span className="cl-left" style={{...lessonLabelStyle(data,marked),...(done?{color:'inherit'}:{})}}>
                       {item.period}교시 {classroom?.name}
-                      {item.swappedFrom && <em className="swap-tag">요일대체</em>}
+                      {item.swappedFrom && <em className="swap-tag">대체</em>}
                       {item.extra && (
                         <em className="swap-tag" title={item.extraNote}>
                           {item.extraOrigin === 'moved' ? '이동' : item.extraOrigin === 'swapped' ? '교체' : (item.extraNote || '보강')}
@@ -128,16 +167,22 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                   </button>
                 )
               })}
+              {(context==='school'?[]:deskCalendarItems(data, key, shownPreferences)).map(item => (
+                <div key={item.id} className={`calendar-desk-item ${item.area} ${item.done ? 'done' : ''} ${item.important?'important-item':''}`} style={{...calendarItemStyle(data,item.area,item.important),...(item.done?{backgroundColor:data.settings.appearance.themeId==='night'?'#35383d':'#f0f1f2',color:'#969ba3',borderColor:'#d3d6da',fontWeight:400}:{})}}>
+                  <button className="calendar-item-title" onClick={() => {const kind=item.area==='work'?'tasks':'notices';if(data.teacherDesk[kind].some(task=>task.id===item.id)){setTaskDetail({id:item.id,kind});taskDialog.current?.showModal()}else if(context==='work'&&onTaskSelect)onTaskSelect(item.id);else onOpenArea?.(item.area==='homeroom'?'담임':item.area==='club'?'동아리':'업무',item.clubId)}}>{item.title}</button>
+
+                </div>
+              ))}
               {blocks.map(block => (
                 <button
                   className={['calendar-lesson', block.date < today ? 'done' : ''].filter(Boolean).join(' ')}
                   key={block.id}
-                  style={{ borderLeftColor: '#8b93a2' }}
+                  style={calendarItemStyle(data,'cover')}
                   onClick={() => setEditBlock(block)}
                 >
-                  <span className="cl-left">
+                  <span className="cl-left" style={{fontWeight:data.settings.calendarLessonLabelBold!==false?600:400}}>
                     {block.period}교시
-                    <em className="swap-tag">대강</em>
+                    <em className="swap-tag">대체</em>
                   </span>
                   <span className="cl-right">{block.title}</span>
                 </button>
@@ -147,6 +192,9 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
         })}
       </div>
 
+      </div></div>
+
+      {add&&<CalendarAddDialog data={data} date={add.date} mode={add.mode} onMode={mode=>setAdd({...add,mode})} onMemo={()=>{setNoteDate(add.date);setAdd(null)}} onClose={()=>setAdd(null)} update={update}/>}
       {noteDate && (
         <DayNoteModal
           date={noteDate}

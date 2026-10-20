@@ -16,6 +16,9 @@ export type Subject = {
 }
 
 export type Student = {
+  joinedOn?: string
+  leftOn?: string
+  departureReason?: string
   id: string
   /** 학번. 선택과목 반은 원적반 학번(예: 2104)을 그대로 쓴다. 동명이인 구분의 기준이 된다. */
   number: number
@@ -57,6 +60,7 @@ export type Lesson = {
 export type EventType = 'closed' | 'blocked' | 'swap' | 'note'
 
 export type SchoolEvent = {
+  color?: string
   id: string
   date: string
   /** 기간 일정이면 마지막 날. 비어 있으면 하루짜리. */
@@ -106,7 +110,7 @@ export type SessionOverride = {
   groupId?: string
 }
 
-export type AttendanceStatus = '출석' | '지각' | '조퇴' | '결석' | '기타'
+export type AttendanceStatus = '출석' | '지각' | '조퇴' | '결석' | '결과' | '기타'
 
 export type Appearance = {
   themeId: string
@@ -116,6 +120,16 @@ export type Appearance = {
 }
 
 export type Settings = {
+  calendarLessonLabelBold?: boolean
+  schoolEventTextColors?: Partial<Record<EventType,string>>
+  calendarTextColors?: Partial<Record<CalendarArea,string>>
+  calendarFonts?: Partial<Record<CalendarArea, 'normal'|'bold'|'italic'>>
+  calendarColors: Record<CalendarArea, string>
+  calendarColorCustom: CalendarArea[]
+  schoolEventColors: Partial<Record<EventType, string>>
+  calendarBorders: Partial<Record<CalendarArea, { visible: boolean; color?: string }>>
+  calendarMarkers: Record<string, { color: string; style: 'solid' | 'dashed' | 'dotted' | 'double' | 'none' }>
+  features: { homeroom: boolean; clubs: boolean; teaching: boolean; work: boolean }
   appearance: Appearance
   schoolName: string
   teacherName: string
@@ -144,7 +158,19 @@ export type PersonalBlock = {
   note?: string
 }
 
+export type SeatConstraints = { frontStudents:string[]; frontRows:number; separated:[string,string][]; separation:'row'|'group'; groupRows:number; pairMode:'any'|'mixed'|'same'; genders:Record<string,'남'|'여'>; avoidPreviousSeat:boolean; avoidPreviousPartner:boolean }
+export type SeatSnapshot = { rows:number; columns:number; aisles:number[]; assignments:Record<string,string>; label?:string }
+export type GroupConstraints = { together:[string,string][]; separated:[string,string][]; balanceScores:boolean; balanceTags:boolean; profiles:Record<string,{score?:number;tags:string;note:string}> }
+export type GroupPlan = { constraints?:GroupConstraints; count:number; assignments:Record<string,number> }
+export type SeatingPlan = { empty?:number[]; constraints?:SeatConstraints; previous?:SeatSnapshot; rows:number; columns:number; disabled:number[]; aisles:number[]; assignments:Record<string,string>; locked:number[] }
+export type HomeroomAttendanceExtra = { id:string; date:string; studentId:string; status:AttendanceStatus; reason:AttendanceReason; memo:string }
+
 export type AppData = {
+  groupPlans: Record<string,GroupPlan>
+  seatingPlans: Record<string,SeatingPlan>
+  clubs: Club[]
+  workspacePreferences: WorkspacePreferences
+  teacherDesk: TeacherDesk
   version: number
   settings: Settings
   subjects: Subject[]
@@ -314,3 +340,75 @@ export type Session = {
   /** true 면 달력·오늘 시간표에는 표시하지 않는다(이동·교체로 자동 비워진 자리). */
   hidden?: boolean
 }
+
+export type TeacherTask = {
+  important?: boolean
+  scheduleType?: 'todo' | 'deadline' | 'period' | 'dated'
+  showDeadline?: boolean
+  deadlineDate?: string
+  endDate?: string
+  id: string
+  title: string
+  date: string
+  done: boolean
+  category: string
+  note: string
+  link: string
+}
+export type Collection = {
+  important?: boolean
+  id: string
+  title: string
+  date: string
+  studentIds: string[]
+  received: string[]
+  archived: boolean
+}
+export type StudentRecord = {
+  studentName?: string
+  studentNumber?: number
+  id: string
+  studentId: string
+  date: string
+  kind: '상담' | '생활 관찰' | '학생 연락' | '학부모 연락'
+  text: string
+  followDate: string
+  followed: boolean
+}
+export type TeacherDesk = {
+  illnessReviewThreshold?: number
+  attendanceChoices: Record<string,string>
+  attendanceExtra: HomeroomAttendanceExtra[]
+  timetable: Record<string, string>
+  timetablePeriods: number
+  attendanceReasons: Record<string, AttendanceReason>
+  attendanceMemos: Record<string, string>
+  homeroomAttendance: Record<string, AttendanceStatus>
+  className: string
+  students: Student[]
+  notices: TeacherTask[]
+  collections: Collection[]
+  records: StudentRecord[]
+  tasks: TeacherTask[]
+}
+
+export type CalendarRange = 'month' | 'week' | 'fortnight'
+export type CalendarFilter = 'all' | 'teaching' | 'homeroom' | 'work' | 'club'
+export type CalendarPreferences = { showWeekends?:boolean; weekCount?: number; homeMode?: 'month' | 'week' | 'fortnight' | 'weeks'; range: CalendarRange; filter: CalendarFilter; showCompleted: boolean }
+export type HomeWidget = 'summary' | 'calendar' | 'lessons' | 'notices' | 'collections' | 'tasks' | 'followups' | 'timetable'
+export type HomeWidgetPlacement = { id: HomeWidget; row: number; column: number; width: number; height: number }
+export type WorkspacePreferences = {
+  timetableShowToday: boolean
+  homeGridSize: 8 | 10
+  homeLayout: HomeWidgetPlacement[]
+  homeWidgets: HomeWidget[]
+  workCalendar: CalendarPreferences
+  homeCalendar: CalendarPreferences
+  scheduleCalendar: CalendarPreferences
+}
+
+export type ClubActivity = { important?: boolean; id: string; date: string; title: string; record: string; nextPlan: string }
+export type Club = { schedule?: import('./clubSchedule').ClubSchedule; attendanceReasons?: Record<string, AttendanceReason>; attendanceMemos?: Record<string, string>; id: string; name: string; students: Student[]; attendance: Record<string, AttendanceStatus>; activities: ClubActivity[] }
+
+export type AttendanceReason = '인정' | '질병' | '미인정' | '기타'
+export type CalendarArea = 'teaching' | 'school' | 'homeroom' | 'work' | 'club' | 'swap' | 'cover' | 'holiday'

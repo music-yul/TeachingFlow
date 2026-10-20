@@ -1,3 +1,4 @@
+import { clubTimetableEntries } from '../clubSchedule'
 import type { AppData, Session } from '../types'
 import { DAYS } from '../types'
 import { readableOn } from '../theme'
@@ -47,9 +48,10 @@ function todayRows(data: AppData, sessions: Session[]): TodayRow[] {
   return [...fromSessions, ...fromBlocks].sort((left, right) => left.period - right.period)
 }
 
-export default function MiniTimetable({ data, sessions }: { data: AppData; sessions: Session[] }) {
+export default function MiniTimetable({ data, sessions, showToday=true, classOnly=false }: { data: AppData; sessions: Session[]; showToday?: boolean; classOnly?: boolean }) {
   const active = data.classes.filter(item => !item.archived)
-  const used = active.flatMap(item => item.slots.map(slot => slot.period))
+  const clubEntries=clubTimetableEntries(data)
+  const used = [...clubEntries.map(item=>item.period),...active.flatMap(item => item.slots.map(slot => slot.period))]
   const maxPeriod = used.length ? Math.max(...used) : 7
   const periods = Array.from({ length: Math.max(maxPeriod, 4) }, (_, index) => index + 1)
   const today = todayRows(data, sessions)
@@ -69,7 +71,7 @@ export default function MiniTimetable({ data, sessions }: { data: AppData; sessi
         {data.settings.teacherName && <span className="mini-teacher">{data.settings.teacherName}</span>}
       </p>
 
-      <div className="mini-today">
+      {showToday&&<div className="mini-today">
         <p className="mini-today-title">오늘 수업</p>
         {!today.length && <p className="hint">오늘 등록된 수업이 없습니다.</p>}
         {today.length > 0 && (
@@ -85,11 +87,12 @@ export default function MiniTimetable({ data, sessions }: { data: AppData; sessi
             ))}
           </ul>
         )}
-      </div>
+      </div>}
 
-      {!active.length && <p className="hint">학급을 등록하면 표시됩니다.</p>}
-      {active.length > 0 && (
+      {!active.length && !clubEntries.length && <p className="hint">학급을 등록하면 표시됩니다.</p>}
+      {(active.length > 0 || clubEntries.length>0) && (
         <table>
+          <colgroup><col className="timetable-period-column"/>{DAYS.map(day=><col className="timetable-weekday-column" key={day}/>)}</colgroup>
           <thead>
             <tr><th /> {DAYS.map(day => <th key={day}>{day}</th>)}</tr>
           </thead>
@@ -99,8 +102,10 @@ export default function MiniTimetable({ data, sessions }: { data: AppData; sessi
                 <th>{period}</th>
                 {DAYS.map(day => {
                   const here = active.filter(item => item.slots.some(slot => slot.day === day && slot.period === period))
+                  const clubsHere=clubEntries.filter(v=>v.day===day&&v.period===period)
                   return (
-                    <td className={here.length > 1 ? 'conflict' : ''} key={day}>
+                    <td className={here.length+clubsHere.length > 1 ? 'conflict' : ''} key={day}>
+                      <div className="mini-cell-content">
                       {here.map(classroom => {
                         const subject = data.subjects.find(item => item.id === classroom.subjectId)
                         return (
@@ -113,11 +118,13 @@ export default function MiniTimetable({ data, sessions }: { data: AppData; sessi
                             }}
                             title={`${subject?.name || ''} ${classroom.name}`}
                           >
-                            {subject?.name && <span className="mini-subject">{subject.name}</span>}
+                            {!classOnly && subject?.name && <span className="mini-subject">{subject.name}</span>}
                             <span className="mini-class">{classroom.name}</span>
                           </div>
                         )
                       })}
+                      {clubsHere.map(({club})=><div className="mini-entry" key={`club:${club.id}`} style={{background:data.settings.calendarColors.club,color:readableOn(data.settings.calendarColors.club)}}>{!classOnly&&<span className="mini-subject">{club.schedule?.kind==='autonomous'?'자율 동아리':'동아리'}</span>}<span className="mini-class">{club.name}</span></div>)}
+                      </div>
                     </td>
                   )
                 })}

@@ -1,32 +1,38 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import type { AppData, Classroom } from './types'
 import { APP_VERSION, emptyData, importData, makeId, nextSubjectColor, readData, writeData } from './storage'
-import { ensureFontLoaded, fonts, fontSizes, themes } from './theme'
+import { ensureFontLoaded, fonts, fontSizes, fontSizeOptions, normalizeFontSize, uiThemeVars, themes } from './theme'
 import { buildSessions } from './schedule'
 import { parseWorkbooks, type ImportedClass } from './naesAttendanceParser'
-import CalendarView from './components/CalendarView'
-import EvaluationsView from './components/EvaluationsView'
-import ProgressHub from './components/ProgressHub'
-import AttendanceView from './components/AttendanceView'
 import SettingsHub from './components/SettingsHub'
 import SessionModal from './components/SessionModal'
 import ImportModal from './components/ImportModal'
-import MiniTimetable from './components/MiniTimetable'
+import TeacherDeskView from './components/TeacherDeskView'
+import ClubView from './components/ClubView'
+import UpdateNotice from './components/UpdateNotice'
+import TeachingHub from './components/TeachingHub'
+import type { TeachingTab } from './components/TeachingHub'
 import './App.css'
 
-const tabs = ['수업 일정', '진도 관리', '출결 관리', '평가·성적', '환경 설정'] as const
-type Tab = (typeof tabs)[number]
+const allTabs = ['오늘', '담임', '교과', '동아리', '업무', '환경설정'] as const
+type Tab = (typeof allTabs)[number]
 
 export default function App() {
   const [data, setData] = useState<AppData>(readData)
-  const [tab, setTab] = useState<Tab>('수업 일정')
+  const [storedTab, setTab] = useState<Tab>('오늘')
+  const tabs=allTabs.filter(item=>item!=='담임'||data.settings.features.homeroom).filter(item=>item!=='동아리'||data.settings.features.clubs).filter(item=>item!=='교과'||data.settings.features.teaching).filter(item=>item!=='업무'||data.settings.features.work)
+  const tab=tabs.includes(storedTab)?storedTab:'오늘'
+  const [teachingTab,setTeachingTab]=useState<TeachingTab>('진도 관리')
+  const [settingsStart,setSettingsStart]=useState<'학사일정'|'기능 설정'>('기능 설정')
+  const manageRoster=()=>{setSettingsStart('기능 설정');setTab('환경설정')}
+  const [clubJump,setClubJump]=useState<string|null>(null)
   const [evalJump, setEvalJump] = useState<{ evaluationId: string; classId: string } | null>(null)
   const openEvaluation = (evaluationId: string, classId: string) => {
     setSelected(null)
     setEvalJump({ evaluationId, classId })
-    setTab('평가·성적')
+    setTeachingTab('평가·성적')
+    setTab('교과')
   }
-  const [month, setMonth] = useState(() => new Date())
   const [selected, setSelected] = useState<string | null>(null)
   const [pending, setPending] = useState<{ classes: ImportedClass[]; failed: string[] } | null>(null)
   const [saveError, setSaveError] = useState(false)
@@ -45,9 +51,9 @@ export default function App() {
   useLayoutEffect(() => {
     const root = document.documentElement
     const theme = themes.find(item => item.id === appearance.themeId) || themes[0]
-    Object.entries(theme.vars).forEach(([key, value]) => root.style.setProperty(key, value))
+    Object.entries(uiThemeVars(theme)).forEach(([key, value]) => root.style.setProperty(key, value))
     root.style.setProperty('--accent', appearance.accent)
-    root.style.fontSize = fontSizes[appearance.fontSize] || fontSizes.normal
+    root.style.fontSize = fontSizes[normalizeFontSize(appearance.fontSize)] || fontSizes.normal
     const font = fonts.find(item => item.id === appearance.fontId) || fonts[0]
     ensureFontLoaded(font)
     document.body.style.fontFamily = font.stack
@@ -55,11 +61,19 @@ export default function App() {
 
   const update = (change: Partial<AppData>) => setData(current => ({ ...current, ...change }))
 
+  const openSetup = (target:'학급 설정'|'동아리'|'업무') => {
+    const enabled=target==='학급 설정'?data.settings.features.teaching:target==='동아리'?data.settings.features.clubs:data.settings.features.work
+    if(!enabled){window.alert('기능 설정에서 해당 기능을 먼저 켜 주세요.');return}
+    if(target==='학급 설정'){setTeachingTab('학급 설정');setTab('교과')}
+    else if(target==='동아리'){setClubJump(null);setTab('동아리')}
+    else setTab('업무')
+  }
+
   const openFiles = async (files: File[]) => {
     const result = await parseWorkbooks(files)
     if (!result.classes.length) {
       window.alert(
-        '파일에서 명단을 찾지 못했습니다.\n설정 > 학급·시간표에서 학급을 만든 뒤 "명단 붙여넣기"로 넣으실 수 있습니다.',
+        '파일에서 명단을 찾지 못했습니다.\n교과 > 학급 설정에서 학급을 만든 뒤 "명단 붙여넣기"로 넣으실 수 있습니다.',
       )
       return
     }
@@ -140,20 +154,17 @@ export default function App() {
               <strong>티칭플로</strong>
               <span className="version-badge">{APP_VERSION}</span>
             </span>
-            <small>TEACHING FLOW ― 수업의 흐름을 한눈에</small>
+            <small>TEACHING FLOW ― 수업과 학교생활을 한눈에</small>
           </div>
         </div>
         <div className="topbar-right">
           <label className="font-control">
             폰트 크기
             <select
-              value={appearance.fontSize}
+              value={normalizeFontSize(appearance.fontSize)}
               onChange={event => update({ settings: { ...data.settings, appearance: { ...appearance, fontSize: event.target.value } } })}
             >
-              <option value="small">작게</option>
-              <option value="normal">기본</option>
-              <option value="large">크게</option>
-              <option value="xlarge">아주 크게</option>
+              {fontSizeOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </label>
         </div>
@@ -161,7 +172,7 @@ export default function App() {
 
       <nav className="tabbar">
         {tabs.map((item, index) => (
-          <button className={tab === item ? 'tab-item active' : 'tab-item'} key={item} onClick={() => setTab(item)}>
+          <button className={tab === item ? 'tab-item active' : 'tab-item'} key={item} onClick={() => {if(item==='동아리')setClubJump(null);if(item==='교과')setTeachingTab('진도 관리');setTab(item)}}>
             <span className="tab-index">{String(index + 1).padStart(2, '0')}</span>{item}
           </button>
         ))}
@@ -171,38 +182,18 @@ export default function App() {
 
       <main className="workspace">
         <section className="content">
-          {!started && tab !== '환경 설정' && (
+          {!started && tab === '교과' && (
             <p className="banner">
-              먼저 <b>환경 설정 &gt; 학급·시간표</b>에서 출석부를 올리거나 과목·학급을 등록해 주세요.
-              그다음 <b>환경 설정 &gt; 학사일정</b>에서 학기 기간을 맞추면 진도표가 만들어집니다.
+              먼저 <b>교과 &gt; 학급 설정</b>에서 출석부를 올리거나 과목·학급을 등록해 주세요.
+              학기 기간은 <b>환경설정 &gt; 학사일정</b>에서 맞춰 주세요. 교과 외 기능의 시작 방법은 <b>환경설정 &gt; 기능 설정</b>에서 확인할 수 있습니다.
             </p>
           )}
 
-          {tab === '수업 일정' && (
-            <div className="timetable-layout">
-              <MiniTimetable data={data} sessions={sessions} />
-              <CalendarView data={data} sessions={sessions} month={month} setMonth={setMonth} onSelect={setSelected} update={update} />
-            </div>
-          )}
-          {tab === '진도 관리' && (
-            <div className="timetable-layout">
-              <MiniTimetable data={data} sessions={sessions} />
-              <ProgressHub data={data} sessions={sessions} update={update} onSelect={setSelected} onOpenEvaluation={openEvaluation} />
-            </div>
-          )}
-          {tab === '출결 관리' && <AttendanceView data={data} sessions={sessions} update={update} />}
-          {tab === '평가·성적' && (
-            <EvaluationsView
-              data={data}
-              update={update}
-              sessions={sessions}
-              jumpTo={evalJump}
-              onJumpHandled={() => setEvalJump(null)}
-              onOpenSession={setSelected}
-            />
-          )}
-          {tab === '환경 설정' && (
-            <SettingsHub data={data} update={update} onFiles={openFiles} onImport={loadBackup} onReset={reset} />
+          {(tab === '오늘' || tab === '담임' || tab === '업무') && <TeacherDeskView key={tab} mode={tab} onManageRoster={manageRoster} data={data} sessions={sessions} update={update} onSelect={setSelected} onNavigate={(next,reference)=>{if(next==='교과')setTeachingTab(reference==='classes'?'학급 설정':'진도 관리');if(next==='동아리')setClubJump(reference||null);setTab(next)}} />}
+          {tab === '동아리' && data.settings.features.clubs && <ClubView onManageRoster={manageRoster} key={clubJump||'club-default'} initialClubId={clubJump||undefined} data={data} update={update} />}
+          {tab === '교과' && <TeachingHub onFiles={openFiles} data={data} sessions={sessions} update={update} tab={teachingTab} setTab={setTeachingTab} onSelect={setSelected} onOpenEvaluation={openEvaluation} evalJump={evalJump} onJumpHandled={() => setEvalJump(null)} />}
+          {tab === '환경설정' && (
+            <SettingsHub initialSub={settingsStart} data={data} update={update} onFiles={openFiles} onImport={loadBackup} onReset={reset} onSetupNavigate={openSetup} />
           )}
           <p className="app-foot">© 2026 율쌤 ｜ 무단 배포 및 수정 금지</p>
         </section>
@@ -217,6 +208,7 @@ export default function App() {
           onOpenEvaluation={openEvaluation}
         />
       )}
+      <UpdateNotice />
       {pending && (
         <ImportModal
           initial={pending.classes}

@@ -1,0 +1,22 @@
+import { useState } from 'react'
+import type { AppData, AttendanceReason, AttendanceStatus } from '../types'
+import { todayKey } from '../schedule'
+import { activeStudents } from '../members'
+type Props={initialDate?:string;dateOptions?:string[];onManage?:()=>void;memberKind?:'club';data:AppData;update:(change:Partial<AppData>)=>void;selected:string;onSelect:(id:string)=>void}
+const statuses:AttendanceStatus[]=['출석','지각','조퇴','결석','결과']
+const reasons:AttendanceReason[]=['인정','질병','미인정','기타']
+export default function HomeroomRoster({data,update,selected,onSelect,onManage,initialDate,dateOptions}:Props){
+ const [memoOpen,setMemoOpen]=useState<string|null>(null)
+ const [date,setDate]=useState(initialDate||todayKey())
+ const desk=data.teacherDesk
+ const students=activeStudents(desk.students,date)
+ const marks=desk.homeroomAttendance
+ const causes=desk.attendanceReasons||{}
+ const memos=desk.attendanceMemos||{}
+ const patch=(values:Partial<typeof desk>)=>update({teacherDesk:{...desk,...values}})
+ const setMark=(id:string,value:string)=>{const next={...marks};const key=`${date}:${id}`;if(value)next[key]=value as AttendanceStatus;else delete next[key];const nextReasons={...causes};if(value!==marks[key])delete nextReasons[key];patch({homeroomAttendance:next,attendanceReasons:nextReasons,...(['지각','조퇴','결과'].includes(value)?{attendanceChoices:{...desk.attendanceChoices,[key]:key}}:{})})}
+ const present=students.filter(s=>marks[`${date}:${s.id}`]==='출석').length
+ const checked=students.filter(s=>marks[`${date}:${s.id}`]).length
+ return <aside className="desk-card homeroom-roster"><div className="desk-heading"><h2>출석 현황</h2><button className="ghost-button" onClick={onManage}>명단 관리</button></div><div className="roster-date-actions">{dateOptions&&dateOptions.length>0&&<select aria-label="동아리 수업일 선택" value={dateOptions.includes(date)?date:''} onChange={e=>{if(e.target.value)setDate(e.target.value)}}><option value="">직접 날짜 선택</option>{dateOptions.map(d=><option key={d} value={d}>{d}</option>)}</select>}<label className="roster-date">날짜<input type="date" required value={date} onChange={e=>{if(e.target.value)setDate(e.target.value)}}/></label><button className="ghost-button" disabled={!students.length} onClick={()=>{if(students.some(s=>marks[`${date}:${s.id}`]&&marks[`${date}:${s.id}`]!=='출석')&&!window.confirm('다른 출결 표시가 있습니다. 모두 출석으로 바꿀까요?'))return;const next={...marks};const nextReasons={...causes};students.forEach(s=>{next[`${date}:${s.id}`]='출석';delete nextReasons[`${date}:${s.id}`]});patch({homeroomAttendance:next,attendanceReasons:nextReasons})}}>전체 출석</button></div><p className="hint">출석 {present}명 · 확인 {checked}/{students.length}명</p>
+ <div className="roster-list compact-roster">{students.map(s=>{const key=`${date}:${s.id}`;const abnormal=['지각','조퇴','결석','결과'].includes(marks[key]);return <div className={`roster-entry ${selected===s.id?'selected':''}`} key={s.id}><div className="compact-roster-row"><button className="roster-name" onClick={()=>onSelect(s.id)} title={`${s.number} ${s.name}`}>{s.number} {s.name}</button><select aria-label={`${s.number} ${s.name} 출결`} value={marks[key]||''} onChange={e=>setMark(s.id,e.target.value)}><option value="">미확인</option>{statuses.map(status=><option key={status}>{status}</option>)}{marks[key]==='기타'&&<option>기타</option>}</select><select aria-label={`${s.number} ${s.name} 출결 사유`} disabled={!abnormal} value={causes[key]||''} onChange={e=>{const next={...causes};if(e.target.value)next[key]=e.target.value as AttendanceReason;else delete next[key];patch({attendanceReasons:next})}}><option value="">사유</option>{reasons.map(reason=><option key={reason}>{reason}</option>)}</select><button className="link-button roster-memo-button" aria-label={`${s.number} ${s.name} 출결 메모`} title="출결 메모" disabled={!abnormal} aria-expanded={abnormal&&memoOpen===key} onClick={()=>setMemoOpen(memoOpen===key?null:key)}>✎{abnormal&&memos[key]?'·':''}</button></div>{abnormal&&memoOpen===key&&<div className="roster-memo-popover"><label>{s.name} 출결 메모<textarea aria-label={`${s.number} ${s.name} 출결 메모 내용`} rows={2} value={memos[key]||''} onChange={e=>{const next={...memos};if(e.target.value)next[key]=e.target.value;else delete next[key];patch({attendanceMemos:next})}}/></label><button className="link-button" onClick={()=>setMemoOpen(null)}>닫기</button></div>}</div>})}</div>{!students.length&&<p className="hint">이 날짜의 학생이 없습니다. 환경설정의 기능 설정에서 초기 명단을 입력하거나 학생을 추가하세요.</p>}</aside>
+}

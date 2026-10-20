@@ -59,7 +59,7 @@ export default function ClassesView({ data, update, onFiles }: Props) {
         <h2>출석부 파일로 가져오기</h2>
         <p className="hint">
           나이스 <b>교과시간별출석부</b>가 가장 잘 읽힙니다. 다른 학교 양식이나 직접 만든 표도 시도해 보세요.
-          자동으로 못 읽은 항목은 다음 화면에서 직접 채울 수 있습니다. 과목·학급·시간표·명단이 한 번에 만들어집니다.
+          자동으로 못 읽은 항목은 다음 화면에서 직접 채울 수 있습니다. 과목·학급 설정·명단이 한 번에 만들어집니다.
         </p>
         <label className="file-button">
           파일 선택 (여러 개 가능)

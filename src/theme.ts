@@ -253,7 +253,19 @@ export function ensureFontLoaded(font: FontOption) {
   document.head.appendChild(link)
 }
 
-export const fontSizes: Record<string, string> = { small: '14px', normal: '16px', large: '18px', xlarge: '21px' }
+export const fontSizeOptions = [8, 10, 12, 14, 16, 18, 20]
+  .map(pt => ({ value: `${pt}pt`, label: `${pt}pt` }))
+export const legacyFontSize: Record<string, string> = { small: '10pt', normal: '12pt', large: '14pt', xlarge: '16pt' }
+export function normalizeFontSize(value: string) {
+  if (legacyFontSize[value]) return legacyFontSize[value]
+  const pt = Number(value.replace(/pt$/, ''))
+  if (!Number.isFinite(pt)) return '12pt'
+  return fontSizeOptions.reduce((best, option) => Math.abs(parseFloat(option.value) - pt) < Math.abs(parseFloat(best.value) - pt) ? option : best).value
+}
+export const fontSizes: Record<string, string> = {
+  ...Object.fromEntries(fontSizeOptions.map(option => [option.value, option.value])),
+  ...legacyFontSize,
+}
 
 /** 배경색이 밝은지 어두운지 보고 그 위에 올릴 글자색을 고른다. */
 export function readableOn(background: string) {
@@ -267,3 +279,6 @@ export function readableOn(background: string) {
   const luminance = 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4)
   return luminance > 0.45 ? '#1f2733' : '#ffffff'
 }
+
+/** Preserve the original v4.1 color roles for all existing and new surfaces. */
+export function uiThemeVars(theme:Theme){return{...theme.vars}}

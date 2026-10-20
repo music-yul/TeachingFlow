@@ -1,6 +1,8 @@
+import { deskCalendarItems } from './workspace'
+import { holidayName } from './holidays'
 import * as XLSX from 'xlsx'
-import type { AppData, EvalColumn, Evaluation, Session } from './types'
-import { coverage, sessionLabel } from './schedule'
+import type { AppData, CalendarPreferences, EvalColumn, Evaluation, Session } from './types'
+import { coverage, coversDate, dateKey, sessionLabel } from './schedule'
 import {
   columnKey,
   evaluationClasses,
@@ -206,4 +208,27 @@ export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
 /** 현재 화면(.content 안쪽)만 인쇄한다. 메뉴·버튼은 인쇄 스타일로 숨긴다. */
 export function printCurrentView() {
   window.print()
+}
+
+/** 현재 표시한 기간·구분만 내보낸다. 개인 상담 본문은 포함하지 않는다. */
+export function exportVisibleCalendarXlsx(data: AppData, sessions: Session[], dates: Date[], preferences: CalendarPreferences, includeSchoolEvents = false) {
+  const rows: (string | number)[][] = [['날짜', '구분', '교시', '학급', '내용']]
+  const teaching = data.settings.features.teaching && (preferences.filter === 'all' || preferences.filter === 'teaching')
+  dates.forEach(date => {
+    const key = dateKey(date)
+    const holiday = data.settings.useHolidays !== false ? holidayName(key) : undefined
+    if (holiday) rows.push([key, '공휴일', '', '', holiday])
+    if (preferences.filter === 'all' || teaching || includeSchoolEvents) data.events.filter(event=>coversDate(event,key)).forEach(event=>rows.push([key,'학사일정','','',event.type==='swap'&&event.sourceDay?`${event.sourceDay}요일 시간표`:event.title]))
+    ;(data.dayNotes[key] || []).forEach(note => rows.push([key, '메모', '', '', note.text]))
+    if (teaching) {
+      sessions.filter(session => session.date === key && !session.cancelled && !session.hidden).sort((a,b) => a.period-b.period).forEach(session => rows.push([key, '교과', session.period, data.classes.find(c => c.id === session.classId)?.name || '', sessionLabel(data, session)]))
+      data.personalBlocks.filter(block => block.date === key).sort((a,b) => a.period-b.period).forEach(block => rows.push([key, '교과·대강', block.period, '', block.title]))
+    }
+    deskCalendarItems(data, key, preferences).forEach(item => rows.push([key, item.area === 'homeroom' ? '담임' : item.area==='club'?'동아리':'업무', '', '', item.title + (item.done ? ' (완료)' : '')]))
+  })
+  const sheet = XLSX.utils.aoa_to_sheet(rows)
+  sheet['!cols'] = [{wch:12}, {wch:12}, {wch:6}, {wch:12}, {wch:55}]
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, sheet, '선택한 달력')
+  XLSX.writeFile(workbook, `달력_${dateKey(dates[0])}_${dateKey(dates.at(-1)!)}_${preferences.filter}.xlsx`)
 }

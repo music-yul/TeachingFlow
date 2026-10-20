@@ -1,12 +1,13 @@
+import { themedCalendarColors } from '../calendarAppearance'
+import CalendarDesign from './CalendarDesign'
 import type { AppData, Appearance } from '../types'
-import { ensureFontLoaded, fonts, fontSizes, subjectColorsForTheme, themes } from '../theme'
+import { ensureFontLoaded, fonts, fontSizeOptions, normalizeFontSize, themes } from '../theme'
 
 type Props = {
   data: AppData
   update: (change: Partial<AppData>) => void
 }
 
-const sizeNames: Record<string, string> = { small: '작게', normal: '기본', large: '크게', xlarge: '아주 크게' }
 
 export default function AppearanceView({ data, update }: Props) {
   const current = data.settings.appearance
@@ -18,12 +19,7 @@ export default function AppearanceView({ data, update }: Props) {
   const pickTheme = (id: string) => {
     const theme = themes.find(item => item.id === id)
     if (!theme) return
-    // 테마에 맞춰 과목 색 순서도 함께 돌린다(예: 그린 테마 -> 초록이 1번 과목 색으로).
-    const colors = subjectColorsForTheme(id)
-    update({
-      settings: { ...data.settings, appearance: { ...current, themeId: id, accent: theme.swatch } },
-      subjects: data.subjects.map((item, index) => ({ ...item, color: colors[index % colors.length] })),
-    })
+    update({settings:{...data.settings,calendarColors:themedCalendarColors(data,id),appearance:{...current,themeId:id,accent:theme.swatch}}})
   }
 
   return (
@@ -31,10 +27,10 @@ export default function AppearanceView({ data, update }: Props) {
       <div className="block">
         <h2>화면 테마</h2>
         <p className="hint">
-          화면 전체의 배경과 글자색이 바뀌고, <b>과목 색도 그 테마와 어울리는 색이 먼저 오도록 순서가 바뀝니다.</b>
-          바꾼 뒤 아래 <b>과목별 색·글자색 미세 조정</b>에서 하나씩 다시 고를 수 있습니다.
+          위젯·탭·표의 배경, 구분선과 강조색을 선택한 테마에 맞춥니다. 달력 기본색은 기존 팔레트의 순서를 테마별로 바꿉니다. 직접 지정한 달력색과 시간표 개별색은 유지합니다.
+          바꾼 뒤 아래 <b>시간표 디자인</b>에서 하나씩 다시 고를 수 있습니다.
         </p>
-        <div className="theme-row">
+        <div className="theme-with-accent"><div className="theme-row">
           {themes.map(theme => (
             <button
               className={current.themeId === theme.id ? 'theme-card on' : 'theme-card'}
@@ -48,12 +44,8 @@ export default function AppearanceView({ data, update }: Props) {
               {theme.name}
             </button>
           ))}
-        </div>
-      </div>
-
-      <div className="block">
-        <h2>강조색</h2>
-        <p className="hint">선택된 메뉴, 버튼에 쓰입니다. 테마를 바꾸면 그 테마의 기본 강조색으로 돌아갑니다.</p>
+        </div>      <div className="theme-accent">
+        <div className="accent-caption"><h2>강조색</h2><span className="hint">메뉴·버튼 색 · 테마 변경 시 기본값 적용</span></div>
         <div className="inline-form">
           <input type="color" value={current.accent} onChange={event => edit({ accent: event.target.value })} />
           <input
@@ -63,6 +55,9 @@ export default function AppearanceView({ data, update }: Props) {
           />
           <button className="ghost-button" onClick={() => pickTheme(current.themeId)}>기본값으로</button>
         </div>
+      </div>
+
+</div>
       </div>
 
       <div className="block">
@@ -92,20 +87,21 @@ export default function AppearanceView({ data, update }: Props) {
       <div className="block">
         <h2>폰트 크기</h2>
         <div className="inline-form">
-          {Object.keys(fontSizes).map(size => (
+          {fontSizeOptions.map(({ value: size, label }) => (
             <button
-              className={current.fontSize === size ? 'subtab active' : 'subtab'}
+              className={(normalizeFontSize(current.fontSize)) === size ? 'subtab active' : 'subtab'}
               key={size}
               onClick={() => edit({ fontSize: size })}
             >
-              {sizeNames[size]}
+              {label}
             </button>
           ))}
         </div>
       </div>
 
+      <CalendarDesign data={data} update={update} />
       <div className="block">
-        <h2>과목별 색·글자색 미세 조정</h2>
+        <h2>시간표 디자인</h2>
         <p className="hint">
           시간표 칸의 글자색입니다. <b>자동</b>으로 두면 배경이 밝을 땐 검정, 어두울 땐 흰색이 됩니다.
           직접 정하고 싶을 때만 색을 고르세요.

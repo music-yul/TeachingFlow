@@ -10,7 +10,7 @@ type Props = {
   update: (change: Partial<AppData>) => void
 }
 
-const statuses: AttendanceStatus[] = ['출석', '지각', '조퇴', '결석', '기타']
+const statuses: AttendanceStatus[] = ['출석', '지각', '조퇴', '결석', '결과', '기타']
 const weekdayNames = ['일', '월', '화', '수', '목', '금', '토']
 
 function weekdayOf(key: string) {
@@ -35,7 +35,7 @@ export default function AttendanceView({ data, sessions, update }: Props) {
   if (!active.length) {
     return (
       <section className="panel empty-panel">
-        등록된 학급이 없습니다. <b>환경 설정 &gt; 학급·시간표</b>에서 먼저 학급을 추가해 주세요.
+        등록된 학급이 없습니다. <b>교과 &gt; 학급 설정</b>에서 먼저 학급을 추가해 주세요.
       </section>
     )
   }

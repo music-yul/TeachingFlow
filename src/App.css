@@ -224,7 +224,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .cl-right { flex: 1 1 auto; font-size: 0.68rem; overflow-wrap: anywhere; min-width: 0; }
 .calendar-lesson.done { background: var(--done); border-color: var(--done); color: var(--done-ink); }
 .calendar-lesson.done .cl-left, .calendar-lesson.done .cl-right { color: var(--done-ink); }
-.calendar-lesson.done { border-left-color: var(--done-ink) !important; }
+
 
 /* ---------- tables ---------- */
 
@@ -949,3 +949,13 @@ thead th small { display: block; font-weight: 400; }
   .digest-lesson { flex: 0 0 auto; }
 }
 
+
+.attendance-table .att-col-status { width:17rem; }
+.attendance-table .att-col-tally { width:6rem; }
+.attendance-table .status-cell { white-space:normal; }
+.attendance-table .status-cell .slot { padding:0 .3rem; }
+.attendance-table td:nth-child(5) input { min-width:0; }
+.eval-row-title>b { font-size:1.08rem; }
+.eval-meta { font-size:.85rem; }
+.eval-tree-task { font-size:.88rem; }
+.eval-tree-empty { font-size:.85rem; }

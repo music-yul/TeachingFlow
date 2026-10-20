@@ -1,7 +1,11 @@
+import { normalizeClubSchedule } from './clubSchedule'
+import { normalizeSeatingPlans } from './seating'
+import { defaultCalendarColors, normalizeCalendarColors, normalizeCalendarCustom, normalizeCalendarFonts, normalizeCalendarTextColors, normalizeCalendarMarkers, normalizeCalendarBorders } from './calendarAppearance'
+import { defaultWorkspacePreferences, normalizeWorkspacePreferences } from './workspace'
 import type { AppData, Evaluation, EvaluationItem, EvaluationTask, LessonType, EvaluationType, Subject, TaskStatus } from './types'
 import { subjectColorsForTheme } from './theme'
 
-export const APP_VERSION = 'v4.1'
+export const APP_VERSION = 'v4.38'
 export const APP_NAME = '티칭플로'
 export const APP_TAGLINE = 'TEACHING FLOW ― 수업의 흐름을 한눈에'
 const STORAGE_KEY = 'class-schedule-planner-data'
@@ -31,8 +35,23 @@ function thisYear() {
 
 export function emptyData(): AppData {
   return {
+    groupPlans: {},
+    seatingPlans: {},
+    clubs: [],
+    workspacePreferences: defaultWorkspacePreferences(),
+    teacherDesk: { attendanceChoices: {}, attendanceExtra: [], timetable: {}, timetablePeriods: 7, attendanceReasons: {}, attendanceMemos: {}, homeroomAttendance: {}, className: '', students: [], notices: [], collections: [], records: [], tasks: [] },
     version: 2,
     settings: {
+      calendarColors: defaultCalendarColors(),
+      calendarColorCustom: [],
+      calendarTextColors: {},
+      calendarLessonLabelBold: true,
+      schoolEventTextColors: {},
+      calendarFonts: {},
+      calendarMarkers: {},
+      calendarBorders: {},
+      schoolEventColors: {},
+      features: { homeroom: false, clubs: false, teaching: true, work: true },
       appearance: { themeId: 'default', accent: '#7c8794', fontId: 'pretendard', fontSize: 'normal' },
       schoolName: '',
       teacherName: '',
@@ -161,17 +180,52 @@ function normalize(saved: Partial<AppData>): AppData {
     return { ...item, note: item.note || '', evaluationId: type?.emphasis ? item.evaluationId : undefined }
   })
   return {
+    groupPlans: saved.groupPlans || {},
+    seatingPlans: normalizeSeatingPlans(saved.seatingPlans),
+    clubs: (saved.clubs || []).map(club=>({...club,...(club.schedule?{schedule:normalizeClubSchedule(club.schedule)}:{}),students:club.students||[],attendance:club.attendance||{},activities:club.activities||[]})),
+    workspacePreferences: normalizeWorkspacePreferences(saved.workspacePreferences),
+    teacherDesk: {
+      ...base.teacherDesk,
+      ...saved.teacherDesk,
+      attendanceChoices: saved.teacherDesk?.attendanceChoices || {},
+      attendanceExtra: saved.teacherDesk?.attendanceExtra || [],
+      timetable: saved.teacherDesk?.timetable || {},
+      timetablePeriods: Math.max(1,Math.min(14,Math.round(saved.teacherDesk?.timetablePeriods || 7))),
+      homeroomAttendance: saved.teacherDesk?.homeroomAttendance || {},
+      attendanceReasons: saved.teacherDesk?.attendanceReasons || {},
+      attendanceMemos: saved.teacherDesk?.attendanceMemos || {},
+      students: saved.teacherDesk?.students || [],
+      notices: saved.teacherDesk?.notices || [],
+      collections: saved.teacherDesk?.collections || [],
+      records: saved.teacherDesk?.records || [],
+      tasks: saved.teacherDesk?.tasks || [],
+    },
     version: 2,
     settings: {
       ...base.settings,
       ...(saved.settings || {}),
+      calendarColors: normalizeCalendarColors(saved.settings?.calendarColors,saved.settings?.appearance?.themeId,saved.settings?.calendarColorCustom),
+      calendarColorCustom: normalizeCalendarCustom(saved.settings?.calendarColorCustom,saved.settings?.calendarColors,saved.settings?.appearance?.themeId),
+      calendarLessonLabelBold: saved.settings?.calendarLessonLabelBold !== false,
+      schoolEventTextColors: Object.fromEntries(Object.entries(saved.settings?.schoolEventTextColors||{}).filter(([key,value])=>['closed','blocked','swap','note'].includes(key)&&/^#[0-9a-f]{6}$/i.test(value))),
+      calendarTextColors: normalizeCalendarTextColors(saved.settings?.calendarTextColors),
+      calendarFonts: normalizeCalendarFonts(saved.settings?.calendarFonts),
+      calendarMarkers: normalizeCalendarMarkers(saved.settings?.calendarMarkers),
+      calendarBorders: normalizeCalendarBorders(saved.settings?.calendarBorders),
+      schoolEventColors: Object.fromEntries(Object.entries(saved.settings?.schoolEventColors || {}).filter(([key,value])=>['closed','blocked','swap','note'].includes(key) && /^#[0-9a-f]{6}$/i.test(value))),
+      features: {
+        teaching: saved.settings?.features?.teaching ?? true,
+        work: saved.settings?.features?.work ?? true,
+        homeroom: saved.settings?.features?.homeroom ?? Boolean(saved.teacherDesk?.className || saved.teacherDesk?.students?.length || saved.teacherDesk?.notices?.length || saved.teacherDesk?.collections?.length || saved.teacherDesk?.records?.length || Object.keys(saved.teacherDesk?.homeroomAttendance || {}).length),
+        clubs: saved.settings?.features?.clubs ?? Boolean(saved.clubs?.length),
+      },
       appearance: { ...base.settings.appearance, ...(saved.settings?.appearance || {}) },
     },
     subjects: (saved.subjects || []).map(item => ({ ...item, usesProgress: item.usesProgress !== false })),
     classes: (saved.classes || []).map(item => ({ ...item, slots: item.slots || [], students: item.students || [] })),
     lessons,
     types,
-    events: (saved.events || []).map(item => ({ ...item, periods: item.periods || [], classIds: item.classIds || [] })),
+    events: (saved.events || []).map(item => ({ ...item, color: /^#[0-9a-f]{6}$/i.test(item.color || '') ? item.color : undefined, periods: item.periods || [], classIds: item.classIds || [] })),
     progress: saved.progress || {},
     overrides: saved.overrides || {},
     extraSessions: saved.extraSessions || [],

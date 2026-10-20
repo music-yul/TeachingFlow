@@ -1,8 +1,10 @@
+import CalendarView from './CalendarView'
+import { schoolEventColor } from '../calendarAppearance'
 import { useState } from 'react'
 import type { AppData, Day, EventType, SchoolEvent } from '../types'
 import { DAYS, PERIODS } from '../types'
 import { makeId } from '../storage'
-import { parseDate } from '../schedule'
+import { parseDate, todayKey } from '../schedule'
 
 type Props = {
   data: AppData
@@ -48,7 +50,8 @@ const emptyDraft: Draft = {
 }
 
 export default function EventsView({ data, update }: Props) {
-  const [draft, setDraft] = useState<Draft>(emptyDraft)
+  const [month,setMonth]=useState(()=>new Date())
+ const [draft, setDraft] = useState<Draft>(()=>({...emptyDraft,date:todayKey()}))
   const edit = (change: Partial<AppData['settings']>) => update({ settings: { ...data.settings, ...change } })
 
   const addEvent = () => {
@@ -60,7 +63,8 @@ export default function EventsView({ data, update }: Props) {
         { ...rest, id: makeId('event'), title: draft.title.trim(), endDate: ranged ? draft.endDate || draft.date : undefined },
       ],
     })
-    setDraft(emptyDraft)
+    setMonth(parseDate(draft.date))
+    setDraft({...emptyDraft,date:draft.date})
   }
 
   const editEvent = (id: string, change: Partial<SchoolEvent>) => {
@@ -72,8 +76,7 @@ export default function EventsView({ data, update }: Props) {
   const draftSpan = draft.ranged ? spanInfo(draft.date, draft.endDate) : null
 
   return (
-    <section className="panel">
-      <div className="block">
+    <div className="academic-settings"><section className="panel academic-term">      <div className="block">
         <h2>학기 설정</h2>
         <p className="hint">
           여기 입력한 기간 안에서만 수업이 배정됩니다. 학기가 바뀌면 날짜를 바꿔 주세요.
@@ -95,6 +98,7 @@ export default function EventsView({ data, update }: Props) {
           대한민국 공휴일을 달력에 표시하고 그날 수업을 자동으로 뺍니다
         </label>
       </div>
+</section>    <div className="academic-layout"><CalendarView context="school" data={data} sessions={[]} month={month} setMonth={setMonth} onSelect={()=>{}} update={update} onDateSelect={date=>setDraft({...draft,date})}/><section className="panel">
 
       <div className="block">
       <h2>학사일정</h2>
@@ -139,6 +143,7 @@ export default function EventsView({ data, update }: Props) {
         <select value={draft.type} onChange={event => setDraft({ ...draft, type: event.target.value as EventType, periods: [] })}>
           {(Object.keys(typeLabel) as EventType[]).map(key => <option key={key} value={key}>{typeLabel[key]}</option>)}
         </select>
+        <label>달력 배경색<input type="color" aria-label="새 학사일정 배경색" value={schoolEventColor(data,draft)} onChange={e=>setDraft({...draft,color:e.target.value})}/></label>
         {draft.type === 'swap' && (
           <label className="swap-pick">
             이 날은
@@ -176,7 +181,7 @@ export default function EventsView({ data, update }: Props) {
         )}
       </div>
 
-      <p className="event-list-label">등록된 일정 {sorted.length > 0 && `(${sorted.length}건)`}</p>
+      <details className="academic-registered"><summary>등록된 학사일정 ({sorted.length}건)</summary>
 
       {sorted.map(event => {
         const span = spanInfo(event.date, event.endDate)
@@ -205,6 +210,7 @@ export default function EventsView({ data, update }: Props) {
             <select value={event.type} onChange={input => editEvent(event.id, { type: input.target.value as EventType })}>
               {(Object.keys(typeLabel) as EventType[]).map(key => <option key={key} value={key}>{typeLabel[key]}</option>)}
             </select>
+            <input type="color" aria-label={`${event.title} 달력 배경색`} value={schoolEventColor(data,event)} onChange={e=>editEvent(event.id,{color:e.target.value})}/><button className="link-button" disabled={!event.color} onClick={()=>editEvent(event.id,{color:undefined})}>종류 색 사용</button>
             {event.type === 'swap' && (
               <label className="swap-pick">
                 <select value={event.sourceDay || '금'} onChange={input => editEvent(event.id, { sourceDay: input.target.value as Day })}>
@@ -243,8 +249,8 @@ export default function EventsView({ data, update }: Props) {
           </div>
         )
       })}
-      {!sorted.length && <p className="hint">등록된 일정이 없습니다.</p>}
+      {!sorted.length && <p className="hint">등록된 일정이 없습니다.</p>}</details>
       </div>
-    </section>
+    </section></div></div>
   )
 }
