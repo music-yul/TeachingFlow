@@ -711,3 +711,8 @@
 
 .calendar-deadline-label { display:inline-block; color:#b42318; background:#fff1f0; font-weight:700; padding:0 3px; border-radius:3px; margin-right:4px; }
 .calendar-task-dialog .desk-card { margin:10px 0; padding:0; border:0; background:transparent; }
+
+.task-date-row { flex-wrap:nowrap; align-items:flex-start; gap:12px; }
+.task-date-row>label { flex:0 1 180px; min-width:0; }
+.task-date-row input[type=date] { width:100%; min-width:0; box-sizing:border-box; }
+.task-date-options { padding:0; gap:6px 14px; }
