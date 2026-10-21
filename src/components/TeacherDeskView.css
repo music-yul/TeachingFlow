@@ -688,3 +688,9 @@
 .task-record-preview { display:block; width:100%; text-align:left; background:var(--subtle); padding:8px; margin:6px 0; border:1px solid var(--line); }
 .task-record-preview span { display:block; white-space:pre-wrap; overflow-wrap:anywhere; font-weight:400; }
 .work-record-dialog::backdrop { background:#0007; }
+.work-record-form .modal-body { padding:0; }
+.work-record-form .modal-foot { padding:10px 0 0; }
+.work-entry-heading { display:flex; align-items:center; gap:10px; flex-wrap:wrap; min-width:0; }
+.work-entry-heading h2 { margin:0; }
+.work-entry-heading .work-entry-kind-select { width:auto; min-width:100px; max-width:150px; padding:4px 8px; font-size:.8rem; font-weight:400; }
+.work-record-form>.desk-heading { margin-bottom:12px; }

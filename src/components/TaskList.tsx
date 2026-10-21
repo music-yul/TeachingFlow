@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 import type { TeacherTask } from '../types'
 import { makeId } from '../storage'
@@ -10,8 +11,8 @@ export function TaskCategoryField({value,categories,onChange}:{value:string;cate
 }
 
 function safeLink(value: string) { try { const url=new URL(value); return ['https:','http:'].includes(url.protocol)?url.href:undefined } catch { return undefined } }
-type Props = { title: string; items: TeacherTask[]; onChange: (items: TeacherTask[]) => void; notice?: boolean; today: string; initialDraft?: TeacherTask; editorOnly?:boolean; categoryOptions?:string[]; onCancel?:()=>void }
-export default function TaskList({ title, items, onChange, notice=false, today, initialDraft, editorOnly=false, onCancel, categoryOptions=[] }: Props) {
+type Props = { headingAddon?:ReactNode; title: string; items: TeacherTask[]; onChange: (items: TeacherTask[]) => void; notice?: boolean; today: string; initialDraft?: TeacherTask; editorOnly?:boolean; categoryOptions?:string[]; onCancel?:()=>void }
+export default function TaskList({ title, items, onChange, notice=false, today, initialDraft, editorOnly=false, onCancel, categoryOptions=[], headingAddon }: Props) {
   const [draft,setDraft]=useState<TeacherTask|null>(initialDraft ? (notice ? initialDraft : taskForEditing(initialDraft)) : null)
   const [showDone,setShowDone]=useState(false)
   const [category,setCategory]=useState('')
@@ -24,7 +25,7 @@ export default function TaskList({ title, items, onChange, notice=false, today, 
   }
   const visible=[...items].filter(item=>(showDone||!item.done)&&(!category||item.category===category)).sort((a,b)=>Number(a.done)-Number(b.done)||(taskDeadline(a,notice)||a.date||'9999').localeCompare(taskDeadline(b,notice)||b.date||'9999'))
   return <section className="desk-card">
-    {!editorOnly&&<div className="desk-heading"><h2>{title}</h2><div className="desk-actions"><label className="inline-check"><input type="checkbox" checked={showDone} onChange={event=>setShowDone(event.target.checked)}/> 완료 표시</label><button className="primary-button" onClick={()=>setDraft(blankTask(notice))}>+ {notice?'안내':'업무·일정'} 추가</button></div></div>}
+    {!editorOnly&&<div className="desk-heading"><div className="work-entry-heading"><h2>{title}</h2>{headingAddon}</div><div className="desk-actions"><label className="inline-check"><input type="checkbox" checked={showDone} onChange={event=>setShowDone(event.target.checked)}/> 완료 표시</label><button className="primary-button" onClick={()=>setDraft(blankTask(notice))}>+ {notice?'안내':'업무·일정'} 추가</button></div></div>}
     {draft && <form className={`desk-form ${!notice?'work-task-form':''}`} onSubmit={event=>{event.preventDefault();save()}}>
       <div className="task-title-field"><div className="task-title-caption"><span>{notice?'안내·할 일':'업무·일정명'}</span><label className="inline-check"><input type="checkbox" checked={Boolean(draft.important)} onChange={event=>setDraft({...draft,important:event.target.checked})}/> 중요 일정</label></div><input aria-label={notice?'안내·할 일':'업무·일정명'} autoFocus required value={draft.title} onChange={event=>setDraft({...draft,title:event.target.value})}/></div>
       <div className="task-date-row"><label>{notice?'안내일':taskKind(draft)==='period'?'시작일':'날짜'}<input type="date" required={notice||taskKind(draft)!=='todo'} value={draft.date} onChange={event=>setDraft({...draft,date:event.target.value,scheduleType:notice?draft.scheduleType:draft.endDate?'period':event.target.value?'dated':'todo'})}/></label>

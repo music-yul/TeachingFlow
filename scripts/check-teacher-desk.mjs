@@ -904,5 +904,28 @@ try {
  d.teacherDesk.tasks=[]
  assert.equal(d.teacherDesk.workRecords[0].taskTitle,'LINKED_TASK');assert.ok(workspace.deskCalendarItems(d,today,{filter:'work',range:'month',showCompleted:true},true).some(i=>i.recordId==='link-record'))
  }
+ {
+ const Selector=(await server.ssrLoadModule('/src/components/WorkEntryTypeSelector.tsx')).default
+ const selector=renderToStaticMarkup(React.createElement(Selector,{value:'record',onChange:()=>{}}))
+ assert.ok(selector.includes('업무 등록 방식'));assert.ok(selector.includes('value="record" selected=""'));assert.ok(selector.includes('일정등록'))
+ const {WorkRecordForm,blankWorkRecord}=await server.ssrLoadModule('/src/components/WorkRecordDialog.tsx')
+ const d=storage.emptyData()
+ const record=blankWorkRecord('2026-11-05');assert.equal(record.date,'2026-11-05')
+ const recordHtml=renderToStaticMarkup(React.createElement(WorkRecordForm,{data:d,initial:record,update:()=>{},onClose:()=>{},embedded:true}))
+ assert.ok(recordHtml.includes('value="2026-11-05"'));assert.ok(recordHtml.includes('기록·처리 결과'));assert.ok(!recordHtml.includes('type="checkbox"'))
+ const Add=(await server.ssrLoadModule('/src/components/CalendarAddDialog.tsx')).default
+ const addHtml=renderToStaticMarkup(React.createElement(Add,{data:d,date:'2026-11-05',mode:'work',onMode:()=>{},onMemo:()=>{},onClose:()=>{},update:()=>{}}))
+ assert.ok(addHtml.includes('업무 등록 방식'));assert.ok(addHtml.includes('value="2026-11-05"'));assert.ok(addHtml.includes('결과등록'))
+ const calendar=renderToStaticMarkup(React.createElement(Calendar,{context:'work',data:d,sessions:[],month:new Date(2026,10,5),setMonth:()=>{},onSelect:()=>{},update:()=>{}}))
+ assert.ok(calendar.includes('aria-label="2026-11-05 할 일 또는 업무 기록 추가"'))
+ }
+ {
+ const Work=(await server.ssrLoadModule('/src/components/WorkView.tsx')).default
+ const d=storage.emptyData()
+ const html=renderToStaticMarkup(React.createElement(Work,{data:d,sessions:[],update:()=>{}}))
+ assert.ok(html.includes('>업무 기록</button>'));assert.ok(html.includes('>히스토리</button>'))
+ assert.ok(html.includes('<h2>업무기록</h2><select class="work-entry-kind-select"'))
+ assert.ok(!html.includes('등록 유형'));assert.ok(!html.includes('할 일·캘린더'))
+ }
  console.log('PASS: legacy migration, storage/backup, privacy, 12 calendar combinations, week/month/year boundaries, leap year, completion filters, widget layout, five main tabs, homeroom attendance, task date ranges, fixed 4-week home calendars and fixed 1/2-week modes, school events in work, 12×12 grid migration/limits, month/week modes, optional teacher/club features, club backups, optional deadlines, attendance reasons/memos, transfers/history, area colors/highlights, club settings/order, today-only summaries, optional four features, timetable widget, homeroom timetable, 1–5 work weeks, school event colors, unified design rows, automatic/custom/hidden borders, activity colors, UI-only themes, daily representative attendance, XLSX roundtrip, seat conditions, groups, all-reason absence totals, editable absence memos, theme palette rotation, weekday calendars, shared quick add, reserved empty seats, constrained balanced groups and backup compatibility')
 } finally { await server.close() }

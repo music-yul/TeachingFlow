@@ -113,10 +113,10 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
           const blocks = data.personalBlocks.filter(item => teaching && item.date === key).sort((left, right) => left.period - right.period)
 
           return (
-            <div className={classNames.join(' ')} key={key} style={key===today&&data.settings.calendarTodayColor?{backgroundColor:data.settings.calendarTodayColor}:undefined}>
+            <div className={classNames.join(' ')} key={key} onClick={event=>{if(context==='work'&&event.target===event.currentTarget)setAdd({date:key,mode:'work'})}} style={key===today&&data.settings.calendarTodayColor?{backgroundColor:data.settings.calendarTodayColor}:undefined}>
               <div className="calendar-day-head">
                 <span className="calendar-day-date">
-                  {onDateSelect ? <button className="calendar-date-button" onClick={() => onDateSelect(key)} title={context==='school'?'이 날짜에 학사일정 등록':'이 날짜에 업무 등록'}>{date.getDate()}</button> : <strong><span className="calendar-day-number">{date.getDate()}</span><span className="compact-date-label">{date.getMonth()+1}/{date.getDate()} {'일월화수목금토'[date.getDay()]}</span></strong>}
+                  {(onDateSelect||context==='work') ? <button type="button" className="calendar-date-button" aria-label={`${key} ${context==='work'?'할 일 또는 업무 기록 추가':'일정 등록'}`} onClick={() => context==='work'?setAdd({date:key,mode:'work'}):onDateSelect?.(key)} title={context==='school'?'이 날짜에 학사일정 등록':'이 날짜에 할 일 또는 업무 기록 등록'}>{date.getDate()}</button> : <strong><span className="calendar-day-number">{date.getDate()}</span><span className="compact-date-label">{date.getMonth()+1}/{date.getDate()} {'일월화수목금토'[date.getDay()]}</span></strong>}
                   {teaching && <button
                     className="day-note-add adjustment-add no-print"
                     title="수업 시간표 변경"
@@ -125,7 +125,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                     ⇆
                   </button>}
                 </span>
-                <button className="day-note-add no-print" title="이 날짜에 일정 추가" aria-label={`${key} 일정 추가`} onClick={()=>context==='school'?onDateSelect?.(key):setAdd({date:key,mode:'menu'})}>+</button>
+                <button className="day-note-add no-print" title="이 날짜에 일정 추가" aria-label={`${key} 일정 추가`} onClick={()=>context==='school'?onDateSelect?.(key):setAdd({date:key,mode:context==='work'?'work':'menu'})}>+</button>
               </div>
               {holiday && <div className="calendar-event holiday-tag" style={calendarItemStyle(data,'holiday')}>{holiday}</div>}
               {dayEvents.map(event => (
