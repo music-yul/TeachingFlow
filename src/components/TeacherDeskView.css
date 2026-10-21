@@ -694,3 +694,10 @@
 .work-entry-heading h2 { margin:0; }
 .work-entry-heading .work-entry-kind-select { width:auto; min-width:100px; max-width:150px; padding:4px 8px; font-size:.8rem; font-weight:400; }
 .work-record-form>.desk-heading { margin-bottom:12px; }
+.calendar-color-mode { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:12px 0; font-weight:600; }
+.calendar-color-mode select { width:auto; min-width:180px; max-width:100%; }
+.calendar-detail-colors-table { overflow:auto; }
+.calendar-detail-colors-table table { width:100%; border-collapse:collapse; }
+.calendar-detail-colors-table th,.calendar-detail-colors-table td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); }
+.calendar-detail-sample { display:inline-block; padding:4px 8px; border-radius:4px; }
+.calendar-completed-label { font-weight:600; font-size:.9em; }

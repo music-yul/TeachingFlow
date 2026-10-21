@@ -927,5 +927,24 @@ try {
  assert.ok(html.includes('<h2>업무기록</h2><select class="work-entry-kind-select"'))
  assert.ok(!html.includes('등록 유형'));assert.ok(!html.includes('할 일·캘린더'))
  }
+ {
+ const colors=await server.ssrLoadModule('/src/calendarDetailColors.ts')
+ const calendarAppearance=await server.ssrLoadModule('/src/calendarAppearance.ts')
+ const d=storage.emptyData();d.subjects=[{id:'color-subject',name:'COLOR_SUBJECT',color:'#123456',usesProgress:true}];d.classes=[{id:'color-class',name:'COLOR_CLASS',subjectId:'color-subject',students:[],slots:[]}]
+ const session={subjectId:'color-subject',classId:'color-class'}
+ assert.deepEqual(colors.teachingCalendarStyle(d,session),calendarAppearance.calendarItemStyle(d,'teaching'))
+ d.settings.calendarDetailColors=colors.normalizeCalendarDetailColors({teachingMode:'subject',workMode:'category',subjects:{'color-subject':{background:'#224466',color:'#ffffff'}},classes:{'color-class':{background:'#eebb44',color:'#111111'}},workCategories:{'예산':{background:'#cceedd',color:'#223344'},'':{background:'#dddddd'}},workKinds:{task:{background:'#eeccaa'},record:{background:'#aaccff'}}})
+ assert.equal(colors.teachingCalendarStyle(d,session).backgroundColor,'#224466');assert.equal(colors.teachingCalendarStyle(d,session).color,'#ffffff')
+ d.settings.calendarDetailColors.teachingMode='class';assert.equal(colors.teachingCalendarStyle(d,session).backgroundColor,'#eebb44')
+ assert.equal(colors.workCalendarStyle(d,{category:' 예산 ',done:true}).backgroundColor,'#cceedd');assert.equal(colors.workCalendarStyle(d,{category:' 예산 ',done:true}).color,'#223344')
+ assert.equal(colors.workCalendarStyle(d,{category:''}).backgroundColor,'#dddddd')
+ d.settings.calendarDetailColors.workMode='kind'
+ assert.equal(colors.workCalendarStyle(d,{workKind:'task'}).backgroundColor,'#eeccaa');assert.equal(colors.workCalendarStyle(d,{workKind:'record'}).backgroundColor,'#aaccff')
+ const imported=await storage.importData({text:async()=>JSON.stringify(d)})
+ assert.deepEqual(imported.settings.calendarDetailColors,d.settings.calendarDetailColors)
+ assert.deepEqual(colors.normalizeCalendarDetailColors({teachingMode:'invalid',workMode:'invalid',subjects:{bad:{background:'invalid',color:'#ffffff'}}}).subjects.bad,{color:'#ffffff'})
+ const Detail=(await server.ssrLoadModule('/src/components/CalendarDetailColorSettings.tsx')).default
+ const html=renderToStaticMarkup(React.createElement(Detail,{data:d,update:()=>{}}));assert.ok(html.includes('COLOR_CLASS'));assert.ok(html.includes('일정등록 / 결과등록별'));assert.ok(html.includes('결과등록 · 업무 결과'))
+ }
  console.log('PASS: legacy migration, storage/backup, privacy, 12 calendar combinations, week/month/year boundaries, leap year, completion filters, widget layout, five main tabs, homeroom attendance, task date ranges, fixed 4-week home calendars and fixed 1/2-week modes, school events in work, 12×12 grid migration/limits, month/week modes, optional teacher/club features, club backups, optional deadlines, attendance reasons/memos, transfers/history, area colors/highlights, club settings/order, today-only summaries, optional four features, timetable widget, homeroom timetable, 1–5 work weeks, school event colors, unified design rows, automatic/custom/hidden borders, activity colors, UI-only themes, daily representative attendance, XLSX roundtrip, seat conditions, groups, all-reason absence totals, editable absence memos, theme palette rotation, weekday calendars, shared quick add, reserved empty seats, constrained balanced groups and backup compatibility')
 } finally { await server.close() }

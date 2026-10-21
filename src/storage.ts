@@ -1,3 +1,4 @@
+import {normalizeCalendarDetailColors} from './calendarDetailColors'
 import { normalizeClubSchedule } from './clubSchedule'
 import { normalizeSeatingPlans } from './seating'
 import { defaultCalendarColors, normalizeCalendarColors, normalizeCalendarCustom, normalizeCalendarFonts, normalizeCalendarTextColors, normalizeCalendarMarkers, normalizeCalendarBorders } from './calendarAppearance'
@@ -206,6 +207,7 @@ function normalize(saved: Partial<AppData>): AppData {
     settings: {
       ...base.settings,
       ...(saved.settings || {}),
+      calendarDetailColors: normalizeCalendarDetailColors(saved.settings?.calendarDetailColors),
       calendarColors: normalizeCalendarColors(saved.settings?.calendarColors,saved.settings?.appearance?.themeId,saved.settings?.calendarColorCustom),
       calendarColorCustom: normalizeCalendarCustom(saved.settings?.calendarColorCustom,saved.settings?.calendarColors,saved.settings?.appearance?.themeId),
       calendarLessonLabelBold: saved.settings?.calendarLessonLabelBold !== false,

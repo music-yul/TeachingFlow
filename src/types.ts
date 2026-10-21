@@ -122,7 +122,10 @@ export type Appearance = {
   fontSize: string
 }
 
+export type CalendarDetailPaint = {background?:string;color?:string}
+export type CalendarDetailColors = {teachingMode:'default'|'subject'|'class';workMode:'default'|'category'|'kind';subjects:Record<string,CalendarDetailPaint>;classes:Record<string,CalendarDetailPaint>;workCategories:Record<string,CalendarDetailPaint>;workKinds:Record<string,CalendarDetailPaint>}
 export type Settings = {
+  calendarDetailColors?: CalendarDetailColors
   calendarTodayColor?: string
   calendarLessonLabelBold?: boolean
   schoolEventTextColors?: Partial<Record<EventType,string>>
