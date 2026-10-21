@@ -230,7 +230,7 @@ function normalize(saved: Partial<AppData>): AppData {
     classes: (saved.classes || []).map(item => ({ ...item, slots: item.slots || [], students: item.students || [] })),
     lessons,
     types,
-    events: (saved.events || []).map(item => ({ ...item, color: /^#[0-9a-f]{6}$/i.test(item.color || '') ? item.color : undefined, periods: item.periods || [], classIds: item.classIds || [] })),
+    events: (saved.events || []).map(item => ({ ...item, color: /^#[0-9a-f]{6}$/i.test(item.color || '') ? item.color : undefined, textColor: /^#[0-9a-f]{6}$/i.test(item.textColor || '') ? item.textColor : undefined, periods: item.periods || [], classIds: item.classIds || [] })),
     lessonJournal: Object.fromEntries(Object.entries(saved.lessonJournal||{}).filter(([,entry])=>entry&&typeof entry.sessionId==='string'&&typeof entry.classId==='string'&&typeof entry.subjectId==='string'&&typeof entry.date==='string'&&Number.isInteger(entry.period)).map(([id,entry])=>[id,{...entry,record:typeof entry.record==='string'?entry.record:'',nextMemo:typeof entry.nextMemo==='string'?entry.nextMemo:'',lessonTitle:typeof entry.lessonTitle==='string'?entry.lessonTitle:''}])),
     progress: saved.progress || {},
     overrides: saved.overrides || {},

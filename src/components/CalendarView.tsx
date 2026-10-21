@@ -1,4 +1,4 @@
-import {teachingCalendarStyle,workCalendarStyle} from '../calendarDetailColors'
+import {teachingCalendarStyle,workCalendarStyle,teachingPaint,workPaint} from '../calendarDetailColors'
 import { taskDateLabel } from '../taskDates'
 import WorkRecordDialog from './WorkRecordDialog'
 import type { WorkRecord } from '../types'
@@ -160,7 +160,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                     style={teachingStyle}
                     onClick={() => onSelect(item.id)}
                   >
-                    <span className="cl-left" style={{...lessonLabelStyle(data,marked),...(data.settings.calendarDetailColors?.teachingMode&&data.settings.calendarDetailColors.teachingMode!=='default'?{color:teachingStyle.color}:{}),...(done?{color:'inherit'}:{})}}>
+                    <span className="cl-left" style={{...lessonLabelStyle(data,marked),...(teachingPaint(data,item)?{color:teachingStyle.color}:{}),...(done?{color:'inherit'}:{})}}>
                       {item.period}교시 {classroom?.name}
                       {item.swappedFrom && <em className="swap-tag">대체</em>}
                       {item.extra && (
@@ -169,12 +169,12 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                         </em>
                       )}
                     </span>
-                    <span className="cl-right" style={data.settings.calendarDetailColors?.teachingMode&&data.settings.calendarDetailColors.teachingMode!=='default'?{color:teachingStyle.color}:undefined}>{hasEvaluation && '🎯 '}{sessionLabel(data, item)}</span>
+                    <span className="cl-right" style={teachingPaint(data,item)?{color:teachingStyle.color}:undefined}>{hasEvaluation && '🎯 '}{sessionLabel(data, item)}</span>
                   </button>
                 )
               })}
               {(context==='school'?[]:deskCalendarItems(data, key, shownPreferences, context==='work')).map(item => (
-                <div key={item.id} className={`calendar-desk-item ${item.area} ${item.done ? 'done' : ''} ${item.important?'important-item':''}`} style={{...(item.area==='work'?workCalendarStyle(data,item):calendarItemStyle(data,item.area,item.important)),...(item.done&&!(item.area==='work'&&data.settings.calendarDetailColors?.workMode&&data.settings.calendarDetailColors.workMode!=='default')?{backgroundColor:data.settings.appearance.themeId==='night'?'#35383d':'#f0f1f2',color:'#969ba3',borderColor:'#d3d6da',fontWeight:400}:{})}}>
+                <div key={item.id} className={`calendar-desk-item ${item.area} ${item.done ? 'done' : ''} ${item.important?'important-item':''}`} style={{...(item.area==='work'?workCalendarStyle(data,item):calendarItemStyle(data,item.area,item.important)),...(item.done&&!(item.area==='work'&&workPaint(data,item))?{backgroundColor:data.settings.appearance.themeId==='night'?'#35383d':'#f0f1f2',color:'#969ba3',borderColor:'#d3d6da',fontWeight:400}:{})}}>
                   <button type="button" className="calendar-item-title" onClick={event => {event.stopPropagation();if(item.recordId){const record=data.teacherDesk.workRecords?.find(record=>record.id===item.recordId);if(record)setRecordDraft({...record});return}const kind=item.area==='work'?'tasks':'notices';if(data.teacherDesk[kind].some(task=>task.id===item.id)){setTaskDetail({id:item.id,kind});taskDialog.current?.showModal()}else if(context==='work'&&onTaskSelect)onTaskSelect(item.id);else onOpenArea?.(item.area==='homeroom'?'담임':item.area==='club'?'동아리':'업무',item.clubId)}}>{item.area==='work'&&item.done&&<span className="calendar-completed-label">완료 · </span>}{item.title}</button>
 
                 </div>

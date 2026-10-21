@@ -469,7 +469,7 @@ try {
  assert.equal(palette.schoolEventStyle(borderData,customSchool).borderTop,`1px solid ${palette.darkerCalendarColor('#abcdef')}`)
  const {default:CalendarDesign}=await server.ssrLoadModule('/src/components/CalendarDesign.tsx')
  const designHtml=renderToStaticMarkup(React.createElement(CalendarDesign,{data:borderData,update:()=>{}}))
- const typeRow=designHtml.match(/class="school-color-list school-type-colors">(.*?)<\/div>/s)?.[1]
+ const typeRow=designHtml.match(/학사일정 종류별<\/h3>(.*?)<\/section>/s)?.[1]
  assert.ok(typeRow)
  assert.equal((typeRow.match(/type="color"/g)||[]).length,8)
  for(const label of ['휴업','수업 불가','요일 변경','일반 안내'])assert.ok(typeRow.includes(label))
@@ -944,7 +944,28 @@ try {
  assert.deepEqual(imported.settings.calendarDetailColors,d.settings.calendarDetailColors)
  assert.deepEqual(colors.normalizeCalendarDetailColors({teachingMode:'invalid',workMode:'invalid',subjects:{bad:{background:'invalid',color:'#ffffff'}}}).subjects.bad,{color:'#ffffff'})
  const Detail=(await server.ssrLoadModule('/src/components/CalendarDetailColorSettings.tsx')).default
- const html=renderToStaticMarkup(React.createElement(Detail,{data:d,update:()=>{}}));assert.ok(html.includes('COLOR_CLASS'));assert.ok(html.includes('일정등록 / 결과등록별'));assert.ok(html.includes('결과등록 · 업무 결과'))
+ const html=renderToStaticMarkup(React.createElement(Detail,{data:d,update:()=>{}}));assert.ok(html.includes('COLOR_CLASS'));assert.ok(html.includes('일정·결과별'));assert.ok(html.includes('결과등록 · 업무 결과'))
+ }
+ {
+ const colors=await server.ssrLoadModule('/src/calendarDetailColors.ts')
+ const d=storage.emptyData();d.subjects=[{id:'mix-s',name:'MIX_SUBJECT',color:'#112233',usesProgress:true}];d.classes=[{id:'mix-c',name:'MIX_CLASS',subjectId:'mix-s',slots:[],students:[]}]
+ d.settings.calendarDetailColors=colors.normalizeCalendarDetailColors({teachingMode:'individual',workMode:'individual',subjects:{'mix-s':{enabled:true,background:'#ddeeff'}},classes:{'mix-c':{enabled:true,background:'#ffeedd'}},workCategories:{'방송':{enabled:true,background:'#ccddaa'}},workKinds:{task:{enabled:true,background:'#aabbcc'},record:{enabled:true,background:'#bbccdd'}}})
+ assert.equal(colors.teachingCalendarStyle(d,{subjectId:'mix-s',classId:'mix-c'}).backgroundColor,'#ffeedd')
+ d.settings.calendarDetailColors.classes['mix-c'].enabled=false
+ assert.equal(colors.teachingCalendarStyle(d,{subjectId:'mix-s',classId:'mix-c'}).backgroundColor,'#ddeeff')
+ assert.equal(colors.workCalendarStyle(d,{workKind:'record',category:'방송'}).backgroundColor,'#ccddaa')
+ d.settings.calendarDetailColors.workCategories['방송'].enabled=false
+ assert.equal(colors.workCalendarStyle(d,{workKind:'record',category:'방송'}).backgroundColor,'#bbccdd')
+ d.events=[{id:'event-color',date:today,title:'COLOR_EVENT',type:'note',color:'#112233',textColor:'#ffffff',periods:[],classIds:[]}]
+ const restored=await storage.importData({text:async()=>JSON.stringify(d)})
+ assert.deepEqual(restored.settings.calendarDetailColors,d.settings.calendarDetailColors);assert.equal(restored.events[0].textColor,'#ffffff')
+ const appearance=await server.ssrLoadModule('/src/calendarAppearance.ts');assert.equal(appearance.schoolEventStyle(d,d.events[0]).color,'#ffffff')
+ const Detail=(await server.ssrLoadModule('/src/components/CalendarDetailColorSettings.tsx')).default
+ const html=renderToStaticMarkup(React.createElement(Detail,{data:d,update:()=>{}}))
+ assert.ok(!html.includes('<select'));assert.ok(html.includes('교과수업 세부 색상'));assert.ok(html.includes('업무 세부 색상'));assert.ok(html.includes('MIX_SUBJECT 개별 색 적용'))
+ const School=(await server.ssrLoadModule('/src/components/SchoolCalendarColorSettings.tsx')).default
+ const school=renderToStaticMarkup(React.createElement(School,{data:d,update:()=>{}}))
+ assert.ok(school.includes('항목 · 미리보기'));assert.ok(school.includes('개별 색 적용'));assert.ok(school.includes('COLOR_EVENT'))
  }
  console.log('PASS: legacy migration, storage/backup, privacy, 12 calendar combinations, week/month/year boundaries, leap year, completion filters, widget layout, five main tabs, homeroom attendance, task date ranges, fixed 4-week home calendars and fixed 1/2-week modes, school events in work, 12×12 grid migration/limits, month/week modes, optional teacher/club features, club backups, optional deadlines, attendance reasons/memos, transfers/history, area colors/highlights, club settings/order, today-only summaries, optional four features, timetable widget, homeroom timetable, 1–5 work weeks, school event colors, unified design rows, automatic/custom/hidden borders, activity colors, UI-only themes, daily representative attendance, XLSX roundtrip, seat conditions, groups, all-reason absence totals, editable absence memos, theme palette rotation, weekday calendars, shared quick add, reserved empty seats, constrained balanced groups and backup compatibility')
 } finally { await server.close() }

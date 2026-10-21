@@ -40,6 +40,6 @@ export function schoolEventColor(data:AppData,event:Pick<SchoolEvent,'type'|'col
 export function schoolEventStyle(data:AppData,event:SchoolEvent):CSSProperties{
  const area=event.type==='swap'?'swap':'school'
  const style=calendarItemStyle(data,area,false,event.color||data.settings.schoolEventColors[event.type])
- const customText=data.settings.schoolEventTextColors?.[event.type]||data.settings.calendarTextColors?.[area]
+ const customText=event.textColor||data.settings.schoolEventTextColors?.[event.type]||data.settings.calendarTextColors?.[area]
  return {...style,color:customText||((event.color||data.settings.schoolEventColors[event.type]||data.settings.calendarColorCustom.includes(area))?style.color:data.settings.appearance.themeId==='night'?'#ffffff':defaultSchoolTextColors[event.type])}
 }

@@ -61,6 +61,7 @@ export type Lesson = {
 export type EventType = 'closed' | 'blocked' | 'swap' | 'note'
 
 export type SchoolEvent = {
+  textColor?: string
   color?: string
   id: string
   date: string
@@ -122,8 +123,8 @@ export type Appearance = {
   fontSize: string
 }
 
-export type CalendarDetailPaint = {background?:string;color?:string}
-export type CalendarDetailColors = {teachingMode:'default'|'subject'|'class';workMode:'default'|'category'|'kind';subjects:Record<string,CalendarDetailPaint>;classes:Record<string,CalendarDetailPaint>;workCategories:Record<string,CalendarDetailPaint>;workKinds:Record<string,CalendarDetailPaint>}
+export type CalendarDetailPaint = {enabled?:boolean;background?:string;color?:string}
+export type CalendarDetailColors = {teachingMode:'default'|'subject'|'class'|'individual';workMode:'default'|'category'|'kind'|'individual';subjects:Record<string,CalendarDetailPaint>;classes:Record<string,CalendarDetailPaint>;workCategories:Record<string,CalendarDetailPaint>;workKinds:Record<string,CalendarDetailPaint>}
 export type Settings = {
   calendarDetailColors?: CalendarDetailColors
   calendarTodayColor?: string
