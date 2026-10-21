@@ -253,7 +253,7 @@ try {
  assert.equal(taskDates.taskCoversDate(periodNoDeadline,'2026-10-20'),true)
  assert.equal(taskDates.isTaskOverdue(periodNoDeadline,'2026-10-25'),false)
  const editedLegacy=taskForEditing({...baseTask,scheduleType:'deadline'})
- assert.equal(editedLegacy.showDeadline,true);assert.equal(editedLegacy.deadlineDate,baseTask.date);assert.equal(editedLegacy.date,baseTask.date)
+ assert.equal(editedLegacy.showDeadline,true);assert.equal(editedLegacy.deadlineDate,'');assert.equal(editedLegacy.date,baseTask.date)
  for(let height=1;height<=8;height++){
   homeBase.workspacePreferences.homeLayout=[{id:'calendar',row:0,column:0,width:1,height}]
   homeBase.workspacePreferences.homeCalendar.homeMode='month'
@@ -978,6 +978,29 @@ try {
  const html=renderToStaticMarkup(React.createElement(Calendar,{context:'work',data:d,sessions:[],month:new Date(2026,9,21),setMonth:()=>{},onSelect:()=>{},update:()=>{}}))
  const deadlineButton=html.match(/<button[^>]*class="calendar-item-title"[^>]*><span class="calendar-deadline-label">마감일<\/span>DEADLINE_TITLE<\/button>/)?.[0]
  assert.ok(deadlineButton);assert.ok(!deadlineButton.includes('CATEGORY_KEEP_FOR_COLOR'));assert.equal(d.teacherDesk.tasks[0].done,false)
+ }
+ {
+ const task={...taskDates.blankTask(),date:'2026-10-23',showDeadline:true}
+ assert.equal(taskDates.taskDeadline(task),'2026-10-23')
+ const period={...task,scheduleType:'period',endDate:'2026-10-26',excludeWeekends:true}
+ assert.equal(taskDates.taskDeadline(period),'2026-10-26')
+ assert.equal(taskDates.taskCoversDate(period,'2026-10-23'),true)
+ assert.equal(taskDates.taskCoversDate(period,'2026-10-24'),false);assert.equal(taskDates.taskCoversDate(period,'2026-10-25'),false);assert.equal(taskDates.taskCoversDate(period,'2026-10-26'),true)
+ assert.equal(taskDates.taskCoversDate({...period,excludeWeekends:false},'2026-10-24'),true)
+ assert.equal(taskDates.taskCoversDate({...period,endDate:'2026-10-25'},'2026-10-25'),true)
+ assert.equal(taskDates.taskCoversDate({...period,endDate:'2026-10-25',showDeadline:false},'2026-10-25'),false)
+ assert.equal(taskDates.taskDeadline({...period,showDeadline:false}),'')
+ const legacy={...task,date:'2026-10-19',deadlineDate:'2026-10-23'}
+ assert.equal(taskDates.taskDeadline(legacy),'2026-10-23')
+ const edited=taskDates.taskForEditing(legacy);assert.equal(edited.date,'2026-10-19');assert.equal(edited.endDate,'2026-10-23');assert.equal(edited.scheduleType,'period');assert.equal(edited.deadlineDate,'');assert.equal(taskDates.taskDeadline(edited),'2026-10-23')
+ const Task=(await server.ssrLoadModule('/src/components/TaskList.tsx')).default
+ const single=renderToStaticMarkup(React.createElement(Task,{title:'test',editorOnly:true,initialDraft:task,items:[],today,onChange:()=>{}}))
+ assert.equal((single.match(/type="date"/g)||[]).length,1);assert.ok(single.includes('마감일 표시'));assert.ok(!single.includes('>마감일<input'))
+ const range=renderToStaticMarkup(React.createElement(Task,{title:'test',editorOnly:true,initialDraft:period,items:[],today,onChange:()=>{}}))
+ assert.equal((range.match(/type="date"/g)||[]).length,2);assert.ok(range.includes('주말 제외'))
+ const data=storage.emptyData();data.teacherDesk.tasks=[period]
+ const imported=await storage.importData({text:async()=>JSON.stringify(data)})
+ assert.equal(imported.teacherDesk.tasks[0].excludeWeekends,true);assert.equal(taskDates.taskDeadline(imported.teacherDesk.tasks[0]),'2026-10-26')
  }
  console.log('PASS: legacy migration, storage/backup, privacy, 12 calendar combinations, week/month/year boundaries, leap year, completion filters, widget layout, five main tabs, homeroom attendance, task date ranges, fixed 4-week home calendars and fixed 1/2-week modes, school events in work, 12×12 grid migration/limits, month/week modes, optional teacher/club features, club backups, optional deadlines, attendance reasons/memos, transfers/history, area colors/highlights, club settings/order, today-only summaries, optional four features, timetable widget, homeroom timetable, 1–5 work weeks, school event colors, unified design rows, automatic/custom/hidden borders, activity colors, UI-only themes, daily representative attendance, XLSX roundtrip, seat conditions, groups, all-reason absence totals, editable absence memos, theme palette rotation, weekday calendars, shared quick add, reserved empty seats, constrained balanced groups and backup compatibility')
 } finally { await server.close() }

@@ -352,6 +352,7 @@ export type Session = {
 }
 
 export type TeacherTask = {
+  excludeWeekends?: boolean
   important?: boolean
   scheduleType?: 'todo' | 'deadline' | 'period' | 'dated'
   showDeadline?: boolean
