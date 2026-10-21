@@ -5,7 +5,7 @@ import { defaultWorkspacePreferences, normalizeWorkspacePreferences } from './wo
 import type { AppData, Evaluation, EvaluationItem, EvaluationTask, LessonType, EvaluationType, Subject, TaskStatus } from './types'
 import { subjectColorsForTheme } from './theme'
 
-export const APP_VERSION = 'v4.38'
+export const APP_VERSION = 'v4.5'
 export const APP_NAME = '티칭플로'
 export const APP_TAGLINE = 'TEACHING FLOW ― 수업의 흐름을 한눈에'
 const STORAGE_KEY = 'class-schedule-planner-data'
@@ -39,7 +39,7 @@ export function emptyData(): AppData {
     seatingPlans: {},
     clubs: [],
     workspacePreferences: defaultWorkspacePreferences(),
-    teacherDesk: { attendanceChoices: {}, attendanceExtra: [], timetable: {}, timetablePeriods: 7, attendanceReasons: {}, attendanceMemos: {}, homeroomAttendance: {}, className: '', students: [], notices: [], collections: [], records: [], tasks: [] },
+    teacherDesk: { attendanceChoices: {}, attendanceExtra: [], timetable: {}, timetablePeriods: 7, attendanceReasons: {}, attendanceMemos: {}, homeroomAttendance: {}, className: '', students: [], notices: [], collections: [], records: [], tasks: [], workRecords: [] },
     version: 2,
     settings: {
       calendarColors: defaultCalendarColors(),
@@ -66,6 +66,7 @@ export function emptyData(): AppData {
     lessons: [],
     types: defaultTypes,
     events: [],
+    lessonJournal: {},
     progress: {},
     overrides: {},
     extraSessions: [],
@@ -199,6 +200,7 @@ function normalize(saved: Partial<AppData>): AppData {
       collections: saved.teacherDesk?.collections || [],
       records: saved.teacherDesk?.records || [],
       tasks: saved.teacherDesk?.tasks || [],
+      workRecords: (saved.teacherDesk?.workRecords||[]).filter(record=>record&&typeof record.id==='string'&&typeof record.title==='string'&&typeof record.date==='string').map(record=>({...record,category:record.category||'',content:record.content||'',link:record.link||''})),
     },
     version: 2,
     settings: {
@@ -208,6 +210,7 @@ function normalize(saved: Partial<AppData>): AppData {
       calendarColorCustom: normalizeCalendarCustom(saved.settings?.calendarColorCustom,saved.settings?.calendarColors,saved.settings?.appearance?.themeId),
       calendarLessonLabelBold: saved.settings?.calendarLessonLabelBold !== false,
       schoolEventTextColors: Object.fromEntries(Object.entries(saved.settings?.schoolEventTextColors||{}).filter(([key,value])=>['closed','blocked','swap','note'].includes(key)&&/^#[0-9a-f]{6}$/i.test(value))),
+      calendarTodayColor: /^#[0-9a-f]{6}$/i.test(saved.settings?.calendarTodayColor||'') ? saved.settings!.calendarTodayColor : undefined,
       calendarTextColors: normalizeCalendarTextColors(saved.settings?.calendarTextColors),
       calendarFonts: normalizeCalendarFonts(saved.settings?.calendarFonts),
       calendarMarkers: normalizeCalendarMarkers(saved.settings?.calendarMarkers),
@@ -226,6 +229,7 @@ function normalize(saved: Partial<AppData>): AppData {
     lessons,
     types,
     events: (saved.events || []).map(item => ({ ...item, color: /^#[0-9a-f]{6}$/i.test(item.color || '') ? item.color : undefined, periods: item.periods || [], classIds: item.classIds || [] })),
+    lessonJournal: Object.fromEntries(Object.entries(saved.lessonJournal||{}).filter(([,entry])=>entry&&typeof entry.sessionId==='string'&&typeof entry.classId==='string'&&typeof entry.subjectId==='string'&&typeof entry.date==='string'&&Number.isInteger(entry.period)).map(([id,entry])=>[id,{...entry,record:typeof entry.record==='string'?entry.record:'',nextMemo:typeof entry.nextMemo==='string'?entry.nextMemo:'',lessonTitle:typeof entry.lessonTitle==='string'?entry.lessonTitle:''}])),
     progress: saved.progress || {},
     overrides: saved.overrides || {},
     extraSessions: saved.extraSessions || [],

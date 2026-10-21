@@ -959,3 +959,19 @@ thead th small { display: block; font-weight: 400; }
 .eval-meta { font-size:.85rem; }
 .eval-tree-task { font-size:.88rem; }
 .eval-tree-empty { font-size:.85rem; }
+
+/* Keep progress columns stable when only the text size changes. */
+.progress-table .sticky-col { min-width:144px; }
+.progress-cell { min-width:128px; }
+@media(min-width:561px) {
+ .progress-table .sticky-col { width:168px; }
+ .progress-table thead th:not(.sticky-col) { width:152px; }
+ .progress-cell { width:152px; max-width:152px; }
+}
+@media(max-width:560px) {
+ .progress-table .sticky-col { width:128px; min-width:128px; }
+ .progress-table thead th:not(.sticky-col) { width:128px; }
+ .progress-cell { width:128px; max-width:128px; }
+}
+.progress-table .cell-top { display:flex; align-items:baseline; flex-wrap:wrap; gap:4px; }
+.progress-table .cell-top .link-button { min-width:0; overflow-wrap:anywhere; }

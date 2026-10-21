@@ -200,6 +200,7 @@ function ClassBlock({ data, classroom, editClass, removeClass }: BlockProps) {
           {data.subjects.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
         </select>
         <input value={classroom.name} onChange={event => editClass(classroom.id, { name: event.target.value })} />
+        <label className="class-room-field">수업 교실<input aria-label={`${classroom.name} 수업 교실`} placeholder="예: 음악실" value={classroom.room||''} onChange={event=>editClass(classroom.id,{room:event.target.value})}/></label>
         <small>{classroom.slots.length}시간 · 학생 {classroom.students.length}명</small>
         <button className="ghost-button" onClick={() => setOpen(!open)}>{open ? '접기' : '명단 열기'}</button>
         <button className="danger-button" onClick={() => removeClass(classroom.id)}>삭제</button>

@@ -10,8 +10,13 @@ export const homeWidgetLabels: Record<HomeWidget, string> = {
 }
 export function defaultWorkspacePreferences(): WorkspacePreferences {
   return {
+    todayLessonFields: {period:true,className:true,subject:true,content:true,memo:true},
     timetableShowToday: false,
-    homeGridSize: 10,
+    homeTimetableMode: 'timetable',
+    homeTimetableSubject: undefined,
+    homeTimetableRoom: false,
+    homeGridSize: 12,
+    homeGridRows: 12,
     homeLayout: defaultHomeLayout(),
     homeWidgets: defaultHomeLayout().map(item=>item.id),
     workCalendar: { showWeekends:true, weekCount: 1, homeMode: 'weeks', range: 'month', filter: 'work', showCompleted: false },
@@ -34,24 +39,29 @@ export function normalizeWorkspacePreferences(saved?: Partial<WorkspacePreferenc
   const widgets = Array.isArray(saved?.homeWidgets)
     ? [...new Set(saved.homeWidgets.filter(id => Object.hasOwn(homeWidgetLabels, id)))] : base.homeWidgets
   const layout = Array.isArray(saved?.homeLayout)
-    ? normalizeHomeLayout(saved.homeGridSize===10?saved.homeLayout:expandHomeLayout(saved.homeGridSize===8?saved.homeLayout:migrateHomeLayout(saved.homeLayout))) : saved ? layoutFromWidgets(widgets) : base.homeLayout
+    ? normalizeHomeLayout(saved.homeGridSize===12?saved.homeLayout:resizeHomeColumns(saved.homeGridSize===10?saved.homeLayout:saved.homeGridSize===8?saved.homeLayout:migrateHomeLayout(saved.homeLayout),saved.homeGridSize===10?10:8)) : saved ? layoutFromWidgets(widgets) : base.homeLayout
   return {
+    todayLessonFields: Object.fromEntries(['period','className','subject','content','memo'].map(key=>[key,saved?.todayLessonFields?.[key as keyof NonNullable<WorkspacePreferences['todayLessonFields']>]!==false])) as NonNullable<WorkspacePreferences['todayLessonFields']>,
     timetableShowToday: saved?.timetableShowToday === true,
-    homeGridSize: 10,
-    homeLayout: layout,
+    homeTimetableSubject: typeof saved?.homeTimetableSubject==='boolean'?saved.homeTimetableSubject:undefined,
+    homeTimetableRoom: saved?.homeTimetableRoom===true,
+    homeTimetableMode: ['timetable','both'].includes(saved?.homeTimetableMode||'') ? saved!.homeTimetableMode! : 'timetable',
+    homeGridSize: 12,
+    homeGridRows: 12,
+    homeLayout: saved?.homeGridSize===12&&saved.homeGridRows!==12 ? normalizeHomeLayout(resizeHomeRows(layout)) : layout,
     homeWidgets: orderedHomeLayout(layout).map(item => item.id),
     homeCalendar: normalizeCalendar(saved?.homeCalendar, base.homeCalendar),
     workCalendar: { ...normalizeCalendar(saved?.workCalendar, base.workCalendar), filter: 'work' },
     scheduleCalendar: { ...normalizeCalendar(saved?.scheduleCalendar, base.scheduleCalendar), filter: 'teaching' },
   }
 }
-export const HOME_GRID_SIZE = 10
-export const HOME_GRID_ROWS = 10
+export const HOME_GRID_SIZE = 12
+export const HOME_GRID_ROWS = 12
 export function defaultHomeLayout(): HomeWidgetPlacement[] {
   return [
-    { id: 'summary', row: 0, column: 0, width: 10, height: 1 },
+    { id: 'summary', row: 0, column: 0, width: 12, height: 1 },
     { id: 'lessons', row: 1, column: 0, width: 2, height: 1 },
-    { id: 'calendar', row: 1, column: 2, width: 8, height: 5 },
+    { id: 'calendar', row: 1, column: 2, width: 10, height: 5 },
     { id: 'tasks', row: 2, column: 0, width: 2, height: 1 },
     { id: 'notices', row: 3, column: 0, width: 2, height: 1 },
     { id: 'collections', row: 4, column: 0, width: 2, height: 1 },
@@ -75,9 +85,9 @@ function maskFor(item: HomeWidgetPlacement) {
   for(let row=item.row;row<item.row+item.height;row++) for(let column=item.column;column<item.column+item.width;column++) mask |= 1n << BigInt(row*HOME_GRID_SIZE+column)
   return mask
 }
-/** 10×10 안에서만 배치한다. 선택한 위젯 위치는 고정하고 나머지 위젯의 빈자리를 찾는다. */
+/** 12×12 안에서만 배치한다. 선택한 위젯 위치는 고정하고 나머지 위젯의 빈자리를 찾는다. */
 function packHomeLayout(layout: HomeWidgetPlacement[], pinned?: HomeWidgetPlacement): HomeWidgetPlacement[] | null {
-  if(layout.reduce((sum,item)=>sum+item.width*item.height,0)>100) return null
+  if(layout.reduce((sum,item)=>sum+item.width*item.height,0)>HOME_GRID_SIZE*HOME_GRID_ROWS) return null
   const others=layout.filter(item=>item.id!==pinned?.id).sort((a,b)=>b.width*b.height-a.width*a.height)
   let attempts=0
   const search=(index:number,occupied:bigint,placed:HomeWidgetPlacement[]):HomeWidgetPlacement[]|null=>{
@@ -93,7 +103,7 @@ function packHomeLayout(layout: HomeWidgetPlacement[], pinned?: HomeWidgetPlacem
   return search(0,pinned?maskFor(pinned):0n,pinned?[pinned]:[])
 }
 export function homeWidgetPlacementError(layout:HomeWidgetPlacement[],p:HomeWidgetPlacement){
- if(![p.row,p.column,p.width,p.height].every(Number.isInteger)||p.row<0||p.column<0||p.width<1||p.height<1||p.row+p.height>HOME_GRID_ROWS||p.column+p.width>HOME_GRID_SIZE)return '위젯 전체가 10×10 배치판 안에 들어와야 합니다.'
+ if(![p.row,p.column,p.width,p.height].every(Number.isInteger)||p.row<0||p.column<0||p.width<1||p.height<1||p.row+p.height>HOME_GRID_ROWS||p.column+p.width>HOME_GRID_SIZE)return '위젯 전체가 12×12 배치판 안에 들어와야 합니다.'
  const collisions=layout.filter(item=>item.id!==p.id&&widgetsOverlap(item,p))
  return collisions.length?`${collisions.map(item=>homeWidgetLabels[item.id]).join(', ')} 영역과 겹칩니다. 다른 위젯은 이동하지 않았습니다.`:''
 }
@@ -130,7 +140,7 @@ export function normalizeHomeLayout(layout: HomeWidgetPlacement[]) {
   }
   return packed||[]
 }
-function expandHomeLayout(layout:HomeWidgetPlacement[]){return layout.map(item=>{const column=Math.round(item.column*10/8),end=Math.round((item.column+item.width)*10/8);return {...item,column,width:Math.max(1,end-column)}})}
+function resizeHomeColumns(layout:HomeWidgetPlacement[],oldColumns:number){return layout.filter(item=>item&&Object.hasOwn(homeWidgetLabels,item.id)).map(item=>{const column=Math.round(item.column*12/oldColumns),end=Math.round((item.column+item.width)*12/oldColumns);return {...item,column,width:Math.max(1,end-column)}})}
 function migrateHomeLayout(layout:HomeWidgetPlacement[]) {
   const valid=layout.filter(item=>item&&Object.hasOwn(homeWidgetLabels,item.id))
   const oldHeight=Math.max(8,...valid.map(item=>item.row+item.height))
@@ -182,4 +192,8 @@ export function calendarPeriodLabel(anchor: Date, range: CalendarRange, weeks?: 
 
 export function availableHomeWidgets(data: AppData): HomeWidget[] {
   return (Object.keys(homeWidgetLabels) as HomeWidget[]).filter(id=>data.settings.features.homeroom||!['notices','collections','followups'].includes(id)).filter(id=>data.settings.features.teaching||!['lessons','timetable'].includes(id)).filter(id=>data.settings.features.work||id!=='tasks')
+}
+
+export function resizeHomeRows(layout:HomeWidgetPlacement[]){
+ return layout.map(item=>{const row=Math.round(item.row*12/10),end=Math.round((item.row+item.height)*12/10);return {...item,row,height:Math.max(1,end-row)}})
 }

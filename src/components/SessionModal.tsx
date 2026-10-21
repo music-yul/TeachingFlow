@@ -1,6 +1,7 @@
 import type { AppData, AttendanceStatus, Session, SessionMode } from '../types'
 import { effectiveLessonIds, progressKey, sessionLabel } from '../schedule'
 import { evalCounts, linkedEvaluation } from '../evaluation'
+import LessonJournalEditor from './LessonJournalEditor'
 import { studentLabel } from '../students'
 
 type Props = {
@@ -51,7 +52,7 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
 
   const override = data.overrides[session.id] || {}
 
-  const setOverride = (change: { mode?: SessionMode; label?: string }) => {
+  const setOverride = (change: { mode?: SessionMode; label?: string; memo?: string }) => {
     update({ overrides: { ...data.overrides, [session.id]: { ...override, ...change } } })
   }
 
@@ -128,6 +129,7 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
         </header>
 
         <div className="modal-body">
+          {override.memo&&<label className="calendar-memo-field">이 날짜 수업 메모<textarea value={override.memo||''} aria-label="이 날짜 수업 메모" placeholder="다음 시간에 할 일이나 준비물" onChange={event=>setOverride({memo:event.target.value})}/></label>}
           {linked && (
             <div className="block eval-first">
               <h3>수행평가</h3>
@@ -180,21 +182,10 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
           )}
 
           <div className="block">
-            <h3>{sessionLabel(data, session)}</h3>
+            <div className="session-lesson-heading"><h3>{sessionLabel(data, session)}</h3><div className="session-completion-controls">{lessons.length>0&&<label className="check">수업 완료<input type="checkbox" checked={lessons.every(lesson=>Boolean(data.progress[progressKey(classroom.id,lesson!.id)]?.done))} onChange={event=>update({progress:{...data.progress,...Object.fromEntries(lessons.map(lesson=>{const key=progressKey(classroom.id,lesson!.id);return [key,{...data.progress[key],done:event.target.checked}]}))}})}/></label>}</div></div>
 
-            <p className="hint">이 반의 이 시간만 조정합니다. 다른 반은 영향을 받지 않습니다.</p>
-            <div className="mode-picker">
-              {modeInfo.map(item => (
-                <button
-                  className={(override.mode || (override.skip ? 'none' : 'normal')) === item.id ? 'mode on' : 'mode'}
-                  key={item.id}
-                  onClick={() => setOverride({ mode: item.id })}
-                >
-                  <b>{item.label}</b>
-                  <small>{item.help}</small>
-                </button>
-              ))}
-            </div>
+            <label className="session-mode-select">수업 방식<select value={override.mode || (override.skip?'none':'normal')} onChange={event=>setOverride({mode:event.target.value as SessionMode})}>{modeInfo.map(item=><option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
+            {(override.mode || (override.skip?'none':'normal'))!=='normal'&&<p className="hint session-mode-help">{modeInfo.find(item=>item.id===(override.mode || (override.skip?'none':'normal')))?.help} 이 반의 이 시간만 적용합니다.</p>}
 
             {(override.mode === 'none' || override.mode === 'extend') && (
               <input
@@ -206,36 +197,8 @@ export default function SessionModal({ data, session, update, onClose, onOpenEva
             )}
           </div>
 
-          {lessons.length > 0 && (
-            <div className="block">
-              <h3>진도 기록</h3>
-              {session.mode === 'extend' && (
-                <p className="hint">앞 시간과 같은 차시를 이어갑니다. 아래 체크·메모는 그 차시 기록과 함께 갑니다.</p>
-              )}
-              {lessons.map(lesson => {
-                const key = progressKey(classroom.id, lesson!.id)
-                const record = data.progress[key] || {}
-                return (
-                  <div className="progress-edit" key={lesson!.id}>
-                    <label className="check big">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(record.done)}
-                        onChange={event => setProgress(lesson!.id, { done: event.target.checked })}
-                      />
-                      {lesson!.title} 완료
-                    </label>
-                    {lesson!.note && <p className="hint">공통 메모: {lesson!.note}</p>}
-                    <textarea
-                      value={record.memo || ''}
-                      placeholder="이 학급 이 차시에 대한 메모"
-                      onChange={event => setProgress(lesson!.id, { memo: event.target.value })}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-          )}
+          <LessonJournalEditor data={data} session={session} update={update}/>
+          {lessons.some(lesson=>lesson!.note||data.progress[progressKey(classroom.id,lesson!.id)]?.memo)&&<details className="block legacy-lesson-memos"><summary>공통·기존 차시 메모</summary>{lessons.map(lesson=>{const key=progressKey(classroom.id,lesson!.id);return <div className="progress-edit" key={key}>{lessons.length>1&&<h4>{lesson!.title}</h4>}{lesson!.note&&<p className="hint">공통 메모: {lesson!.note}</p>}{data.progress[key]?.memo&&<label>기존 차시 메모<textarea value={data.progress[key]?.memo||''} onChange={event=>setProgress(lesson!.id,{memo:event.target.value})}/></label>}</div>})}</details>}
 
           {classroom.students.length > 0 && (
             <div className="block">

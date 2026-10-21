@@ -12,6 +12,20 @@ type TodayRow = {
   color?: string
 }
 
+export function sessionChangeLabel(item: Session) {
+  return item.mode === 'none'
+        ? '휴강'
+        : item.extra
+          ? (item.extraOrigin === 'moved' ? '이동' : item.extraOrigin === 'swapped' ? '교체' : '보강')
+          : item.swappedFrom
+            ? '대체'
+            : item.mode === 'extend'
+              ? '이어서'
+              : item.mode === 'merge'
+                ? '합반'
+                : undefined
+}
+
 /** 오늘 실제로 있는 수업(요일 변경·보강·이동·취소가 전부 반영된 값)을 교시 순서로 정리한다. */
 function todayRows(data: AppData, sessions: Session[]): TodayRow[] {
   const today = todayKey()
@@ -21,17 +35,7 @@ function todayRows(data: AppData, sessions: Session[]): TodayRow[] {
     .map(item => {
       const classroom = data.classes.find(value => value.id === item.classId)
       const subject = data.subjects.find(value => value.id === item.subjectId)
-      const tag = item.mode === 'none'
-        ? '휴강'
-        : item.extra
-          ? (item.extraOrigin === 'moved' ? '이동' : item.extraOrigin === 'swapped' ? '교체' : (item.extraNote || '보강'))
-          : item.swappedFrom
-            ? '요일대체'
-            : item.mode === 'extend'
-              ? '이어서'
-              : item.mode === 'merge'
-                ? '합반'
-                : undefined
+      const tag = sessionChangeLabel(item)
       return {
         key: item.id,
         period: item.period,
@@ -48,7 +52,7 @@ function todayRows(data: AppData, sessions: Session[]): TodayRow[] {
   return [...fromSessions, ...fromBlocks].sort((left, right) => left.period - right.period)
 }
 
-export default function MiniTimetable({ data, sessions, showToday=true, classOnly=false }: { data: AppData; sessions: Session[]; showToday?: boolean; classOnly?: boolean }) {
+export default function MiniTimetable({ data, sessions, showToday=true, classOnly=false, showTimetable=true, showSubject, showRoom=false }: { data: AppData; sessions: Session[]; showToday?: boolean; classOnly?: boolean; showTimetable?: boolean; showSubject?: boolean; showRoom?: boolean }) {
   const active = data.classes.filter(item => !item.archived)
   const clubEntries=clubTimetableEntries(data)
   const used = [...clubEntries.map(item=>item.period),...active.flatMap(item => item.slots.map(slot => slot.period))]
@@ -89,8 +93,8 @@ export default function MiniTimetable({ data, sessions, showToday=true, classOnl
         )}
       </div>}
 
-      {!active.length && !clubEntries.length && <p className="hint">학급을 등록하면 표시됩니다.</p>}
-      {(active.length > 0 || clubEntries.length>0) && (
+      {showTimetable && !active.length && !clubEntries.length && <p className="hint">학급을 등록하면 표시됩니다.</p>}
+      {showTimetable && (active.length > 0 || clubEntries.length>0) && (
         <table>
           <colgroup><col className="timetable-period-column"/>{DAYS.map(day=><col className="timetable-weekday-column" key={day}/>)}</colgroup>
           <thead>
@@ -118,12 +122,13 @@ export default function MiniTimetable({ data, sessions, showToday=true, classOnl
                             }}
                             title={`${subject?.name || ''} ${classroom.name}`}
                           >
-                            {!classOnly && subject?.name && <span className="mini-subject">{subject.name}</span>}
+                            {(showSubject??!classOnly) && subject?.name && <span className="mini-subject">{subject.name}</span>}
                             <span className="mini-class">{classroom.name}</span>
+                            {showRoom&&classroom.room?.trim()&&<span className="mini-room">{classroom.room}</span>}
                           </div>
                         )
                       })}
-                      {clubsHere.map(({club})=><div className="mini-entry" key={`club:${club.id}`} style={{background:data.settings.calendarColors.club,color:readableOn(data.settings.calendarColors.club)}}>{!classOnly&&<span className="mini-subject">{club.schedule?.kind==='autonomous'?'자율 동아리':'동아리'}</span>}<span className="mini-class">{club.name}</span></div>)}
+                      {clubsHere.map(({club})=><div className="mini-entry" key={`club:${club.id}`} style={{background:data.settings.calendarColors.club,color:readableOn(data.settings.calendarColors.club)}}>{(showSubject??!classOnly)&&<span className="mini-subject">{club.schedule?.kind==='autonomous'?'자율 동아리':'동아리'}</span>}<span className="mini-class">{club.name}</span></div>)}
                       </div>
                     </td>
                   )

@@ -1,9 +1,11 @@
+import { themes } from '../theme'
 import type { AppData, CalendarArea, EventType } from '../types'
 import { calendarAreaNames, calendarItemStyle, defaultCalendarColors, darkerCalendarColor, schoolEventTypeNames, schoolEventColor, schoolEventStyle } from '../calendarAppearance'
 export default function CalendarDesign({data,update}:{data:AppData;update:(change:Partial<AppData>)=>void}){
  const areas=Object.keys(calendarAreaNames) as CalendarArea[]
- const reset=<button className="ghost-button calendar-reset" onClick={()=>update({settings:{...data.settings,calendarColors:defaultCalendarColors(data.settings.appearance.themeId),calendarColorCustom:[],calendarTextColors:{},calendarLessonLabelBold:true,schoolEventTextColors:{},calendarFonts:{},calendarMarkers:{},calendarBorders:{},schoolEventColors:{}},events:data.events.map(event=>({...event,color:undefined}))})}>기본 설정</button>
+ const reset=<button className="ghost-button calendar-reset" onClick={()=>update({settings:{...data.settings,calendarColors:defaultCalendarColors(data.settings.appearance.themeId),calendarColorCustom:[],calendarTodayColor:undefined,calendarTextColors:{},calendarLessonLabelBold:true,schoolEventTextColors:{},calendarFonts:{},calendarMarkers:{},calendarBorders:{},schoolEventColors:{}},events:data.events.map(event=>({...event,color:undefined}))})}>기본 설정</button>
  return <div className="block"><div className="desk-heading"><h2>달력 일정 디자인</h2>{reset}</div>
+ <div className="inline-form calendar-today-color"><label>오늘 날짜 배경색<input type="color" aria-label="오늘 날짜 배경색" value={data.settings.calendarTodayColor||(themes.find(theme=>theme.id===data.settings.appearance.themeId)||themes[0]).vars['--today']} onChange={e=>update({settings:{...data.settings,calendarTodayColor:e.target.value}})}/></label><button className="ghost-button" disabled={!data.settings.calendarTodayColor} onClick={()=>update({settings:{...data.settings,calendarTodayColor:undefined}})}>테마 기본색</button></div>
  <label className="inline-form"><input type="checkbox" checked={data.settings.calendarLessonLabelBold!==false} onChange={e=>update({settings:{...data.settings,calendarLessonLabelBold:e.target.checked}})}/>수업의 교시·학급을 약간 굵게 표시</label>
  <p className="hint">행에서 일정 종류를, 열에서 조절할 항목을 고르세요. 글자색은 종류별 기본값 또는 직접 지정한 색을 사용합니다. 테두리색은 자동 또는 직접 지정할 수 있습니다.</p>
  <div className="calendar-design-table-wrap"><table className="calendar-design-table"><thead>

@@ -90,7 +90,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
         {(showWeekends?['일', '월', '화', '수', '목', '금', '토']:['월','화','수','목','금']).map(day => <b key={day}>{day}</b>)}
       </div>
 
-      <div className="calendar-grid calendar-dates" style={{gridTemplateColumns:`repeat(${columns},minmax(0,1fr))`,...(weeks?{gridTemplateRows:`repeat(${weeks},minmax(5.8rem,auto))`}:{})}}>
+      <div className="calendar-grid calendar-dates" style={{gridTemplateColumns:`repeat(${columns},minmax(0,1fr))`,...(weeks?{gridTemplateRows:`repeat(${weeks},minmax(92.8px,auto))`}:{})}}>
         {cells.map(date => {
           const key = dateKey(date)
           const outside = !weeks && range === 'month' && !key.startsWith(monthPrefix)
@@ -109,7 +109,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
           const blocks = data.personalBlocks.filter(item => teaching && item.date === key).sort((left, right) => left.period - right.period)
 
           return (
-            <div className={classNames.join(' ')} key={key}>
+            <div className={classNames.join(' ')} key={key} style={key===today&&data.settings.calendarTodayColor?{backgroundColor:data.settings.calendarTodayColor}:undefined}>
               <div className="calendar-day-head">
                 <span className="calendar-day-date">
                   {onDateSelect ? <button className="calendar-date-button" onClick={() => onDateSelect(key)} title={context==='school'?'이 날짜에 학사일정 등록':'이 날짜에 업무 등록'}>{date.getDate()}</button> : <strong><span className="calendar-day-number">{date.getDate()}</span><span className="compact-date-label">{date.getMonth()+1}/{date.getDate()} {'일월화수목금토'[date.getDay()]}</span></strong>}
@@ -159,7 +159,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                       {item.swappedFrom && <em className="swap-tag">대체</em>}
                       {item.extra && (
                         <em className="swap-tag" title={item.extraNote}>
-                          {item.extraOrigin === 'moved' ? '이동' : item.extraOrigin === 'swapped' ? '교체' : (item.extraNote || '보강')}
+                          {item.extraOrigin === 'moved' ? '이동' : item.extraOrigin === 'swapped' ? '교체' : '보강'}
                         </em>
                       )}
                     </span>

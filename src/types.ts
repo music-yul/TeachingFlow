@@ -28,6 +28,7 @@ export type Student = {
 }
 
 export type Classroom = {
+  room?: string
   id: string
   subjectId: string
   name: string
@@ -93,6 +94,8 @@ export type Progress = {
 export type SessionMode = 'normal' | 'extend' | 'none' | 'merge'
 
 export type SessionOverride = {
+  /** 배정된 차시가 없는 수업의 빠른 메모 */
+  memo?: string
   mode?: SessionMode
   label?: string
   /** 예전 형식 호환용 */
@@ -120,6 +123,7 @@ export type Appearance = {
 }
 
 export type Settings = {
+  calendarTodayColor?: string
   calendarLessonLabelBold?: boolean
   schoolEventTextColors?: Partial<Record<EventType,string>>
   calendarTextColors?: Partial<Record<CalendarArea,string>>
@@ -165,7 +169,9 @@ export type GroupPlan = { constraints?:GroupConstraints; count:number; assignmen
 export type SeatingPlan = { empty?:number[]; constraints?:SeatConstraints; previous?:SeatSnapshot; rows:number; columns:number; disabled:number[]; aisles:number[]; assignments:Record<string,string>; locked:number[] }
 export type HomeroomAttendanceExtra = { id:string; date:string; studentId:string; status:AttendanceStatus; reason:AttendanceReason; memo:string }
 
+export type LessonJournalEntry = { sessionId:string; date:string; period:number; classId:string; subjectId:string; lessonTitle:string; record:string; nextMemo:string }
 export type AppData = {
+  lessonJournal?: Record<string,LessonJournalEntry>
   groupPlans: Record<string,GroupPlan>
   seatingPlans: Record<string,SeatingPlan>
   clubs: Club[]
@@ -375,7 +381,9 @@ export type StudentRecord = {
   followDate: string
   followed: boolean
 }
+export type WorkRecord = {id:string;date:string;title:string;category:string;content:string;link:string}
 export type TeacherDesk = {
+  workRecords?: WorkRecord[]
   illnessReviewThreshold?: number
   attendanceChoices: Record<string,string>
   attendanceExtra: HomeroomAttendanceExtra[]
@@ -397,9 +405,15 @@ export type CalendarFilter = 'all' | 'teaching' | 'homeroom' | 'work' | 'club'
 export type CalendarPreferences = { showWeekends?:boolean; weekCount?: number; homeMode?: 'month' | 'week' | 'fortnight' | 'weeks'; range: CalendarRange; filter: CalendarFilter; showCompleted: boolean }
 export type HomeWidget = 'summary' | 'calendar' | 'lessons' | 'notices' | 'collections' | 'tasks' | 'followups' | 'timetable'
 export type HomeWidgetPlacement = { id: HomeWidget; row: number; column: number; width: number; height: number }
+export type TodayLessonFields = {period:boolean;className:boolean;subject:boolean;content:boolean;memo:boolean}
 export type WorkspacePreferences = {
+  todayLessonFields?: TodayLessonFields
+  homeTimetableSubject?: boolean
+  homeTimetableRoom?: boolean
+  homeTimetableMode?: 'timetable' | 'both'
   timetableShowToday: boolean
-  homeGridSize: 8 | 10
+  homeGridSize: 8 | 10 | 12
+  homeGridRows?: 10 | 12
   homeLayout: HomeWidgetPlacement[]
   homeWidgets: HomeWidget[]
   workCalendar: CalendarPreferences

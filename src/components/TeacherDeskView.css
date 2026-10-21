@@ -46,7 +46,7 @@
 .calendar-desk-item span { font-size: .67rem; color: var(--muted); }
 .calendar-desk-item.done { color: var(--muted); text-decoration: line-through; }
 @media print { .calendar-scroll { overflow: visible; } .calendar-scroll > .calendar-grid { min-width: 0; } }
-.home-widget-grid { display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); grid-auto-rows:112px; gap:12px; align-items:stretch; }
+.home-widget-grid { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); grid-auto-rows:91.3333333333px; gap:12px; align-items:stretch; }
 .home-widget { min-width:0; min-height:0; overflow:auto; border-radius:.7rem; }
 .home-widget > .desk-card, .home-widget > .home-wide, .home-widget > .desk-stats { margin:0; min-height:100%; }
 .home-widget .home-wide { grid-column:auto; }
@@ -54,7 +54,7 @@
 .home-widget .calendar-panel { margin:0; min-height:100%; }
 @media(max-width:800px) {
  .home-widget-grid { grid-template-columns:minmax(0,1fr); grid-auto-rows:auto; }
- .home-widget { grid-column:1 !important; grid-row:auto !important; height:calc(var(--widget-rows)*112px + (var(--widget-rows) - 1)*12px); }
+ .home-widget { grid-column:1 !important; grid-row:auto !important; height:calc(var(--widget-rows)*91.3333333333px + (var(--widget-rows) - 1)*12px); }
 }
 @media print { .home-widget-grid { display:block; } .home-widget { height:auto; overflow:visible; margin-bottom:1rem; } }
 /* 첫 화면 요약 카드 */
@@ -93,7 +93,7 @@
 .home-widget-calendar .calendar-day { min-height:0; overflow:auto; }
 .home-widget-calendar .calendar-toolbar { flex:none; gap:.3rem; padding-bottom:.3rem; }
 .home-widget-calendar .calendar-toolbar h2 { font-size:.95rem; }
-@media(max-width:800px){ .home-widget-calendar { height:calc(var(--widget-rows)*112px + 110px); } }
+@media(max-width:800px){ .home-widget-calendar { height:calc(var(--widget-rows)*91.3333333333px + (var(--widget-rows) - 1)*12px); } }
 
 .home-calendar .calendar-toolbar { flex-wrap:nowrap; overflow-x:auto; white-space:nowrap; }
 .home-calendar .calendar-toolbar > * { flex-shrink:0; }
@@ -535,3 +535,148 @@
 .home-widget-timetable .timetable-fixed-frame .mini-cell-content .mini-entry { padding:0 1px; line-height:1.05; overflow:hidden; }
 .home-widget-timetable .timetable-fixed-frame .mini-subject,
 .home-widget-timetable .timetable-fixed-frame .mini-class { max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }
+
+/* Keep the 12pt calendar geometry when the user changes text size. */
+.calendar-panel { padding:16px; }
+.calendar-panel .calendar-dates { grid-auto-rows:minmax(92.8px,auto); }
+.calendar-panel .calendar-day { min-height:92.8px; padding:3.2px; gap:1.6px; }
+.calendar-panel .weekday-row b { padding:3.2px 0; }
+.calendar-panel .calendar-toolbar { gap:4.8px; padding-bottom:4.8px; margin-bottom:16px; }
+.calendar-panel .calendar-toolbar .calendar-controls { gap:7.2px; }
+.calendar-panel .calendar-toolbar button { padding:4.8px 8px; }
+.calendar-panel .calendar-controls select { padding:4px; }
+.calendar-panel .calendar-lesson,
+.calendar-panel .calendar-desk-item,
+.calendar-panel .calendar-event,
+.calendar-panel .day-note-chip { padding:1.6px 4px; border-radius:3.2px; }
+.calendar-panel .calendar-lesson { gap:4.8px; }
+.calendar-panel .calendar-day-date { gap:2.4px; }
+.calendar-panel .calendar-lesson .cl-left { flex-basis:57.6px; }
+.home-widget-calendar .calendar-panel { padding:16px; }
+.home-widget-calendar .calendar-dates { grid-auto-rows:minmax(92.8px,auto); }
+.home-widget-calendar .calendar-day { min-height:92.8px; padding:3.2px; gap:1.6px; }
+.home-widget-calendar .calendar-toolbar button { padding:4.8px 8px; }
+.home-widget-calendar .calendar-lesson .cl-left { flex-basis:57.6px; }
+
+/* Enlarged text: reserve name space and let forms reflow instead of overflowing. */
+.homeroom-layout { grid-template-columns:minmax(330px,calc(19rem + 26px)) minmax(0,1fr); }
+.homeroom-class-layout { grid-template-columns:minmax(330px,calc(19rem + 26px)) minmax(300px,1fr) minmax(260px,300px); }
+.compact-roster-row { grid-template-columns:minmax(7.2em,1fr) max-content max-content 22px; gap:4px; }
+.compact-roster-row .roster-name { white-space:nowrap; overflow-wrap:normal; padding:1.6px; }
+.compact-roster-row select { width:auto; min-width:0; padding:4px 2px; }
+.roster-date-actions .roster-date { min-width:0; flex-wrap:wrap; }
+.roster-date-actions input[type=date] { max-width:100%; }
+.desk-form { min-width:0; }
+.desk-form>*,.desk-fields>label,.task-date-row>label,.task-title-field { min-width:0; }
+.desk-form .desk-fields { grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr)); }
+.desk-form input:not([type=checkbox]),.desk-form select,.desk-form textarea { max-width:100%; width:100%; box-sizing:border-box; }
+.task-title-caption { flex-wrap:wrap; }
+.task-date-row>label { max-width:100%; }
+.work-editor>.desk-card { max-height:none; overflow:visible; }
+@media(max-width:1200px) { .homeroom-class-layout { grid-template-columns:minmax(330px,calc(19rem + 26px)) minmax(0,1fr); } }
+@media(max-width:800px) { .homeroom-layout,.homeroom-class-layout { grid-template-columns:minmax(0,1fr); } }
+@container(max-width:260px) { .compact-roster-row { grid-template-columns:minmax(0,1fr) max-content max-content 22px; } .compact-roster-row .roster-name { grid-column:1 / -1; } }
+/* The teaching sidebar remains a compact reference at every global font size. */
+.timetable-layout { gap:16px; }
+.timetable-layout>.mini-timetable { flex:0 0 256px; width:256px; padding:8px; top:16px; border-radius:8px; }
+.timetable-layout>.mini-timetable .mini-title { font-size:12.16px; gap:6.4px; margin-bottom:5.6px; }
+.timetable-layout>.mini-timetable table,
+.timetable-layout>.mini-timetable thead th { font-size:11.2px; }
+.timetable-layout>.mini-timetable th,
+.timetable-layout>.mini-timetable td { padding:2.4px 1.6px; }
+.timetable-layout>.mini-timetable tbody th { width:19.2px; }
+.timetable-layout>.mini-timetable .mini-entry { padding:2.24px 2.4px; margin-bottom:1.92px; border-radius:3.2px; }
+.timetable-layout>.mini-timetable .mini-subject { font-size:9.6px; }
+.timetable-layout>.mini-timetable .mini-class { font-size:11.2px; }
+.timetable-layout>.mini-timetable .mini-today-title { font-size:11.52px; }
+.timetable-layout>.mini-timetable .mini-today-list li { font-size:12.16px; gap:5.6px; }
+.timetable-layout>.mini-timetable .hint { font-size:12.8px; }
+.timetable-layout>.mini-timetable .mini-today { margin-bottom:9.6px; padding-bottom:8px; }
+.work-calendar .calendar-scroll>.calendar-grid { min-width:0; }
+.work-calendar .calendar-panel .calendar-toolbar { flex-wrap:wrap; }
+@media(max-width:880px) { .timetable-layout>.mini-timetable { flex:none; position:static; width:100%; } }
+
+.homeroom-roster { container-type:inline-size; }
+
+/* Narrow lesson cards: period and class/subject above the wrapped lesson title. */
+.home-widget-lessons { overflow-x:hidden; }
+.home-widget-lessons .desk-session-class { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+@container(max-width:320px) {
+ .home-widget-lessons .desk-session { display:grid; grid-template-columns:max-content minmax(0,1fr); align-items:baseline; gap:2px 4px; padding:4px; max-width:100%; box-sizing:border-box; }
+ .home-widget-lessons .desk-session>.desk-session-details { display:contents; }
+ .home-widget-lessons .desk-session>b { grid-column:1; grid-row:1; }
+ .home-widget-lessons .desk-session .desk-session-class { grid-column:2; grid-row:1; white-space:normal; overflow-wrap:anywhere; text-align:left; }
+ .home-widget-lessons .desk-session small.desk-session-content { display:block; grid-column:1 / -1; grid-row:2; min-width:0; margin:0; white-space:normal; overflow:visible; overflow-wrap:anywhere; text-overflow:clip; text-align:left; }
+}
+
+/* Leave a small inset inside bordered lesson cards and task forms. */
+.home-widget-lessons .desk-session { padding:4px 6px; }
+.work-task-form { padding:8px; }
+.home-widget-lessons .desk-session-class .swap-tag { display:inline-block; font-size:.85em; font-weight:400; vertical-align:baseline; margin-left:3px; }
+.home-widget-timetable .timetable-mode-both .mini-title { display:flex; }
+.home-widget-timetable .timetable-mode-both .mini-today { box-sizing:border-box; max-height:45%; overflow:auto; margin:0 0 4px; padding:0 0 4px; flex-shrink:0; }
+.home-widget-timetable .mini-today-title { font-size:1em; margin:0 0 3px; }
+.home-widget-timetable .mini-today-list li { font-size:1em; gap:4px; }
+.home-widget-timetable .mini-today-period { flex:0 0 auto; }
+.home-widget-timetable .mini-today-text { white-space:normal; overflow-wrap:anywhere; }
+.home-widget-timetable .mini-today .swap-tag { font-size:.8em; flex-shrink:0; }
+
+.home-widget-timetable .timetable-mode-both .timetable-fit-content>.mini-timetable { height:100%; }
+.home-widget-timetable .mini-today { font-size:.72rem; }
+
+.task-category-field { display:grid; gap:4px; min-width:0; }
+.task-category-field select,.task-category-field input { width:100%; max-width:100%; min-width:0; }
+
+.calendar-today-color { margin:8px 0; }
+.calendar-today-color label { display:flex; align-items:center; gap:8px; }
+
+.work-history-filters { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; align-items:end; }
+.work-history-filters label { display:grid; gap:4px; min-width:0; flex:1 1 150px; }
+.work-history-filters input,.work-history-filters select { width:100%; min-width:0; }
+.work-history-entry { padding:14px 0; border-top:1px solid var(--line); overflow-wrap:anywhere; }
+.work-history-caption { display:flex; flex-wrap:wrap; gap:4px 16px; color:var(--muted); font-size:.78rem; }
+.work-history-entry h3 { margin:6px 0; font-size:1rem; }
+.work-history-entry .desk-pre { margin:6px 0; font-size:.9rem; }
+.calendar-lesson-memo-text { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:400; font-size:.85em; }
+.calendar-memo-field { display:grid; gap:6px; margin:12px 0; }
+.calendar-memo-field textarea { width:100%; min-width:0; resize:vertical; }
+
+.mini-room { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.85em; }
+.class-room-field { display:grid; gap:2px; font-size:.75rem; min-width:90px; max-width:160px; }
+.class-room-field input { width:100%; min-width:0; }
+
+.session-lesson-heading { display:flex; align-items:center; justify-content:space-between; gap:8px 16px; flex-wrap:wrap; }
+.session-lesson-heading h3 { margin:0; flex:1 1 200px; }
+.session-completion-controls { display:flex; gap:6px 12px; flex-wrap:wrap; margin-left:auto; }
+.session-completion-controls .check { margin:0; display:flex; align-items:center; gap:5px; }
+.session-completion-controls input { flex:0 0 auto; }
+
+.session-mode-select { display:flex; align-items:center; gap:10px; margin:10px 0 0; font-size:.85rem; }
+.session-mode-select select { width:auto; max-width:100%; min-width:0; padding:4px 8px; }
+.session-mode-help { margin:5px 0 0; }
+
+.home-widget-lessons .desk-session { display:flex; flex-direction:column; align-items:stretch; gap:4px; padding:5px 6px; }
+.home-widget-lessons .desk-session-first-line { display:flex; align-items:baseline; gap:4px; min-width:0; width:100%; white-space:nowrap; text-align:left; }
+.home-widget-lessons .desk-session-first-line>b { flex:0 0 auto; }
+.home-widget-lessons .desk-session-first-line .desk-session-class { flex:0 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.home-widget-lessons .desk-session-first-line .swap-tag { flex:0 0 auto; font-size:.8em; margin:0; }
+.home-widget-lessons .desk-session-first-line .desk-session-content { flex:1 1 0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:inherit; color:var(--muted); }
+.home-widget-lessons .desk-session-memo { display:flex; align-items:flex-start; gap:5px; min-width:0; text-align:left; font-size:.9em; line-height:1.4; color:var(--muted); }
+.home-widget-lessons .desk-session-memo>span { min-width:0; white-space:normal; overflow-wrap:anywhere; }
+.lesson-memo-icon { width:13px; height:13px; flex:0 0 13px; margin-top:2px; }
+.lesson-journal-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.lesson-journal-fields label { display:grid; gap:5px; min-width:0; font-weight:600; }
+.lesson-journal-fields textarea { width:100%; resize:vertical; font-weight:400; }
+.lesson-journal-fields .hint { font-size:.75rem; font-weight:400; }
+.lesson-reminders { padding:8px 10px; border-left:3px solid var(--accent); background:var(--subtle); margin-bottom:10px; }
+.lesson-reminders p { margin:5px 0; white-space:pre-wrap; overflow-wrap:anywhere; }
+.lesson-reminders small,.lesson-reminders span { display:block; }
+.lesson-journal-history { margin-top:8px; }
+.lesson-journal-history article { border-top:1px solid var(--line); padding:8px 0; }
+.lesson-journal-history p { white-space:pre-wrap; overflow-wrap:anywhere; margin:4px 0; }
+@media(max-width:650px){.lesson-journal-fields{grid-template-columns:1fr;}}
+.home-widget-lessons .desk-session-memo { font-size:1em; line-height:1.5; color:var(--ink); }
+.lesson-memo-dash { flex:0 0 auto; }
+.today-lessons-field { display:flex; align-items:center; gap:8px; padding:7px 0; }
+.today-lessons-field input { width:auto; }
+.today-lessons-settings::backdrop { background:#0007; }

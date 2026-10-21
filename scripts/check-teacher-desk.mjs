@@ -101,22 +101,22 @@ try {
  // Saved v4.3 settings migrate to non-overlapping widget coordinates.
  const oldPrefs=workspace.normalizeWorkspacePreferences({homeWidgets:['tasks','calendar','notices'],homeCalendar:{range:'fortnight',filter:'work',showCompleted:true}})
  assert.deepEqual([...oldPrefs.homeWidgets].sort(),['calendar','notices','tasks'])
- assert.ok(oldPrefs.homeLayout.every(item=>item.width>=1&&item.column+item.width<=10))
+ assert.ok(oldPrefs.homeLayout.every(item=>item.width>=1&&item.column+item.width<=12))
  const verifyLayout = items => { for(let i=0;i<items.length;i++) for(let j=i+1;j<items.length;j++) assert.ok(!workspace.widgetsOverlap(items[i],items[j]),'widgets overlap') }
  verifyLayout(oldPrefs.homeLayout)
  let layout=workspace.defaultHomeLayout()
  verifyLayout(layout)
- assert.deepEqual(layout.find(i=>i.id==='calendar'),{id:'calendar',row:1,column:2,width:8,height:5})
+ assert.deepEqual(layout.find(i=>i.id==='calendar'),{id:'calendar',row:1,column:2,width:10,height:5})
  assert.deepEqual(layout.filter(i=>['lessons','tasks','notices','collections','followups'].includes(i.id)).map(i=>[i.id,i.row,i.column,i.width,i.height]),[['lessons',1,0,2,1],['tasks',2,0,2,1],['notices',3,0,2,1],['collections',4,0,2,1],['followups',5,0,2,1]])
  assert.equal(workspace.defaultWorkspacePreferences().homeCalendar.homeMode,'weeks')
- const rejected=workspace.placeHomeWidget(layout,{id:'calendar',row:0,column:0,width:10,height:10})
+ const rejected=workspace.placeHomeWidget(layout,{id:'calendar',row:0,column:0,width:12,height:12})
  assert.equal(rejected,layout,'full grid should reject an oversized widget without changing the layout')
  layout=workspace.placeHomeWidget([{id:'tasks',row:0,column:0,width:4,height:2},{id:'calendar',row:2,column:0,width:8,height:2}],{id:'tasks',row:2,column:0,width:4,height:2})
  verifyLayout(layout)
  assert.equal(layout.find(item=>item.id==='tasks').row,2)
- assert.ok(layout.every(item=>item.row>=0&&item.column>=0&&item.row+item.height<=10&&item.column+item.width<=10))
+ assert.ok(layout.every(item=>item.row>=0&&item.column>=0&&item.row+item.height<=10&&item.column+item.width<=12))
  const malformed=workspace.normalizeHomeLayout([{id:'tasks',row:-2,column:99,width:9,height:0},{id:'tasks',row:1,column:1,width:1,height:1},{id:'INVALID',row:0,column:0,width:4,height:8}])
- assert.equal(malformed.length,1); assert.equal(malformed[0].width,9); assert.equal(malformed[0].column,1); assert.equal(malformed[0].height,1)
+ assert.equal(malformed.length,1); assert.equal(malformed[0].width,9); assert.equal(malformed[0].column,3); assert.equal(malformed[0].height,1)
  calendarData.workspacePreferences.homeLayout=[{id:'tasks',row:2,column:2,width:2,height:3}]
  calendarData.workspacePreferences.homeWidgets=['tasks']
  const positioned=renderToStaticMarkup(React.createElement(Today,{...props,data:calendarData}))
@@ -129,7 +129,7 @@ try {
  assert.ok(!scheduleHtml.includes('업무확인'))
  const {default:LayoutSettings}=await server.ssrLoadModule('/src/components/HomeLayoutSettings.tsx')
  const settingsHtml=renderToStaticMarkup(React.createElement(LayoutSettings,{data:calendarData,update:()=>{}}))
- assert.ok(settingsHtml.includes('메인화면 위젯 배치')); assert.ok(settingsHtml.includes('메인화면 10×10 배치판'))
+ assert.ok(settingsHtml.includes('메인화면 위젯 배치')); assert.ok(settingsHtml.includes('메인화면 12×12 배치판'))
  storage.writeData(calendarData)
  assert.deepEqual(storage.readData().workspacePreferences.homeLayout,calendarData.workspacePreferences.homeLayout)
  const taskDates=await server.ssrLoadModule('/src/taskDates.ts')
@@ -152,7 +152,7 @@ try {
  assert.ok(workspace.deskCalendarItems(periodData,'2026-10-15',homePrefs).some(item=>item.id==='period'))
  assert.ok(workspace.deskCalendarItems(periodData,'2026-10-15',homePrefs).some(item=>item.id==='notice'))
  assert.ok(!workspace.deskCalendarItems(periodData,'2026-10-15',homePrefs).some(item=>item.id==='todo'))
- assert.equal(workspace.deskCalendarItems(periodData,'2026-10-21',homePrefs).length,0)
+ assert.ok(!workspace.deskCalendarItems(periodData,'2026-10-21',homePrefs).some(item=>['period','notice','todo'].includes(item.id)))
  const {default:Roster}=await server.ssrLoadModule('/src/components/HomeroomRoster.tsx')
  periodData.teacherDesk.homeroomAttendance[`${today}:student`]='결석'
  const rosterHtml=renderToStaticMarkup(React.createElement(Roster,{data:periodData,update:()=>{},selected:'',onSelect:()=>{}}))
@@ -165,7 +165,7 @@ try {
  assert.ok(workHtml.includes('work-calendar'));assert.ok(workHtml.includes('work-editor'));assert.ok(workHtml.includes('기간으로 등록'));assert.ok(workHtml.includes('마감일 표시'))
  const fullHome=renderToStaticMarkup(React.createElement(View,{...props,data:periodData,mode:'오늘'}))
  assert.ok(!fullHome.includes('오늘의 티칭플로'));assert.ok(!fullHome.includes('오늘 확인할 일을 한곳에서'))
- assert.ok(fullHome.includes('grid-template-rows:64px'))
+ assert.ok(fullHome.includes('grid-template-rows:repeat('))
  const calHtml=renderToStaticMarkup(React.createElement(Calendar,{context:'home',data:periodData,sessions:[],month:new Date(2026,9,16),setMonth:()=>{},onSelect:()=>{},update:()=>{}}))
  assert.ok(calHtml.includes('<b>일</b><b>월</b><b>화</b><b>수</b><b>목</b><b>금</b><b>토</b>'))
  assert.ok(!calHtml.includes('월요일 ~ 일요일'))
@@ -203,19 +203,19 @@ try {
  }
  homeBase.workspacePreferences.homeCalendar.homeMode='weeks'
  const tenthRow=workspace.placeHomeWidget([],{id:'tasks',row:9,column:9,width:1,height:1})
- assert.deepEqual(tenthRow,[{id:'tasks',row:9,column:9,width:1,height:1}]);assert.deepEqual(workspace.normalizeHomeLayout([{id:'calendar',row:0,column:0,width:10,height:10}]),[{id:'calendar',row:0,column:0,width:10,height:10}])
+ assert.deepEqual(tenthRow,[{id:'tasks',row:9,column:9,width:1,height:1}]);assert.deepEqual(workspace.normalizeHomeLayout([{id:'calendar',row:0,column:0,width:12,height:12}]),[{id:'calendar',row:0,column:0,width:12,height:12}])
  const oldGrid=workspace.normalizeWorkspacePreferences({homeLayout:[{id:'calendar',row:1,column:0,width:4,height:4},{id:'tasks',row:8,column:0,width:2,height:3}],homeWidgets:['calendar','tasks']})
- assert.equal(oldGrid.homeGridSize,10);assert.equal(oldGrid.homeLayout.length,2);verifyLayout(oldGrid.homeLayout)
- assert.ok(oldGrid.homeLayout.every(item=>item.row+item.height<=10&&item.column+item.width<=10))
+ assert.equal(oldGrid.homeGridSize,12);assert.equal(oldGrid.homeLayout.length,2);verifyLayout(oldGrid.homeLayout)
+ assert.ok(oldGrid.homeLayout.every(item=>item.row+item.height<=10&&item.column+item.width<=12))
  const savedGrid=workspace.normalizeWorkspacePreferences({homeGridSize:8,homeLayout:[{id:'tasks',row:6,column:6,width:2,height:2}]})
- assert.deepEqual(savedGrid.homeLayout,[{id:'tasks',row:6,column:8,width:2,height:2}]);assert.deepEqual(workspace.normalizeWorkspacePreferences(savedGrid).homeLayout,savedGrid.homeLayout)
+ assert.deepEqual(savedGrid.homeLayout,[{id:'tasks',row:6,column:9,width:3,height:2}]);assert.deepEqual(workspace.normalizeWorkspacePreferences(savedGrid).homeLayout,savedGrid.homeLayout)
  homeBase.events=[{id:'school-event',date:today,title:'SCHOOL_EVENT_VISIBLE',type:'note',periods:[],classIds:[]}]
  homeBase.dayNotes[today]=[{id:'secret-note',text:'CALENDAR_MEMO'}]
  const workCalendar=renderToStaticMarkup(React.createElement(Calendar,{context:'work',data:homeBase,sessions:[fakeSession],month:new Date(),setMonth:()=>{},onSelect:()=>{},update:()=>{}}))
  assert.ok(workCalendar.includes('SCHOOL_EVENT_VISIBLE'));assert.ok(workCalendar.includes('CALENDAR_MEMO'))
  const layoutHtml=renderToStaticMarkup(React.createElement(LayoutSettings,{data:homeBase,update:()=>{}}))
- assert.equal((layoutHtml.match(/class="layout-slot"/g)||[]).length,100)
- assert.ok(!layoutHtml.includes('보기 기간'));assert.ok(layoutHtml.includes('10×10'))
+ assert.equal((layoutHtml.match(/class="layout-slot"/g)||[]).length,144)
+ assert.ok(!layoutHtml.includes('보기 기간'));assert.ok(layoutHtml.includes('12×12'))
  const {default:Settings}=await server.ssrLoadModule('/src/components/SettingsHub.tsx')
  const settingsNav=renderToStaticMarkup(React.createElement(Settings,{data:homeBase,update:()=>{},onFiles:()=>{},onImport:()=>{},onReset:()=>{}}))
  assert.ok(settingsNav.includes('>디자인</button>'));assert.ok(!settingsNav.includes('>화면</button>'))
@@ -236,7 +236,7 @@ try {
  assert.ok(academicHtml.includes('academic-layout'));assert.ok(academicHtml.includes('<details class="academic-registered">'));assert.ok(!academicHtml.includes('<details class="academic-registered" open'))
  assert.ok(academicHtml.includes('SCHOOL_EVENT_VISIBLE'));assert.ok(!academicHtml.includes('CALENDAR_MEMO'))
  const migratedEight=workspace.normalizeWorkspacePreferences({homeGridSize:8,homeLayout:[{id:'calendar',row:0,column:0,width:8,height:2},{id:'tasks',row:2,column:0,width:4,height:2},{id:'notices',row:2,column:4,width:4,height:2}]})
- assert.equal(migratedEight.homeLayout.find(i=>i.id==='calendar').width,10);assert.equal(migratedEight.homeLayout.find(i=>i.id==='notices').column,5);verifyLayout(migratedEight.homeLayout)
+ assert.equal(migratedEight.homeLayout.find(i=>i.id==='calendar').width,12);assert.equal(migratedEight.homeLayout.find(i=>i.id==='notices').column,6);verifyLayout(migratedEight.homeLayout)
  assert.deepEqual(workspace.normalizeWorkspacePreferences(migratedEight).homeLayout,migratedEight.homeLayout)
 
  const {blankTask,taskForEditing}=taskDates
@@ -288,6 +288,9 @@ try {
  const {default:TaskList}=await server.ssrLoadModule('/src/components/TaskList.tsx')
  const dateForm=renderToStaticMarkup(React.createElement(TaskList,{title:'업무',items:[],onChange:()=>{},today,initialDraft:dated}))
  assert.ok(!dateForm.includes('등록 유형'));assert.ok(dateForm.includes('기간으로 등록'));assert.ok(dateForm.includes('마감일 표시'))
+ const categoryForm=renderToStaticMarkup(React.createElement(TaskList,{title:'업무',items:[{...dated,id:'completed-category',done:true,category:'방송부'}],categoryOptions:['방송부',' 학년부 '],onChange:()=>{},today,initialDraft:dated}))
+ assert.equal((categoryForm.match(/value="value:방송부"/g)||[]).length,1)
+ assert.ok(categoryForm.includes('value:학년부'));assert.ok(categoryForm.includes('+ 새 분류 입력'))
  const headerForm=renderToStaticMarkup(React.createElement(TaskList,{title:'안내·학급 할 일',items:[],onChange:()=>{},notice:true,today}))
  assert.ok(headerForm.indexOf('완료 표시')<headerForm.indexOf('</h2>')+500)
  const releases=await server.ssrLoadModule('/src/releaseNotes.ts')
@@ -655,6 +658,15 @@ try {
  const {default:QuickAdd}=await server.ssrLoadModule('/src/components/CalendarAddDialog.tsx')
  const quickHtml=renderToStaticMarkup(React.createElement(QuickAdd,{data:actionsData,date:'2026-10-23',mode:'menu',onMode:()=>{},onMemo:()=>{},onClose:()=>{},update:()=>{}}))
  for(const label of ['메모 추가','업무 추가','담임 안내·할 일 추가'])assert.ok(quickHtml.includes(label))
+ const categoryData=structuredClone(actionsData)
+ categoryData.teacherDesk.tasks=[{...fromCalendar,category:'방송부'}]
+ const quickCategory=renderToStaticMarkup(React.createElement(QuickAdd,{data:categoryData,date:'2026-10-23',mode:'work',onMode:()=>{},onMemo:()=>{},onClose:()=>{},update:()=>{}}))
+ assert.ok(quickCategory.includes('value:방송부'))
+ categoryData.settings.calendarTodayColor='#aabbcc'
+ const restoredToday=await storage.importData({text:async()=>JSON.stringify(categoryData)})
+ assert.equal(restoredToday.settings.calendarTodayColor,'#aabbcc')
+ const todayColorHtml=renderToStaticMarkup(React.createElement(Calendar,{data:categoryData,sessions:[],month:new Date(today+'T12:00:00'),setMonth:()=>{},onSelect:()=>{},update:()=>{}}))
+ assert.ok(todayColorHtml.includes('background-color:#aabbcc'))
  const emptyPlan={rows:2,columns:3,disabled:[],empty:[1],aisles:[],locked:[],assignments:{}}
  const oddStudents=condStudents.slice(0,5)
  const emptyDraw=seatModel.randomSeats(emptyPlan,oddStudents)
@@ -693,7 +705,7 @@ try {
  const timeWidget=withTimetable.find(i=>i.id==='timetable');assert.deepEqual(timeWidget,{id:'timetable',row:6,column:0,width:4,height:3})
  const smaller=workspace.placeHomeWidget(withTimetable,{...timeWidget,width:2,height:2});verifyLayout(smaller);for(const old of addBase)assert.deepEqual(smaller.find(i=>i.id===old.id),old)
  const moved=workspace.placeHomeWidget(smaller,{...smaller.find(i=>i.id==='timetable'),row:7,column:7});verifyLayout(moved);assert.equal(moved.find(i=>i.id==='timetable').column,7)
- const full=[{id:'calendar',row:0,column:0,width:10,height:10}];assert.equal(workspace.addHomeWidget(full,'timetable'),full)
+ const full=[{id:'calendar',row:0,column:0,width:12,height:12}];assert.equal(workspace.addHomeWidget(full,'timetable'),full)
  // Strict editing must not displace neighbours or count the pointer as the tile origin.
  const strictBase=workspace.addHomeWidget(workspace.defaultHomeLayout(),'timetable'),strictTime=strictBase.find(i=>i.id==='timetable')
  const cursorTarget=workspace.homeWidgetDropPosition(7,7,{row:0,column:2});assert.deepEqual(cursorTarget,{row:7,column:5})
@@ -703,10 +715,39 @@ try {
  assert.equal(workspace.placeHomeWidget(strictBase,{...strictTime,row:9,column:9},false),strictBase)
  const hiddenData=storage.emptyData();hiddenData.settings.features.homeroom=false;hiddenData.workspacePreferences.homeLayout=workspace.defaultHomeLayout()
  const hiddenSettings=renderToStaticMarkup(React.createElement(LayoutSettings,{data:hiddenData,update:()=>{}}));assert.ok(hiddenSettings.includes('담임 안내 · 기능 꺼짐'));assert.ok(hiddenSettings.includes('제출 현황 · 기능 꺼짐'))
+ for(const mode of ['timetable','both']) {
+  const modeData=structuredClone(migrated)
+  modeData.workspacePreferences.homeTimetableMode=mode
+  const restoredMode=await storage.importData({text:async()=>JSON.stringify(modeData)})
+  assert.equal(restoredMode.workspacePreferences.homeTimetableMode,mode)
+ }
+ assert.equal(workspace.normalizeWorkspacePreferences({homeTimetableMode:'invalid'}).homeTimetableMode,'timetable')
+ assert.equal(workspace.normalizeWorkspacePreferences({homeTimetableMode:'today'}).homeTimetableMode,'timetable')
+ const {sessionChangeLabel}=await server.ssrLoadModule('/src/components/MiniTimetable.tsx')
+ assert.equal(sessionChangeLabel({swappedFrom:'월'}),'대체')
+ assert.equal(sessionChangeLabel({extra:true,extraOrigin:'moved'}),'이동')
+ assert.equal(sessionChangeLabel({extra:true,extraNote:'개인 사유'}),'보강')
+ assert.equal(sessionChangeLabel({extra:true,extraOrigin:'swapped'}),'교체')
+ {
+ const {workHistoryEntries}=await server.ssrLoadModule('/src/workHistory.ts')
+ const historyData=structuredClone(migrated)
+ historyData.teacherDesk.tasks=[{...dated,id:'done-history',title:'완료 업무',date:'2026-10-20',done:true},{...dated,id:'pending-history',title:'진행 업무',done:false}]
+ historyData.teacherDesk.workRecords=[{id:'past-record',date:'2026-05-15',title:'지난 행사 정리',category:'방송부',content:'방송 장비 점검 완료',link:''}]
+ const historyEntries=workHistoryEntries(historyData)
+ assert.deepEqual(historyEntries.map(entry=>entry.id),['done-history','past-record'])
+ assert.equal(historyEntries[1].content,'방송 장비 점검 완료')
+ const restoredHistory=await storage.importData({text:async()=>JSON.stringify(historyData)})
+ assert.deepEqual(restoredHistory.teacherDesk.workRecords,historyData.teacherDesk.workRecords)
+ assert.equal(restoredHistory.teacherDesk.tasks.length,2)
+ const {default:WorkHistoryView}=await server.ssrLoadModule('/src/components/WorkHistoryView.tsx')
+ const historyHtml=renderToStaticMarkup(React.createElement(WorkHistoryView,{data:restoredHistory,update:()=>{},onEditTask:()=>{}}))
+ for(const text of ['지난 행사 정리','방송 장비 점검 완료','완료 업무','지난 업무 기록'])assert.ok(historyHtml.includes(text))
+ assert.ok(!historyHtml.includes('진행 업무'))
+ }
  const {timetableDisplay}=await server.ssrLoadModule('/src/timetableDisplay.ts')
  assert.deepEqual(timetableDisplay(1),{fontPt:7,classOnly:true})
  assert.deepEqual(timetableDisplay(2),{fontPt:9,classOnly:false})
- assert.deepEqual(timetableDisplay(3),{fontPt:11,classOnly:false})
+ assert.deepEqual(timetableDisplay(3),{fontPt:9,classOnly:false})
  const {largestTimetableFont}=await server.ssrLoadModule('/src/timetableFit.ts')
  const wrappedHeight=(size,width)=>8*(Math.ceil(5*size/(width*.186))*size*1.2+size*.5)
  const fitted=(width,height)=>largestTimetableFont(width*.186,size=>wrappedHeight(size,width)<=height)
@@ -717,5 +758,120 @@ try {
  assert.ok(fitted(700,600)>fitted(350,600),'type grows with width at the same height')
  const limited=largestTimetableFont(40,size=>size<=17)
  assert.ok(limited<=17&&limited>16.99)
- console.log('PASS: legacy migration, storage/backup, privacy, 12 calendar combinations, week/month/year boundaries, leap year, completion filters, widget layout, five main tabs, homeroom attendance, task date ranges, fixed 4-week home calendars and fixed 1/2-week modes, school events in work, 10×10 grid migration/limits, month/week modes, optional teacher/club features, club backups, optional deadlines, attendance reasons/memos, transfers/history, area colors/highlights, club settings/order, today-only summaries, optional four features, timetable widget, homeroom timetable, 1–5 work weeks, school event colors, unified design rows, automatic/custom/hidden borders, activity colors, UI-only themes, daily representative attendance, XLSX roundtrip, seat conditions, groups, all-reason absence totals, editable absence memos, theme palette rotation, weekday calendars, shared quick add, reserved empty seats, constrained balanced groups and backup compatibility')
+ {
+ const before=storage.emptyData()
+ const session={id:'memo-session',classId:'c',lessonIds:['l'],date:today,period:1}
+ before.progress['c:l']={done:true,memo:'old'}
+ before.overrides[session.id]={mode:'extend',label:'keep'}
+ const memoModel=await server.ssrLoadModule('/src/lessonMemo.ts')
+ Object.assign(before,memoModel.saveCalendarLessonMemos(before,session,{l:' next lesson '},''))
+ assert.equal(before.progress['c:l'].done,true);assert.equal(before.progress['c:l'].memo,'next lesson')
+ assert.equal(before.overrides[session.id].mode,'extend');assert.equal(memoModel.calendarLessonMemoText(before,session),'next lesson')
+ const unassigned={...session,id:'no-lesson',lessonIds:[]}
+ Object.assign(before,memoModel.saveCalendarLessonMemos(before,unassigned,{},'bring instruments'))
+ assert.equal(memoModel.calendarLessonMemoText(before,unassigned),'bring instruments')
+ const imported=await storage.importData({text:async()=>JSON.stringify(before)})
+ assert.equal(imported.overrides['no-lesson'].memo,'bring instruments')
+ const old=workspace.normalizeWorkspacePreferences({homeGridSize:10,homeLayout:[{id:'calendar',row:0,column:0,width:5,height:3},{id:'tasks',row:0,column:5,width:5,height:3}]})
+ assert.deepEqual(old.homeLayout.map(i=>[i.column,i.width]),[[0,6],[6,6]])
+ assert.deepEqual(workspace.normalizeWorkspacePreferences(old),old)
+ assert.equal(workspace.homeWidgetPlacementError([],{id:'tasks',row:9,column:11,width:1,height:1}),'')
+ assert.ok(workspace.homeWidgetPlacementError([],{id:'tasks',row:9,column:12,width:1,height:1}))
+ }
+ {
+ const last=workspace.placeHomeWidget([],{id:'tasks',row:11,column:11,width:1,height:1})
+ assert.deepEqual(last,[{id:'tasks',row:11,column:11,width:1,height:1}])
+ const prefs=workspace.normalizeWorkspacePreferences({homeGridSize:12,homeGridRows:12,homeLayout:last})
+ assert.deepEqual(prefs.homeLayout,last)
+ assert.ok(workspace.homeWidgetPlacementError([],{id:'tasks',row:12,column:0,width:1,height:1}))
+ const calendarSource=await import('node:fs/promises').then(fs=>fs.readFile(new URL('../src/components/CalendarView.tsx',import.meta.url),'utf8'))
+ assert.ok(!calendarSource.includes('calendar-quick-memo'))
+ }
+ {
+ assert.equal(12*((112*10+12*9-12*11)/12)+11*12,10*112+9*12)
+ const oldPrefs=workspace.normalizeWorkspacePreferences({homeGridSize:12,homeLayout:[{id:'calendar',row:0,column:0,width:6,height:5},{id:'tasks',row:5,column:0,width:6,height:5}]})
+ assert.deepEqual(oldPrefs.homeLayout.map(i=>[i.row,i.height]),[[0,6],[6,6]])
+ assert.deepEqual(workspace.normalizeWorkspacePreferences(oldPrefs),oldPrefs)
+ }
+ {
+ const roomData=storage.emptyData();roomData.classes=[{id:'room-class',subjectId:'room-subject',name:'ROOM_CLASS',room:'ROOM_LOCATION',slots:[{day:'월',period:1}],students:[]}];roomData.subjects=[{id:'room-subject',name:'ROOM_SUBJECT',color:'#123456'}]
+ roomData.workspacePreferences.homeTimetableSubject=false;roomData.workspacePreferences.homeTimetableRoom=true
+ const restored=await storage.importData({text:async()=>JSON.stringify(roomData)})
+ assert.equal(restored.classes[0].room,'ROOM_LOCATION');assert.equal(restored.workspacePreferences.homeTimetableRoom,true);assert.equal(restored.workspacePreferences.homeTimetableSubject,false)
+ const Mini=(await server.ssrLoadModule('/src/components/MiniTimetable.tsx')).default
+ const hidden=renderToStaticMarkup(React.createElement(Mini,{data:roomData,sessions:[],showToday:false,showSubject:false,showRoom:true}))
+ assert.ok(hidden.includes('class="mini-room">ROOM_LOCATION'));assert.ok(!hidden.includes('class="mini-subject">ROOM_SUBJECT'))
+ const shown=renderToStaticMarkup(React.createElement(Mini,{data:roomData,sessions:[],showToday:false,classOnly:true,showSubject:true,showRoom:false}))
+ assert.ok(shown.includes('class="mini-subject">ROOM_SUBJECT'));assert.ok(!shown.includes('class="mini-room"'))
+ assert.deepEqual(timetableDisplay(4),{fontPt:11,classOnly:false})
+ }
+ {
+ const memoModel=await server.ssrLoadModule('/src/lessonMemo.ts')
+ const common=storage.emptyData();common.lessons=[{id:'shared1',note:'COMMON_NOTE'},{id:'shared2',note:'SECOND_NOTE'}];common.progress['c:shared1']={memo:'CLASS_NOTE'}
+ const session={id:'shared-session',classId:'c',lessonIds:['shared1','shared2']}
+ assert.equal(memoModel.calendarLessonMemoText(common,session),'COMMON_NOTE · CLASS_NOTE · SECOND_NOTE')
+ const other={...session,classId:'other'}
+ assert.equal(memoModel.calendarLessonMemoText(common,other),'COMMON_NOTE · SECOND_NOTE')
+ assert.equal(memoModel.calendarLessonMemoText(common,{...session,lessonIds:[]}),'')
+ }
+ {
+ const d=storage.emptyData();d.classes=[{id:'memo-c',name:'MEMO_CLASS',subjectId:'memo-s',students:[],slots:[]}];d.subjects=[{id:'memo-s',name:'MEMO_SUBJECT',usesProgress:true,color:'#123456'}];d.lessons=[{id:'memo-l',subjectId:'memo-s',title:'LESSON_CONTENT_ONLY',note:'SHARED_MEMO_VISIBLE',order:0}];d.progress['memo-c:memo-l']={memo:'CLASS_MEMO_VISIBLE'};d.settings.features.teaching=true;d.workspacePreferences.homeLayout=[{id:'lessons',row:0,column:0,width:6,height:2}]
+ const lessonSession={id:'memo-session',classId:'memo-c',subjectId:'memo-s',lessonIds:['memo-l'],date:today,period:2,mode:'normal'}
+ const homeHtml=renderToStaticMarkup(React.createElement(Today,{data:d,sessions:[lessonSession],update:()=>{},onSelect:()=>{},onNavigate:()=>{}}))
+ assert.ok(homeHtml.includes('desk-session-first-line'));assert.ok(homeHtml.includes('desk-session-memo'));assert.ok(homeHtml.includes('SHARED_MEMO_VISIBLE'));assert.ok(homeHtml.includes('CLASS_MEMO_VISIBLE'));assert.ok(homeHtml.includes('lesson-memo-dash'))
+ const calendarHtml=renderToStaticMarkup(React.createElement(Calendar,{data:d,sessions:[lessonSession],month:new Date(),setMonth:()=>{},onSelect:()=>{},update:()=>{}}))
+ assert.ok(calendarHtml.includes('LESSON_CONTENT_ONLY'));assert.ok(!calendarHtml.includes('SHARED_MEMO_VISIBLE'));assert.ok(!calendarHtml.includes('CLASS_MEMO_VISIBLE'))
+ }
+ {
+ const journal=await server.ssrLoadModule('/src/lessonJournal.ts')
+ const d=storage.emptyData();d.classes=[{id:'jc',name:'JOURNAL_CLASS',subjectId:'js',students:[],slots:[]}];d.subjects=[{id:'js',name:'JOURNAL_SUBJECT',usesProgress:true,color:'#123456'}];d.lessons=[{id:'jl',subjectId:'js',title:'JOURNAL_LESSON',note:''}];d.settings.features.teaching=true
+ const source={id:'journal-source',date:'2026-10-19',period:2,classId:'jc',subjectId:'js',mode:'normal',lessonIds:['jl']}
+ const cancelled={...source,id:'cancelled',date:'2026-10-20',cancelled:true}
+ const hidden={...source,id:'hidden',date:'2026-10-20',hidden:true}
+ const none={...source,id:'none',date:'2026-10-20',mode:'none'}
+ const other={...source,id:'other',date:'2026-10-20',classId:'other'}
+ const wrongSubject={...source,id:'wrong-subject',date:'2026-10-20',subjectId:'other'}
+ const target={...source,id:'journal-target',date:today,period:3,extra:true}
+ const later={...target,id:'later',date:'2027-01-01'}
+ Object.assign(d,journal.saveLessonJournal(d,source,{record:'HISTORICAL_INCIDENT_ONLY',nextMemo:'PREPARE_NEXT_CLASS'}))
+ const all=[source,cancelled,hidden,none,other,wrongSubject,target,later]
+ assert.equal(journal.nextLessonFor(d.lessonJournal[source.id],all).id,target.id)
+ assert.equal(journal.incomingLessonMemos(d,source,all).length,0)
+ assert.equal(journal.incomingLessonMemos(d,target,all)[0].nextMemo,'PREPARE_NEXT_CLASS')
+ assert.equal(journal.incomingLessonMemos(d,later,all).length,0)
+ const sameDay={...source,id:'same-day',period:4};assert.equal(journal.nextLessonFor(d.lessonJournal[source.id],[source,sameDay,target]).id,'same-day')
+ assert.equal(journal.nextLessonFor(d.lessonJournal[source.id],[source]),undefined)
+ assert.equal(journal.nextLessonFor(d.lessonJournal[source.id],[source,{...target,hidden:true},later]).id,later.id)
+ Object.assign(d,journal.saveLessonJournal(d,source,{record:'UPDATED_INCIDENT_ONLY'}))
+ assert.equal(d.lessonJournal[source.id].nextMemo,'PREPARE_NEXT_CLASS')
+ assert.equal(d.lessonJournal[source.id].date,source.date)
+ const restored=await storage.importData({text:async()=>JSON.stringify(d)})
+ assert.deepEqual(restored.lessonJournal,d.lessonJournal)
+ d.workspacePreferences.homeLayout=[{id:'lessons',row:0,column:0,width:6,height:3}]
+ const html=renderToStaticMarkup(React.createElement(Today,{data:d,sessions:all,update:()=>{},onSelect:()=>{},onNavigate:()=>{}}))
+ assert.ok(html.includes('PREPARE_NEXT_CLASS'));assert.ok(!html.includes('UPDATED_INCIDENT_ONLY'))
+ const noJournal=await storage.importData({text:async()=>JSON.stringify({...d,lessonJournal:undefined})});assert.deepEqual(noJournal.lessonJournal,{})
+ }
+ {
+ const Widget=(await server.ssrLoadModule('/src/components/TodayLessonsWidget.tsx')).default
+ const d=storage.emptyData();d.classes=[{id:'visibility-c',name:'VISIBLE_CLASS',subjectId:'visibility-s',students:[],slots:[]}];d.subjects=[{id:'visibility-s',name:'HIDDEN_SUBJECT',usesProgress:true,color:'#123456'}];d.lessons=[{id:'visibility-l',subjectId:'visibility-s',title:'HIDDEN_CONTENT',note:'HIDDEN_MEMO'}]
+ const item={id:'visibility-session',classId:'visibility-c',subjectId:'visibility-s',date:today,period:3,lessonIds:['visibility-l'],mode:'normal'}
+ d.workspacePreferences.todayLessonFields={period:false,className:true,subject:false,content:false,memo:false}
+ const html=renderToStaticMarkup(React.createElement(Widget,{data:d,sessions:[item],update:()=>{},onSelect:()=>{}}))
+ assert.ok(html.includes('VISIBLE_CLASS'));for(const hidden of ['3교시','HIDDEN_SUBJECT','HIDDEN_CONTENT','HIDDEN_MEMO','desk-session-memo'])assert.ok(!html.includes(hidden))
+ const restored=await storage.importData({text:async()=>JSON.stringify(d)})
+ assert.deepEqual(restored.workspacePreferences.todayLessonFields,d.workspacePreferences.todayLessonFields)
+ d.workspacePreferences.todayLessonFields={period:false,className:false,subject:false,content:false,memo:true}
+ const memoOnly=renderToStaticMarkup(React.createElement(Widget,{data:d,sessions:[item],update:()=>{},onSelect:()=>{}}))
+ assert.ok(memoOnly.includes('HIDDEN_MEMO'));assert.ok(!memoOnly.includes('desk-session-first-line'));assert.ok(!memoOnly.includes('VISIBLE_CLASS'))
+ }
+ {
+ const notes=await server.ssrLoadModule('/src/releaseNotes.ts')
+ assert.equal(storage.APP_VERSION,'v4.5');assert.equal(notes.releaseHighlights.length,3)
+ assert.ok(notes.releaseHighlights[0].includes('지난 업무 기록'))
+ assert.ok(notes.releaseHighlights[1].includes('표시 정보'))
+ assert.ok(notes.releaseHighlights[2].includes('같은 학급·과목의 다음 수업일'))
+ assert.equal(notes.releaseNoticeKey,'teachingflow-release-seen:v4.5')
+ }
+ console.log('PASS: legacy migration, storage/backup, privacy, 12 calendar combinations, week/month/year boundaries, leap year, completion filters, widget layout, five main tabs, homeroom attendance, task date ranges, fixed 4-week home calendars and fixed 1/2-week modes, school events in work, 12×12 grid migration/limits, month/week modes, optional teacher/club features, club backups, optional deadlines, attendance reasons/memos, transfers/history, area colors/highlights, club settings/order, today-only summaries, optional four features, timetable widget, homeroom timetable, 1–5 work weeks, school event colors, unified design rows, automatic/custom/hidden borders, activity colors, UI-only themes, daily representative attendance, XLSX roundtrip, seat conditions, groups, all-reason absence totals, editable absence memos, theme palette rotation, weekday calendars, shared quick add, reserved empty seats, constrained balanced groups and backup compatibility')
 } finally { await server.close() }
