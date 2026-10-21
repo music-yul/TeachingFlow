@@ -727,3 +727,36 @@
 .deadline-color-settings { padding:12px 0; border-bottom:1px solid var(--line); }
 .calendar-detail-colors-table th:first-child { width:48%; }
 .calendar-detail-colors-table table { min-width:410px; }
+
+/* Compact design controls: one horizontal control group per cell. */
+.unified-design { max-width:860px; }
+.unified-design table { table-layout:fixed; min-width:730px; font-size:13px; margin:0; }
+.unified-design thead th:first-child { width:28%; }
+.unified-design thead th:nth-child(2) { width:6%; }
+.unified-design thead th:nth-child(3) { width:12%; }
+.unified-design thead th:nth-child(4) { width:10%; }
+.unified-design thead th:nth-child(5) { width:17%; }
+.unified-design thead th:nth-child(6) { width:18%; }
+.unified-design thead th:nth-child(7) { width:9%; }
+.unified-design thead th { white-space:nowrap; text-align:center; padding:6px 4px; }
+.unified-design tbody th,.unified-design tbody td { vertical-align:middle; padding:4px; line-height:1.25; }
+.unified-design tbody th { width:auto; overflow-wrap:anywhere; }
+.unified-design td { text-align:center; }
+.unified-design .calendar-detail-sample { display:block; padding:4px 6px; border-radius:3px; font-size:13px; line-height:1.35; }
+.unified-design .design-stack { display:flex; flex-direction:row; align-items:center; justify-content:center; gap:4px; }
+.unified-design input[type=color] { width:26px; height:23px; padding:1px; flex:none; }
+.unified-design select { width:auto; max-width:68px; min-width:0; padding:3px 2px; font-size:12px; height:25px; }
+.unified-design .link-button,.unified-design .inline-check { font-size:11px; line-height:1.25; }
+.unified-design .inline-check { gap:2px; margin:0; white-space:nowrap; }
+.unified-design input[type=checkbox] { margin:0; width:13px; height:13px; }
+.unified-design .design-group th { width:auto; text-align:left; background:var(--subtle); color:var(--muted); padding:4px 7px; font-size:12px; }
+.design-extra { margin-top:10px; }
+
+.design-settings-groups { max-width:860px; }
+.design-fold-group { border-bottom:1px solid var(--line); }
+.design-fold-group>summary { cursor:pointer; padding:8px 5px; font-size:13px; font-weight:600; }
+.design-fold-group>summary small { margin-left:8px; font-size:11px; font-weight:400; color:var(--muted); }
+.design-fold-group[open]>summary { background:var(--subtle); }
+.timetable-color-preview { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:2px; width:150px; flex:0 0 150px; border:1px solid var(--line); border-radius:3px; overflow:hidden; }
+.timetable-color-preview>div { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px 3px; font-size:12px; line-height:1.3; min-height:33px; }
+.timetable-color-preview span { font-size:11px; }

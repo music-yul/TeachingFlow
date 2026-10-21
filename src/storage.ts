@@ -1,7 +1,7 @@
 import {normalizeCalendarDetailColors} from './calendarDetailColors'
 import { normalizeClubSchedule } from './clubSchedule'
 import { normalizeSeatingPlans } from './seating'
-import { defaultCalendarColors, normalizeCalendarColors, normalizeCalendarCustom, normalizeCalendarFonts, normalizeCalendarTextColors, normalizeCalendarMarkers, normalizeCalendarBorders } from './calendarAppearance'
+import { normalizeCalendarDecoration, defaultCalendarColors, normalizeCalendarColors, normalizeCalendarCustom, normalizeCalendarFonts, normalizeCalendarTextColors, normalizeCalendarMarkers, normalizeCalendarBorders } from './calendarAppearance'
 import { defaultWorkspacePreferences, normalizeWorkspacePreferences } from './workspace'
 import type { AppData, Evaluation, EvaluationItem, EvaluationTask, LessonType, EvaluationType, Subject, TaskStatus } from './types'
 import { subjectColorsForTheme } from './theme'
@@ -47,6 +47,7 @@ export function emptyData(): AppData {
       calendarColorCustom: [],
       calendarTextColors: {},
       calendarLessonLabelBold: true,
+      schoolEventDesigns: {},
       schoolEventTextColors: {},
       calendarFonts: {},
       calendarMarkers: {},
@@ -211,6 +212,7 @@ function normalize(saved: Partial<AppData>): AppData {
       calendarColors: normalizeCalendarColors(saved.settings?.calendarColors,saved.settings?.appearance?.themeId,saved.settings?.calendarColorCustom),
       calendarColorCustom: normalizeCalendarCustom(saved.settings?.calendarColorCustom,saved.settings?.calendarColors,saved.settings?.appearance?.themeId),
       calendarLessonLabelBold: saved.settings?.calendarLessonLabelBold !== false,
+      schoolEventDesigns: Object.fromEntries(Object.entries(saved.settings?.schoolEventDesigns||{}).filter(([key])=>['closed','blocked','swap','note'].includes(key)).map(([key,value])=>[key,normalizeCalendarDecoration(value)])),
       schoolEventTextColors: Object.fromEntries(Object.entries(saved.settings?.schoolEventTextColors||{}).filter(([key,value])=>['closed','blocked','swap','note'].includes(key)&&/^#[0-9a-f]{6}$/i.test(value))),
       calendarDeadlineColor: /^#[0-9a-f]{6}$/i.test(saved.settings?.calendarDeadlineColor||'') ? saved.settings!.calendarDeadlineColor : undefined,
       calendarTodayColor: /^#[0-9a-f]{6}$/i.test(saved.settings?.calendarTodayColor||'') ? saved.settings!.calendarTodayColor : undefined,
@@ -231,7 +233,7 @@ function normalize(saved: Partial<AppData>): AppData {
     classes: (saved.classes || []).map(item => ({ ...item, slots: item.slots || [], students: item.students || [] })),
     lessons,
     types,
-    events: (saved.events || []).map(item => ({ ...item, color: /^#[0-9a-f]{6}$/i.test(item.color || '') ? item.color : undefined, textColor: /^#[0-9a-f]{6}$/i.test(item.textColor || '') ? item.textColor : undefined, periods: item.periods || [], classIds: item.classIds || [] })),
+    events: (saved.events || []).map(item => ({ ...item, ...(item.design?{design:normalizeCalendarDecoration(item.design)}:{}), color: /^#[0-9a-f]{6}$/i.test(item.color || '') ? item.color : undefined, textColor: /^#[0-9a-f]{6}$/i.test(item.textColor || '') ? item.textColor : undefined, periods: item.periods || [], classIds: item.classIds || [] })),
     lessonJournal: Object.fromEntries(Object.entries(saved.lessonJournal||{}).filter(([,entry])=>entry&&typeof entry.sessionId==='string'&&typeof entry.classId==='string'&&typeof entry.subjectId==='string'&&typeof entry.date==='string'&&Number.isInteger(entry.period)).map(([id,entry])=>[id,{...entry,record:typeof entry.record==='string'?entry.record:'',nextMemo:typeof entry.nextMemo==='string'?entry.nextMemo:'',lessonTitle:typeof entry.lessonTitle==='string'?entry.lessonTitle:''}])),
     progress: saved.progress || {},
     overrides: saved.overrides || {},

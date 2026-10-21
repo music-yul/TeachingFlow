@@ -469,12 +469,10 @@ try {
  assert.equal(palette.schoolEventStyle(borderData,customSchool).borderTop,`1px solid ${palette.darkerCalendarColor('#abcdef')}`)
  const {default:CalendarDesign}=await server.ssrLoadModule('/src/components/CalendarDesign.tsx')
  const designHtml=renderToStaticMarkup(React.createElement(CalendarDesign,{data:borderData,update:()=>{}}))
- const typeRow=designHtml.match(/학사일정 종류별<\/h3>(.*?)<\/section>/s)?.[1]
- assert.ok(typeRow)
- assert.equal((typeRow.match(/type="color"/g)||[]).length,8)
- for(const label of ['휴업','수업 불가','요일 변경','일반 안내'])assert.ok(typeRow.includes(label))
- assert.equal((designHtml.match(/class="calendar-design-row"/g)||[]).length,8)
- assert.ok(designHtml.includes('<thead>'));assert.ok(designHtml.includes('고급 설정 · 글씨 스타일·선·테두리'))
+ for(const label of ['휴업','수업 불가','요일 변경','일반 안내']){
+  for(const control of ['배경색','글자색','글꼴 스타일','왼쪽 선 색','외곽 테두리 표시'])assert.ok(designHtml.includes(`${label} ${control}`))
+ }
+ assert.ok(designHtml.includes('<thead>'));assert.ok(!designHtml.includes('고급 설정'))
  for(const name of Object.values(palette.calendarAreaNames))assert.ok(designHtml.includes(`${name} 글자색`))
  assert.ok(!designHtml.includes('수업 종류 ·'))
  assert.ok(designHtml.includes('업무 외곽 테두리 표시'));assert.ok(designHtml.includes('업무 테두리 자동 색'))
@@ -962,10 +960,10 @@ try {
  const appearance=await server.ssrLoadModule('/src/calendarAppearance.ts');assert.equal(appearance.schoolEventStyle(d,d.events[0]).color,'#ffffff')
  const Detail=(await server.ssrLoadModule('/src/components/CalendarDetailColorSettings.tsx')).default
  const html=renderToStaticMarkup(React.createElement(Detail,{data:d,update:()=>{}}))
- assert.ok(!html.includes('<select'));assert.ok(html.includes('교과수업 세부 색상'));assert.ok(html.includes('업무 세부 색상'));assert.ok(html.includes('MIX_SUBJECT 글자색'));assert.ok(!html.includes('개별 색 적용'))
+ assert.ok(html.includes('글씨 모양'));assert.ok(html.includes('과목별'));assert.ok(html.includes('일정·결과별'));assert.ok(html.includes('MIX_SUBJECT 글자색'));assert.ok(!html.includes('개별 색 적용'))
  const School=(await server.ssrLoadModule('/src/components/SchoolCalendarColorSettings.tsx')).default
  const school=renderToStaticMarkup(React.createElement(School,{data:d,update:()=>{}}))
- assert.ok(school.includes('항목 · 미리보기'));assert.ok(school.includes('기본색으로'));assert.ok(school.includes('COLOR_EVENT'))
+ assert.ok(school.includes('항목 · 미리보기'));assert.ok(school.includes('되돌리기'));assert.ok(school.includes('COLOR_EVENT'))
  }
  {
  const d=storage.emptyData();d.settings.features.work=true
@@ -1034,6 +1032,55 @@ try {
  const Appearance=(await server.ssrLoadModule('/src/components/AppearanceView.tsx')).default
  const settingsHtml=renderToStaticMarkup(React.createElement(Appearance,{data:restored,update:()=>{}}))
  assert.ok(settingsHtml.includes('aria-label="화면 배경"'));assert.ok(settingsHtml.includes('aria-label="위젯·상자 배경"'));assert.ok(settingsHtml.includes('업무 마감일 글자색'))
+ }
+ {
+ const palette=await server.ssrLoadModule('/src/calendarAppearance.ts')
+ const detail=await server.ssrLoadModule('/src/calendarDetailColors.ts')
+ const {commonCalendarRow}=await server.ssrLoadModule('/src/components/CalendarDesign.tsx')
+ const {calendarDetailRows}=await server.ssrLoadModule('/src/components/CalendarDetailColorSettings.tsx')
+ const {schoolCalendarRows}=await server.ssrLoadModule('/src/components/SchoolCalendarColorSettings.tsx')
+ let d=storage.emptyData()
+ d.subjects=[{id:'style-subject',name:'Style subject',color:'#123456',usesProgress:true}]
+ const update=value=>{d={...d,...value}}
+ commonCalendarRow({data:d,update},'work').onDecoration({marker:{color:'#cc1122',style:'dashed'},border:{visible:false},font:'bold'})
+ let style=palette.calendarItemStyle(d,'work');assert.equal(style.borderTop,'none');assert.equal(style.borderLeftStyle,'dashed');assert.equal(style.borderLeftColor,'#cc1122');assert.equal(style.fontWeight,700)
+ const workBefore=structuredClone(d.settings.calendarMarkers.work)
+ commonCalendarRow({data:d,update},'teaching').onDecoration({marker:{color:'#aabbcc',style:'dotted'},border:{visible:true,color:'#111111'}})
+ commonCalendarRow({data:d,update},'teaching').onReset();assert.deepEqual(d.settings.calendarMarkers.work,workBefore);assert.equal(d.settings.calendarMarkers.teaching,undefined)
+ let row=calendarDetailRows({data:d,update,section:'teaching'}).find(row=>row.key==='style-subject')
+ const background=row.background;row.onDecoration({marker:{color:'#224466',style:'double'},border:{visible:true,color:'#663311'},font:'italic'})
+ style=detail.teachingCalendarStyle(d,{subjectId:'style-subject',classId:''});assert.equal(style.backgroundColor,background);assert.equal(style.borderLeftStyle,'double');assert.equal(style.borderTop,'1px solid #663311');assert.equal(style.fontStyle,'italic')
+ d.events=[{id:'decorated-event',date:today,title:'Style event',type:'note',periods:[],classIds:[]}]
+ schoolCalendarRows({data:d,update}).find(row=>row.key==='note').onDecoration({marker:{style:'dashed',color:'#dd2244'},border:{visible:false}})
+ style=palette.schoolEventStyle(d,d.events[0]);assert.equal(style.borderTop,'none');assert.equal(style.borderLeftStyle,'dashed')
+ schoolCalendarRows({data:d,update}).find(row=>row.key==='decorated-event').onDecoration({border:{visible:true,color:'#123456'}})
+ style=palette.schoolEventStyle(d,d.events[0]);assert.equal(style.borderTop,'1px solid #123456');assert.equal(style.borderLeftColor,'#dd2244')
+ const restored=await storage.importData({text:async()=>JSON.stringify(d)})
+ assert.deepEqual(restored.settings.schoolEventDesigns,d.settings.schoolEventDesigns);assert.deepEqual(restored.events[0].design,d.events[0].design);assert.deepEqual(restored.settings.calendarDetailColors,d.settings.calendarDetailColors)
+ row=calendarDetailRows({data:d,update,section:'teaching'}).find(row=>row.key==='style-subject');row.onReset();assert.equal(detail.teachingPaint(d,{subjectId:'style-subject',classId:''}),undefined)
+ assert.deepEqual(palette.normalizeCalendarDecoration({font:'bad',marker:{style:'bad',color:'bad'},border:{visible:true,color:'bad'}}),{border:{visible:true}})
+ }
+ {
+ const loader=await server.ssrLoadModule('/src/fontLoading.ts')
+ const originalDocument=globalThis.document
+ try{
+  const font={id:'test-webfont',stack:"'Test Font', sans-serif",href:'https://example.com/font.css'}
+  const calls=[]
+  let release
+  globalThis.document={getElementById:()=>({sheet:{}}),fonts:{ready:Promise.resolve(),load:(query,text)=>{calls.push({query,text});return new Promise(resolve=>{const prev=release;release=()=>{prev?.();resolve([{status:'loaded'}])}})}}}
+  let shown=false
+  const waiting=loader.prepareScreenFont(font,'첫 화면 학급 업무 메모 0123',100).then(result=>{shown=true;return result})
+  await Promise.resolve();assert.equal(shown,false);assert.equal(calls.length,4);assert.ok(calls.every(call=>call.text.includes('학')))
+  release();assert.equal(await waiting,true);assert.equal(loader.displayFontStack(font),font.stack)
+  // Timeout locks this session to fallback even if the old font request finishes later.
+  let late
+  globalThis.document.fonts.load=()=>new Promise(resolve=>{late=()=>resolve([{status:'loaded'}])})
+  assert.equal(await loader.prepareScreenFont(font,'늦은 글꼴',5),false)
+  assert.notEqual(loader.displayFontStack(font),font.stack);late();await Promise.resolve();assert.notEqual(loader.displayFontStack(font),font.stack)
+  globalThis.document.fonts.load=async()=>{throw new Error('offline')}
+  assert.equal(await loader.prepareScreenFont(font,'오프라인',100),false);assert.notEqual(loader.displayFontStack(font),font.stack)
+  assert.equal(await loader.prepareScreenFont({id:'system',stack:'system-ui'},'기본',100),true)
+ }finally{if(originalDocument===undefined)delete globalThis.document;else globalThis.document=originalDocument}
  }
  console.log('PASS: legacy migration, storage/backup, privacy, 12 calendar combinations, week/month/year boundaries, leap year, completion filters, widget layout, five main tabs, homeroom attendance, task date ranges, fixed 4-week home calendars and fixed 1/2-week modes, school events in work, 12×12 grid migration/limits, month/week modes, optional teacher/club features, club backups, optional deadlines, attendance reasons/memos, transfers/history, area colors/highlights, club settings/order, today-only summaries, optional four features, timetable widget, homeroom timetable, 1–5 work weeks, school event colors, unified design rows, automatic/custom/hidden borders, activity colors, UI-only themes, daily representative attendance, XLSX roundtrip, seat conditions, groups, all-reason absence totals, editable absence memos, theme palette rotation, weekday calendars, shared quick add, reserved empty seats, constrained balanced groups and backup compatibility')
 } finally { await server.close() }

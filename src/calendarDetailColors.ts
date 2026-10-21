@@ -1,11 +1,11 @@
 import type {AppData,CalendarDetailColors,CalendarDetailPaint,Session} from './types'
 import type {DeskCalendarItem} from './workspace'
-import {calendarItemStyle} from './calendarAppearance'
+import {calendarItemStyle,normalizeCalendarDecoration,decorateCalendarStyle} from './calendarAppearance'
 import {autoTextColor} from './colors'
 const valid=(value:unknown):value is string=>typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value)
 function paints(saved:unknown):Record<string,CalendarDetailPaint>{
  if(!saved||typeof saved!=='object'||Array.isArray(saved))return {}
- return Object.fromEntries(Object.entries(saved).filter(([,v])=>v&&typeof v==='object').map(([key,value])=>{const v=value as CalendarDetailPaint;return [key,{...(typeof v.enabled==='boolean'?{enabled:v.enabled}:{}),...(valid(v.background)?{background:v.background}:{}),...(valid(v.color)?{color:v.color}:{})}]}))
+ return Object.fromEntries(Object.entries(saved).filter(([,v])=>v&&typeof v==='object').map(([key,value])=>{const v=value as CalendarDetailPaint;return [key,{...normalizeCalendarDecoration(v),...(typeof v.enabled==='boolean'?{enabled:v.enabled}:{}),...(valid(v.background)?{background:v.background}:{}),...(valid(v.color)?{color:v.color}:{})}]}))
 }
 export function normalizeCalendarDetailColors(saved?:Partial<CalendarDetailColors>):CalendarDetailColors{
  return {teachingMode:saved?.teachingMode==='subject'||saved?.teachingMode==='class'||saved?.teachingMode==='individual'?saved.teachingMode:'default',workMode:saved?.workMode==='category'||saved?.workMode==='kind'||saved?.workMode==='individual'?saved.workMode:'default',subjects:paints(saved?.subjects),classes:paints(saved?.classes),workCategories:paints(saved?.workCategories),workKinds:paints(saved?.workKinds)}
@@ -42,10 +42,10 @@ export function workPaint(data:AppData,item:Pick<DeskCalendarItem,'category'|'wo
 export function teachingCalendarStyle(data:AppData,session:Pick<Session,'subjectId'|'classId'>,important=false){
  const paint=teachingPaint(data,session)
  const base=calendarItemStyle(data,'teaching',important,paint?.background)
- return paint?{...base,color:paint.color||autoTextColor(String(base.backgroundColor))}:base
+ return paint?decorateCalendarStyle({...base,color:paint.color||autoTextColor(String(base.backgroundColor))},paint):base
 }
 export function workCalendarStyle(data:AppData,item:Pick<DeskCalendarItem,'category'|'workKind'|'important'|'done'>){
  const paint=workPaint(data,item)
  const base=calendarItemStyle(data,'work',item.important,paint?.background)
- return paint?{...base,color:paint.color||autoTextColor(String(base.backgroundColor)),...(item.done?{opacity:.75,fontWeight:400}:{})}:base
+ return paint?decorateCalendarStyle({...base,color:paint.color||autoTextColor(String(base.backgroundColor)),...(item.done?{opacity:.75,fontWeight:400}:{})},paint):base
 }

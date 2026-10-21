@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { themedCalendarColors } from '../calendarAppearance'
 import CalendarDesign from './CalendarDesign'
 import type { AppData, Appearance } from '../types'
-import { ensureFontLoaded, fonts, fontSizeOptions, normalizeFontSize, themes } from '../theme'
+import { ensureFontLoaded, fonts, fontSizeOptions, normalizeFontSize, themes, readableOn } from '../theme'
 
 type Props = {
   data: AppData
@@ -10,6 +11,7 @@ type Props = {
 
 
 export default function AppearanceView({ data, update }: Props) {
+  const [section,setSection] = useState('calendar')
   const current = data.settings.appearance
   const theme = themes.find(item => item.id === current.themeId) || themes[0]
 
@@ -25,6 +27,8 @@ export default function AppearanceView({ data, update }: Props) {
 
   return (
     <section className="panel">
+      <div className="subtabs appearance-sections" aria-label="디자인 설정 종류">{[{id:'screen',label:'화면 테마·배경'},{id:'calendar',label:'달력'},{id:'timetable',label:'시간표'},{id:'font',label:'글꼴·크기'}].map(item=><button type="button" key={item.id} aria-pressed={section===item.id} className={section===item.id?'subtab active':'subtab'} onClick={()=>setSection(item.id)}>{item.label}</button>)}</div>
+      <div hidden={section!=='screen'}>
       <div className="block">
         <h2>화면 테마</h2>
         <p className="hint">
@@ -63,11 +67,12 @@ export default function AppearanceView({ data, update }: Props) {
         </div>
       </div>
 
+      </div>
+      <div hidden={section!=='font'}>
       <div className="block">
         <h2>글꼴</h2>
         <p className="hint">
-          고른 글꼴만 인터넷에서 내려받습니다. 처음 한 번은 잠깐 기본 글꼴로 보였다가 바뀝니다.
-          인터넷이 없을 때는 기기 글꼴로 대체됩니다.
+          선택한 글꼴을 준비한 뒤 첫 화면을 표시합니다. 인터넷 연결이 안 되거나 글꼴을 불러오지 못하면 기기 글꼴로 표시합니다.
         </p>
         <div className="theme-row">
           {fonts.map(font => (
@@ -85,9 +90,7 @@ export default function AppearanceView({ data, update }: Props) {
             </button>
           ))}
         </div>
-        <div className="appearance-backgrounds">
-          {([{key:'background',label:'화면 배경',variable:'--bg'},{key:'cardBackground',label:'위젯·상자 배경',variable:'--card'}] as const).map(({key,label,variable})=><div className="appearance-color-control" key={key}><span>{label}</span><input type="color" aria-label={label} value={current[key]||theme.vars[variable]} onChange={e=>edit({[key]:e.target.value})}/><code>{current[key]||theme.vars[variable]}</code><button className="link-button" disabled={!current[key]} onClick={()=>edit({[key]:undefined})}>테마색으로</button></div>)}
-        </div>
+
       </div>
 
       <div className="block">
@@ -105,9 +108,11 @@ export default function AppearanceView({ data, update }: Props) {
         </div>
       </div>
 
-      <CalendarDesign data={data} update={update} />
+      </div>
+      <div hidden={section!=='calendar'}><CalendarDesign data={data} update={update} /></div>
+      <div hidden={section!=='timetable'}>
       <div className="block">
-        <details className="feature-details"><summary>시간표 색상 · 과목별</summary>
+        <h2>시간표 색상 · 과목별</h2>
         <p className="hint">
           시간표 칸의 글자색입니다. <b>자동</b>으로 두면 배경이 밝을 땐 검정, 어두울 땐 흰색이 됩니다.
           직접 정하고 싶을 때만 색을 고르세요.
@@ -124,6 +129,9 @@ export default function AppearanceView({ data, update }: Props) {
                 onChange={event => update({ subjects: data.subjects.map(item => (item.id === subject.id ? { ...item, color: event.target.value } : item)) })}
               />
               <span className="subject-name-static">{subject.name}</span>
+              <div className="timetable-color-preview" aria-label={`${subject.name} 시간표 색상 미리보기`}>
+                {(data.classes.filter(item=>item.subjectId===subject.id&&!item.archived).slice(0,2).map(item=>item.name).length?data.classes.filter(item=>item.subjectId===subject.id&&!item.archived).slice(0,2).map(item=>item.name):['1-1','1-2']).map((name,index)=><div key={`${name}-${index}`} style={{background:subject.color,color:subject.textColor||readableOn(subject.color)}}><span>{subject.name}</span><b>{name}</b></div>)}
+              </div>
               <label className={subject.textColor ? 'subject-toggle on' : 'subject-toggle'}>
                 <input
                   type="checkbox"
@@ -148,7 +156,7 @@ export default function AppearanceView({ data, update }: Props) {
             </div>
           ))}
         </div>
-        </details>
+      </div>
       </div>
     </section>
   )

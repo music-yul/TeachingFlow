@@ -61,6 +61,7 @@ export type Lesson = {
 export type EventType = 'closed' | 'blocked' | 'swap' | 'note'
 
 export type SchoolEvent = {
+  design?: CalendarDecoration
   textColor?: string
   color?: string
   id: string
@@ -125,13 +126,15 @@ export type Appearance = {
   fontSize: string
 }
 
-export type CalendarDetailPaint = {enabled?:boolean;background?:string;color?:string}
+export type CalendarDecoration = {font?:'normal'|'bold'|'italic';marker?:{color:string;style:'solid'|'dashed'|'dotted'|'double'|'none'};border?:{visible:boolean;color?:string}}
+export type CalendarDetailPaint = CalendarDecoration & {enabled?:boolean;background?:string;color?:string}
 export type CalendarDetailColors = {teachingMode:'default'|'subject'|'class'|'individual';workMode:'default'|'category'|'kind'|'individual';subjects:Record<string,CalendarDetailPaint>;classes:Record<string,CalendarDetailPaint>;workCategories:Record<string,CalendarDetailPaint>;workKinds:Record<string,CalendarDetailPaint>}
 export type Settings = {
   calendarDetailColors?: CalendarDetailColors
   calendarTodayColor?: string
   calendarDeadlineColor?: string
   calendarLessonLabelBold?: boolean
+  schoolEventDesigns?: Partial<Record<EventType,CalendarDecoration>>
   schoolEventTextColors?: Partial<Record<EventType,string>>
   calendarTextColors?: Partial<Record<CalendarArea,string>>
   calendarFonts?: Partial<Record<CalendarArea, 'normal'|'bold'|'italic'>>

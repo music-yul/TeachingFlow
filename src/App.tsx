@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import type { AppData, Classroom } from './types'
 import { APP_VERSION, emptyData, importData, makeId, nextSubjectColor, readData, writeData } from './storage'
 import { ensureFontLoaded, fonts, fontSizes, fontSizeOptions, normalizeFontSize, uiThemeVars, themes } from './theme'
+import { displayFontStack } from './fontLoading'
 import { buildSessions } from './schedule'
 import { parseWorkbooks, type ImportedClass } from './naesAttendanceParser'
 import SettingsHub from './components/SettingsHub'
@@ -56,7 +57,7 @@ export default function App() {
     root.style.fontSize = fontSizes[normalizeFontSize(appearance.fontSize)] || fontSizes.normal
     const font = fonts.find(item => item.id === appearance.fontId) || fonts[0]
     ensureFontLoaded(font)
-    document.body.style.fontFamily = font.stack
+    document.body.style.fontFamily = displayFontStack(font)
   }, [appearance])
 
   const update = (change: Partial<AppData>) => setData(current => ({ ...current, ...change }))

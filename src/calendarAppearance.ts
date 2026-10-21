@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import type { AppData, CalendarArea, EventType, SchoolEvent } from './types'
+import type { AppData, CalendarArea, EventType, SchoolEvent, CalendarDecoration } from './types'
 import { autoTextColor } from './colors'
 export const calendarAreaNames:Record<CalendarArea,string>={teaching:'교과',school:'학사일정',homeroom:'담임',work:'업무',club:'동아리',swap:'요일 대체',cover:'수업 대체·대강',holiday:'공휴일'}
 export function blendCalendarColor(base:string,tint:string,amount:number){return '#'+[0,2,4].map(i=>Math.round(parseInt(base.slice(1+i,3+i),16)*(1-amount)+parseInt(tint.slice(1+i,3+i),16)*amount).toString(16).padStart(2,'0')).join('')}
@@ -41,8 +41,40 @@ export function schoolEventStyle(data:AppData,event:SchoolEvent):CSSProperties{
  const area=event.type==='swap'?'swap':'school'
  const style=calendarItemStyle(data,area,false,event.color||data.settings.schoolEventColors[event.type])
  const customText=event.textColor||data.settings.schoolEventTextColors?.[event.type]||data.settings.calendarTextColors?.[area]
- return {...style,color:customText||((event.color||data.settings.schoolEventColors[event.type]||data.settings.calendarColorCustom.includes(area))?style.color:data.settings.appearance.themeId==='night'?'#ffffff':defaultSchoolTextColors[event.type])}
+ return decorateCalendarStyle({...style,color:customText||((event.color||data.settings.schoolEventColors[event.type]||data.settings.calendarColorCustom.includes(area))?style.color:data.settings.appearance.themeId==='night'?'#ffffff':defaultSchoolTextColors[event.type])},{...data.settings.schoolEventDesigns?.[event.type],...event.design})
 }
 
 /** 마감일 표시는 업무 분류·완료 상태와 관계없이 별도 색을 사용합니다. */
 export function deadlineLabelStyle(data:AppData):CSSProperties{return {color:data.settings.calendarDeadlineColor||'#b42318',backgroundColor:'transparent'}}
+
+export function normalizeCalendarDecoration(value?:CalendarDecoration):CalendarDecoration {
+ const next:CalendarDecoration={}
+ if(value&&['normal','bold','italic'].includes(value.font||''))next.font=value.font
+ if(value?.marker&&/^#[0-9a-f]{6}$/i.test(value.marker.color)&&['solid','dashed','dotted','double','none'].includes(value.marker.style))next.marker={...value.marker}
+ if(value?.border&&typeof value.border.visible==='boolean')next.border={visible:value.border.visible,...(/^#[0-9a-f]{6}$/i.test(value.border.color||'')?{color:value.border.color}:{})}
+ return next
+}
+export function decorateCalendarStyle(base:CSSProperties,decoration?:CalendarDecoration):CSSProperties {
+ if(!decoration)return base
+ const style={...base}
+ if(decoration.font){style.fontWeight=decoration.font==='bold'?700:400;style.fontStyle=decoration.font==='italic'?'italic':'normal'}
+ if(decoration.border){
+  const {visible,color}=decoration.border
+  const edge=visible?`1px solid ${color||String(base.borderTop||'').match(/#[0-9a-f]{6}/i)?.[0]||String(base.borderLeftColor||'#888888')}`:'none'
+  style.borderTop=edge;style.borderRight=edge;style.borderBottom=edge
+  if(Number(base.borderLeftWidth)<=1){style.borderLeftWidth=visible?1:0;style.borderLeftColor=color||base.borderLeftColor}
+ }
+ if(decoration.marker){
+  const marker=decoration.marker
+  const visible=decoration.border?.visible??base.borderTop!=='none'
+  style.borderLeftWidth=marker.style==='none'?(visible?1:0):3
+  style.borderLeftStyle=marker.style==='none'?'solid':marker.style
+  style.borderLeftColor=marker.style==='none'?(decoration.border?.color||String(style.borderTop).match(/#[0-9a-f]{6}/i)?.[0]||marker.color):marker.color
+ }
+ return style
+}
+
+export function calendarDecorationFromStyle(style:CSSProperties,own?:CalendarDecoration):CalendarDecoration {
+ const markerStyle=Number(style.borderLeftWidth)>1?(style.borderLeftStyle as NonNullable<CalendarDecoration['marker']>['style']):'none'
+ return {font:own?.font||(style.fontStyle==='italic'?'italic':Number(style.fontWeight)>=700?'bold':'normal'),marker:own?.marker||{color:String(style.borderLeftColor||'#888888'),style:markerStyle},border:own?.border||{visible:style.borderTop!=='none'}}
+}

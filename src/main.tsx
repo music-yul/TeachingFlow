@@ -1,51 +1,38 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { flushSync } from 'react-dom'
 import App from './App.tsx'
 import { readData } from './storage'
-import { ensureFontLoaded, fonts, fontSizes, normalizeFontSize, themes } from './theme'
+import { fonts, fontSizes, normalizeFontSize, themes, uiThemeVars } from './theme'
+import {displayFontStack,prepareScreenFont} from './fontLoading'
 
 async function startApp() {
-  const data = readData()
-  const appearance = data.settings.appearance
-  const root = document.documentElement
-  const theme = themes.find(item => item.id === appearance.themeId) || themes[0]
-  Object.entries(theme.vars).forEach(([key, value]) => root.style.setProperty(key, value))
-  root.style.setProperty('--accent', appearance.accent)
-  root.style.fontSize = fontSizes[normalizeFontSize(appearance.fontSize)] || fontSizes.normal
-  const font = fonts.find(item => item.id === appearance.fontId) || fonts[0]
-  document.body.style.fontFamily = font.stack
-
-  if (font.href) {
-    const ready = new Promise<void>(resolve => {
-      ensureFontLoaded(font)
-      const link = document.getElementById(`webfont-${font.id}`) as HTMLLinkElement | null
-      if (!link) { resolve(); return }
-      const load = async () => {
-        try {
-          const family = font.stack.split(',')[0].trim()
-          const text = '티칭플로 수업 일정 진도 관리 출결 평가 성적 환경 설정 변경한 수업 원래대로 0123456789'
-            + data.classes.map(item => item.name).join('')
-            + data.lessons.map(item => item.title).join('')
-          await Promise.all([400, 500, 600, 700].map(weight => document.fonts.load(`${weight} 16px ${family}`, text)))
-        } catch {}
-        resolve()
-      }
-      if (link.sheet) void load()
-      else {
-        link.addEventListener('load', () => void load(), { once: true })
-        link.addEventListener('error', () => resolve(), { once: true })
-      }
-    })
-    let timer: ReturnType<typeof setTimeout> | undefined
-    await Promise.race([ready, new Promise<void>(resolve => { timer = setTimeout(resolve, 2500) })])
-    if (timer) clearTimeout(timer)
-  }
-
-  createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  )
+ const data=readData(),appearance=data.settings.appearance
+ const root=document.documentElement
+ const theme=themes.find(item=>item.id===appearance.themeId)||themes[0]
+ Object.entries(uiThemeVars(theme,appearance)).forEach(([key,value])=>root.style.setProperty(key,value))
+ root.style.setProperty('--accent',appearance.accent)
+ root.style.fontSize=fontSizes[normalizeFontSize(appearance.fontSize)]||fontSizes.normal
+ const font=fonts.find(item=>item.id===appearance.fontId)||fonts[0]
+ document.body.style.fontFamily=font.stack
+ const container=document.getElementById('root')!
+ // Visibility preserves layout/font discovery while preventing a fallback-font frame.
+ container.style.visibility='hidden'
+ container.setAttribute('aria-busy','true')
+ const loading=document.createElement('div')
+ loading.textContent='화면을 준비하고 있어요…'
+ loading.setAttribute('role','status')
+ Object.assign(loading.style,{position:'fixed',inset:'0',display:'grid',placeItems:'center',font:'14px system-ui, sans-serif',color:'var(--muted)',background:'var(--bg)',zIndex:'99999'})
+ document.body.append(loading)
+ try{
+  flushSync(()=>createRoot(container).render(<StrictMode><App /></StrictMode>))
+  // Include rendered UI, widget data, dialog labels and saved content (including Korean subsets).
+  await prepareScreenFont(font,(container.textContent||'')+JSON.stringify(data))
+  document.body.style.fontFamily=displayFontStack(font)
+ }finally{
+  container.style.visibility=''
+  container.removeAttribute('aria-busy')
+  loading.remove()
+ }
 }
-
 void startApp()
