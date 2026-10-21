@@ -1,4 +1,6 @@
 import { taskDateLabel } from '../taskDates'
+import WorkRecordDialog from './WorkRecordDialog'
+import type { WorkRecord } from '../types'
 import CalendarAddDialog from './CalendarAddDialog'
 import { calendarItemStyle, schoolEventStyle, lessonLabelStyle } from '../calendarAppearance'
 import { useRef, useState } from 'react'
@@ -25,6 +27,7 @@ type Props = {
 }
 
 export default function CalendarView({ data, sessions, month, setMonth, onSelect, update, context = 'schedule', onOpenArea, onDateSelect, onTaskSelect }: Props) {
+  const [recordDraft,setRecordDraft]=useState<WorkRecord|null>(null)
   const [add,setAdd]=useState<{date:string;mode:'menu'|'work'|'homeroom'}|null>(null)
   const [noteDate, setNoteDate] = useState<string | null>(null)
   const [extraDate, setExtraDate] = useState<string | null>(null)
@@ -36,8 +39,8 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
   const range=context==='home'?(homeMode==='month'?'month':'week'):preferences.range
   const disabledFilter=(preferences.filter==='homeroom'&&!data.settings.features.homeroom)||(preferences.filter==='teaching'&&!data.settings.features.teaching)||(preferences.filter==='work'&&!data.settings.features.work)||(preferences.filter==='club'&&!data.settings.features.clubs)
   const filter=context==='school'?'teaching':disabledFilter?'all':preferences.filter
-  const showCompleted=preferences.showCompleted
-  const shownPreferences={...preferences,filter}
+  const showCompleted=context==='work'||preferences.showCompleted
+  const shownPreferences={...preferences,filter,showCompleted}
   const teaching = context!=='school' && data.settings.features.teaching && (filter === 'all' || filter === 'teaching')
   const weeks = context==='home' ? homeMode==='month'?undefined:homeMode==='week'?1:homeMode==='fortnight'?2:4 : context==='work'&&range!=='month'?Math.min(5,preferences.weekCount||(range==='fortnight'?2:1)):undefined
   const showWeekends=preferences.showWeekends!==false
@@ -62,7 +65,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
         <h2>{!showWeekends&&range!=='month'?`${dateKey(cells[0])} ~ ${dateKey(cells.at(-1)!)}`:calendarPeriodLabel(month, range, weeks)}</h2>
         <button className="ghost-button" onClick={() => shift(1)}>다음 {rangeUnit} ›</button>
         <button className="ghost-button" onClick={() => setMonth(new Date())}>오늘</button>
-        {(context==='home'||context==='work')&&<label className="calendar-completed-toggle no-print"><input type="checkbox" checked={showCompleted} onChange={e=>changePreferences({showCompleted:e.target.checked})}/> 완료 포함</label>}
+        {context==='home'&&<label className="calendar-completed-toggle no-print"><input type="checkbox" checked={showCompleted} onChange={e=>changePreferences({showCompleted:e.target.checked})}/> 완료 포함</label>}
         <button className="ghost-button no-print" onClick={()=>settingsDialog.current?.showModal()}>설정</button>
       </div>
       <dialog className="calendar-options-dialog no-print" ref={settingsDialog}><div className="desk-heading"><h2>달력 설정</h2><button className="ghost-button" onClick={()=>settingsDialog.current?.close()}>닫기</button></div>
@@ -84,7 +87,8 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
         </div>
       </dialog>
 
-      <dialog ref={taskDialog} className="calendar-task-dialog no-print" onClose={()=>setTaskDetail(null)} aria-label="일정 내용">{detailTask&&<><div className="desk-heading"><h2>{detailTask.title}</h2><button className="ghost-button" onClick={()=>taskDialog.current?.close()}>닫기</button></div><p className="hint">{taskDateLabel(detailTask,taskDetail?.kind==='notices')}</p>{detailTask.category&&<p>{detailTask.category}</p>}<p className="desk-pre">{detailTask.note||'추가 내용이 없습니다.'}</p><div className="calendar-task-footer"><label>완료 <input type="checkbox" aria-label="일정 완료" checked={detailTask.done} onChange={e=>{if(!taskDetail)return;update({teacherDesk:{...data.teacherDesk,[taskDetail.kind]:data.teacherDesk[taskDetail.kind].map(task=>task.id===taskDetail.id?{...task,done:e.target.checked}:task)}})}}/></label></div></>}</dialog>
+      {recordDraft&&<WorkRecordDialog key={recordDraft.id||'new-record'} data={data} initial={recordDraft} update={update} onClose={()=>setRecordDraft(null)}/>}
+      <dialog ref={taskDialog} className="calendar-task-dialog no-print" onClose={()=>setTaskDetail(null)} aria-label="일정 내용">{detailTask&&<><div className="desk-heading"><h2>{detailTask.title}</h2><button className="ghost-button" onClick={()=>taskDialog.current?.close()}>닫기</button></div><p className="hint">{taskDateLabel(detailTask,taskDetail?.kind==='notices')}</p>{detailTask.category&&<p>{detailTask.category}</p>}<p className="desk-pre">{detailTask.note||'추가 내용이 없습니다.'}</p>{taskDetail?.kind==='tasks'&&<section className="task-linked-records"><div className="desk-heading"><h3>관련 업무 기록</h3><button type="button" className="ghost-button" onClick={()=>setRecordDraft({id:'',date:today,title:detailTask.title,category:detailTask.category||'',content:'',link:'',taskId:detailTask.id,taskTitle:detailTask.title})}>+ 기록 추가</button></div>{(data.teacherDesk.workRecords||[]).filter(record=>record.taskId===detailTask.id).sort((a,b)=>b.date.localeCompare(a.date)).map(record=><button type="button" className="task-record-preview" key={record.id} onClick={()=>setRecordDraft({...record})}><strong>{record.date} · {record.title}</strong><span>{record.content||'내용 없음'}</span></button>)}</section>}<div className="calendar-task-footer"><span className="hint">{detailTask.done?'완료한 업무입니다.':'내용 확인만으로 완료 처리되지 않습니다.'}</span><button type="button" className={detailTask.done?'ghost-button':'primary-button'} onClick={()=>{if(!taskDetail)return;update({teacherDesk:{...data.teacherDesk,[taskDetail.kind]:data.teacherDesk[taskDetail.kind].map(task=>task.id===taskDetail.id?{...task,done:!task.done}:task)}})}}>{detailTask.done?'미완료로 변경':'완료 처리'}</button></div></>}</dialog>
       <div className="calendar-scroll"><div className="calendar-content">
       <div className="calendar-grid weekday-row" style={{gridTemplateColumns:`repeat(${columns},minmax(0,1fr))`}}>
         {(showWeekends?['일', '월', '화', '수', '목', '금', '토']:['월','화','수','목','금']).map(day => <b key={day}>{day}</b>)}
@@ -167,9 +171,9 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                   </button>
                 )
               })}
-              {(context==='school'?[]:deskCalendarItems(data, key, shownPreferences)).map(item => (
+              {(context==='school'?[]:deskCalendarItems(data, key, shownPreferences, context==='work')).map(item => (
                 <div key={item.id} className={`calendar-desk-item ${item.area} ${item.done ? 'done' : ''} ${item.important?'important-item':''}`} style={{...calendarItemStyle(data,item.area,item.important),...(item.done?{backgroundColor:data.settings.appearance.themeId==='night'?'#35383d':'#f0f1f2',color:'#969ba3',borderColor:'#d3d6da',fontWeight:400}:{})}}>
-                  <button className="calendar-item-title" onClick={() => {const kind=item.area==='work'?'tasks':'notices';if(data.teacherDesk[kind].some(task=>task.id===item.id)){setTaskDetail({id:item.id,kind});taskDialog.current?.showModal()}else if(context==='work'&&onTaskSelect)onTaskSelect(item.id);else onOpenArea?.(item.area==='homeroom'?'담임':item.area==='club'?'동아리':'업무',item.clubId)}}>{item.title}</button>
+                  <button type="button" className="calendar-item-title" onClick={event => {event.stopPropagation();if(item.recordId){const record=data.teacherDesk.workRecords?.find(record=>record.id===item.recordId);if(record)setRecordDraft({...record});return}const kind=item.area==='work'?'tasks':'notices';if(data.teacherDesk[kind].some(task=>task.id===item.id)){setTaskDetail({id:item.id,kind});taskDialog.current?.showModal()}else if(context==='work'&&onTaskSelect)onTaskSelect(item.id);else onOpenArea?.(item.area==='homeroom'?'담임':item.area==='club'?'동아리':'업무',item.clubId)}}>{item.title}</button>
 
                 </div>
               ))}

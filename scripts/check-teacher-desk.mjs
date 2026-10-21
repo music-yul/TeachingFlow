@@ -741,7 +741,7 @@ try {
  assert.equal(restoredHistory.teacherDesk.tasks.length,2)
  const {default:WorkHistoryView}=await server.ssrLoadModule('/src/components/WorkHistoryView.tsx')
  const historyHtml=renderToStaticMarkup(React.createElement(WorkHistoryView,{data:restoredHistory,update:()=>{},onEditTask:()=>{}}))
- for(const text of ['지난 행사 정리','방송 장비 점검 완료','완료 업무','지난 업무 기록'])assert.ok(historyHtml.includes(text))
+ for(const text of ['지난 행사 정리','방송 장비 점검 완료','완료 업무','업무 기록'])assert.ok(historyHtml.includes(text))
  assert.ok(!historyHtml.includes('진행 업무'))
  }
  const {timetableDisplay}=await server.ssrLoadModule('/src/timetableDisplay.ts')
@@ -868,10 +868,41 @@ try {
  {
  const notes=await server.ssrLoadModule('/src/releaseNotes.ts')
  assert.equal(storage.APP_VERSION,'v4.5');assert.equal(notes.releaseHighlights.length,3)
- assert.ok(notes.releaseHighlights[0].includes('지난 업무 기록'))
+ assert.ok(notes.releaseHighlights[0].includes('할 일과 업무 기록'))
  assert.ok(notes.releaseHighlights[1].includes('표시 정보'))
  assert.ok(notes.releaseHighlights[2].includes('같은 학급·과목의 다음 수업일'))
  assert.equal(notes.releaseNoticeKey,'teachingflow-release-seen:v4.5')
+ }
+ {
+ const d=storage.emptyData();d.settings.features.work=true
+ d.teacherDesk.tasks=[{...taskDates.blankTask(),id:'completed-work-test',title:'COMPLETED_WORK_ALWAYS_VISIBLE',date:today,done:true},{...taskDates.blankTask(),id:'pending-work-test',title:'PENDING_WORK_VISIBLE',date:today,done:false}]
+ d.workspacePreferences.workCalendar.showCompleted=false
+ d.workspacePreferences.homeCalendar.showCompleted=false
+ let updates=0
+ const props={data:d,sessions:[],month:new Date(),setMonth:()=>{},onSelect:()=>{},update:()=>updates++}
+ const work=renderToStaticMarkup(React.createElement(Calendar,{...props,context:'work'}))
+ assert.ok(work.includes('COMPLETED_WORK_ALWAYS_VISIBLE'));assert.ok(work.includes('PENDING_WORK_VISIBLE'));assert.ok(!work.includes('calendar-completed-toggle'));assert.equal(updates,0)
+ const home=renderToStaticMarkup(React.createElement(Calendar,{...props,context:'home'}))
+ assert.ok(!home.includes('COMPLETED_WORK_ALWAYS_VISIBLE'));assert.ok(home.includes('calendar-completed-toggle'))
+ assert.equal(workspace.normalizeWorkspacePreferences(d.workspacePreferences).workCalendar.showCompleted,true)
+ assert.equal(d.teacherDesk.tasks[0].done,true);assert.equal(d.teacherDesk.tasks[1].done,false)
+ }
+ {
+ const d=storage.emptyData();d.settings.features.work=true
+ d.teacherDesk.tasks=[{...taskDates.blankTask(),id:'link-task',title:'LINKED_TASK',date:today,done:true}]
+ d.teacherDesk.workRecords=[{id:'link-record',date:today,title:'WORK_RECORD_DISTINCT',category:'test',content:'KEPT_PROCESS_RECORD',link:'',taskId:'link-task',taskTitle:'LINKED_TASK'},{id:'standalone-record',date:today,title:'STANDALONE_RECORD',category:'',content:'',link:''}]
+ const restored=await storage.importData({text:async()=>JSON.stringify(d)})
+ assert.deepEqual(restored.teacherDesk.workRecords,d.teacherDesk.workRecords)
+ const items=workspace.deskCalendarItems(d,today,{filter:'work',range:'month',showCompleted:true},true)
+ assert.equal(items.filter(i=>i.recordId).length,2);assert.ok(items.find(i=>i.recordId==='link-record').title.startsWith('기록 · '))
+ assert.ok(!workspace.deskCalendarItems(d,today,{filter:'all',range:'week',showCompleted:false}).some(i=>i.recordId))
+ const html=renderToStaticMarkup(React.createElement(Calendar,{context:'work',data:d,sessions:[],month:new Date(),setMonth:()=>{},onSelect:()=>{},update:()=>{}}))
+ assert.ok(html.includes('WORK_RECORD_DISTINCT'));assert.ok(html.includes('LINKED_TASK'));assert.ok(html.includes('STANDALONE_RECORD'))
+ const History=(await server.ssrLoadModule('/src/components/WorkHistoryView.tsx')).default
+ const history=renderToStaticMarkup(React.createElement(History,{data:d,update:()=>{},onEditTask:()=>{}}))
+ assert.ok(history.includes('연결된 할 일:'));assert.ok(history.includes('KEPT_PROCESS_RECORD'))
+ d.teacherDesk.tasks=[]
+ assert.equal(d.teacherDesk.workRecords[0].taskTitle,'LINKED_TASK');assert.ok(workspace.deskCalendarItems(d,today,{filter:'work',range:'month',showCompleted:true},true).some(i=>i.recordId==='link-record'))
  }
  console.log('PASS: legacy migration, storage/backup, privacy, 12 calendar combinations, week/month/year boundaries, leap year, completion filters, widget layout, five main tabs, homeroom attendance, task date ranges, fixed 4-week home calendars and fixed 1/2-week modes, school events in work, 12×12 grid migration/limits, month/week modes, optional teacher/club features, club backups, optional deadlines, attendance reasons/memos, transfers/history, area colors/highlights, club settings/order, today-only summaries, optional four features, timetable widget, homeroom timetable, 1–5 work weeks, school event colors, unified design rows, automatic/custom/hidden borders, activity colors, UI-only themes, daily representative attendance, XLSX roundtrip, seat conditions, groups, all-reason absence totals, editable absence memos, theme palette rotation, weekday calendars, shared quick add, reserved empty seats, constrained balanced groups and backup compatibility')
 } finally { await server.close() }

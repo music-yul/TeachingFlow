@@ -680,3 +680,11 @@
 .today-lessons-field { display:flex; align-items:center; gap:8px; padding:7px 0; }
 .today-lessons-field input { width:auto; }
 .today-lessons-settings::backdrop { background:#0007; }
+
+.calendar-task-footer { align-items:center; gap:12px; flex-wrap:wrap; }
+.calendar-task-footer>.hint { margin-right:auto; }
+.task-linked-records { margin-top:12px; border-top:1px solid var(--line); padding-top:8px; }
+.task-linked-records h3 { margin:0; }
+.task-record-preview { display:block; width:100%; text-align:left; background:var(--subtle); padding:8px; margin:6px 0; border:1px solid var(--line); }
+.task-record-preview span { display:block; white-space:pre-wrap; overflow-wrap:anywhere; font-weight:400; }
+.work-record-dialog::backdrop { background:#0007; }

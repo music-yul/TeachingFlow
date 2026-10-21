@@ -19,7 +19,7 @@ export function defaultWorkspacePreferences(): WorkspacePreferences {
     homeGridRows: 12,
     homeLayout: defaultHomeLayout(),
     homeWidgets: defaultHomeLayout().map(item=>item.id),
-    workCalendar: { showWeekends:true, weekCount: 1, homeMode: 'weeks', range: 'month', filter: 'work', showCompleted: false },
+    workCalendar: { showWeekends:true, weekCount: 1, homeMode: 'weeks', range: 'month', filter: 'work', showCompleted: true },
     homeCalendar: { showWeekends:true, weekCount: 1, homeMode: 'weeks', range: 'week', filter: 'all', showCompleted: false },
     scheduleCalendar: { showWeekends:true, weekCount: 1, homeMode: 'weeks', range: 'month', filter: 'teaching', showCompleted: false },
   }
@@ -51,7 +51,7 @@ export function normalizeWorkspacePreferences(saved?: Partial<WorkspacePreferenc
     homeLayout: saved?.homeGridSize===12&&saved.homeGridRows!==12 ? normalizeHomeLayout(resizeHomeRows(layout)) : layout,
     homeWidgets: orderedHomeLayout(layout).map(item => item.id),
     homeCalendar: normalizeCalendar(saved?.homeCalendar, base.homeCalendar),
-    workCalendar: { ...normalizeCalendar(saved?.workCalendar, base.workCalendar), filter: 'work' },
+    workCalendar: { ...normalizeCalendar(saved?.workCalendar, base.workCalendar), filter: 'work', showCompleted: true },
     scheduleCalendar: { ...normalizeCalendar(saved?.scheduleCalendar, base.scheduleCalendar), filter: 'teaching' },
   }
 }
@@ -162,9 +162,9 @@ export function shiftCalendar(anchor: Date, range: CalendarRange, step: number, 
   if (range === 'month' && !weeks) return new Date(anchor.getFullYear(), anchor.getMonth() + step, 1)
   const next = new Date(anchor); next.setDate(next.getDate() + step * (weeks ? integer(weeks,1,1,5)*7 : range === 'week' ? 7 : 14)); return next
 }
-export type DeskCalendarItem = { id: string; area: 'homeroom' | 'work' | 'club'; title: string; done: boolean; important?: boolean; clubId?:string }
+export type DeskCalendarItem = { id: string; area: 'homeroom' | 'work' | 'club'; title: string; done: boolean; important?: boolean; clubId?:string; recordId?:string }
 /** 개인 상담 본문·학생 이름은 달력에 포함하지 않는다. */
-export function deskCalendarItems(data: AppData, date: string, preferences: CalendarPreferences): DeskCalendarItem[] {
+export function deskCalendarItems(data: AppData, date: string, preferences: CalendarPreferences,includeWorkRecords=false): DeskCalendarItem[] {
   const items: DeskCalendarItem[] = []
   const desk = data.teacherDesk
   if (data.settings.features.homeroom && (preferences.filter === 'all' || preferences.filter === 'homeroom')) {
@@ -178,6 +178,7 @@ export function deskCalendarItems(data: AppData, date: string, preferences: Cale
     if (followups.length) items.push({ id: `followups-${date}`, area: 'homeroom', title: `학생 후속 확인 ${followups.length}건`, done: followups.every(item => item.followed) })
   }
   if (data.settings.features.work && (preferences.filter === 'all' || preferences.filter === 'work')) {
+    if(includeWorkRecords)(desk.workRecords||[]).filter(record=>record.date===date).forEach(record=>items.push({id:`work-record:${record.id}`,recordId:record.id,area:'work',title:`기록 · ${record.title}`,done:false}))
     desk.tasks.filter(item => taskCoversDate(item, date)).forEach(item => items.push({ id: item.id, area: 'work', title: `${item.category ? `${item.category} · ` : ''}${item.title}${taskDeadline(item)===date?' · 마감':''}`, done: item.done, important:item.important }))
   }
   if(data.settings.features.clubs&&(preferences.filter==='all'||preferences.filter==='club'))data.clubs.forEach(club=>{const periods=clubMeetingsOn(data,club,date);if(periods.length)items.push({id:`club-meeting:${club.id}:${date}`,clubId:club.id,area:'club',title:`${club.name} · ${periods.join('·')}교시`,done:false})})

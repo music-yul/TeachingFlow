@@ -381,7 +381,7 @@ export type StudentRecord = {
   followDate: string
   followed: boolean
 }
-export type WorkRecord = {id:string;date:string;title:string;category:string;content:string;link:string}
+export type WorkRecord = {taskId?:string;taskTitle?:string;id:string;date:string;title:string;category:string;content:string;link:string}
 export type TeacherDesk = {
   workRecords?: WorkRecord[]
   illnessReviewThreshold?: number
