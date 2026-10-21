@@ -51,7 +51,7 @@ export default function App() {
   useLayoutEffect(() => {
     const root = document.documentElement
     const theme = themes.find(item => item.id === appearance.themeId) || themes[0]
-    Object.entries(uiThemeVars(theme)).forEach(([key, value]) => root.style.setProperty(key, value))
+    Object.entries(uiThemeVars(theme,appearance)).forEach(([key, value]) => root.style.setProperty(key, value))
     root.style.setProperty('--accent', appearance.accent)
     root.style.fontSize = fontSizes[normalizeFontSize(appearance.fontSize)] || fontSizes.normal
     const font = fonts.find(item => item.id === appearance.fontId) || fonts[0]

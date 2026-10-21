@@ -1,3 +1,4 @@
+import type { Appearance } from './types'
 export type ThemeVars = Record<string, string>
 
 export type Theme = {
@@ -281,4 +282,9 @@ export function readableOn(background: string) {
 }
 
 /** Preserve the original v4.1 color roles for all existing and new surfaces. */
-export function uiThemeVars(theme:Theme){return{...theme.vars}}
+export function uiThemeVars(theme:Theme,appearance?:Pick<Appearance,'background'|'cardBackground'>){
+ const vars={...theme.vars}
+ if(/^#[0-9a-f]{6}$/i.test(appearance?.background||''))vars['--bg']=appearance!.background!
+ if(/^#[0-9a-f]{6}$/i.test(appearance?.cardBackground||''))vars['--card']=appearance!.cardBackground!
+ return vars
+}

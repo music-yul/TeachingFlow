@@ -716,3 +716,14 @@
 .task-date-row>label { flex:0 1 180px; min-width:0; }
 .task-date-row input[type=date] { width:100%; min-width:0; box-sizing:border-box; }
 .task-date-options { padding:0; gap:6px 14px; }
+
+/* Color settings keep common controls separate from optional decorations. */
+.color-setting-status { display:block; color:var(--muted); font-weight:400; font-size:.75rem; margin-top:3px; }
+.calendar-color-text,.appearance-color-control { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.appearance-backgrounds { display:flex; flex-wrap:wrap; gap:16px 28px; margin-top:18px; }
+.appearance-color-control { padding:12px; background:var(--subtle); border:1px solid var(--line); border-radius:8px; }
+.appearance-color-control input[type=color] { width:42px; height:30px; padding:2px; }
+.appearance-color-control code { font-size:.8rem; }
+.deadline-color-settings { padding:12px 0; border-bottom:1px solid var(--line); }
+.calendar-detail-colors-table th:first-child { width:48%; }
+.calendar-detail-colors-table table { min-width:410px; }

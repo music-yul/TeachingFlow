@@ -118,6 +118,8 @@ export type AttendanceStatus = '출석' | '지각' | '조퇴' | '결석' | '결�
 
 export type Appearance = {
   themeId: string
+  background?: string
+  cardBackground?: string
   accent: string
   fontId: string
   fontSize: string
@@ -128,6 +130,7 @@ export type CalendarDetailColors = {teachingMode:'default'|'subject'|'class'|'in
 export type Settings = {
   calendarDetailColors?: CalendarDetailColors
   calendarTodayColor?: string
+  calendarDeadlineColor?: string
   calendarLessonLabelBold?: boolean
   schoolEventTextColors?: Partial<Record<EventType,string>>
   calendarTextColors?: Partial<Record<CalendarArea,string>>

@@ -4,7 +4,7 @@ import TaskList from './TaskList'
 import WorkRecordDialog from './WorkRecordDialog'
 import type { WorkRecord } from '../types'
 import CalendarAddDialog from './CalendarAddDialog'
-import { calendarItemStyle, schoolEventStyle, lessonLabelStyle } from '../calendarAppearance'
+import { calendarItemStyle, schoolEventStyle, lessonLabelStyle, deadlineLabelStyle } from '../calendarAppearance'
 import { useRef, useState } from 'react'
 import type { AppData, CalendarFilter, CalendarRange, PersonalBlock, Session } from '../types'
 import { coversDate, dateKey, effectiveLessonIds, sessionLabel, todayKey } from '../schedule'
@@ -176,7 +176,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
               })}
               {(context==='school'?[]:deskCalendarItems(data, key, shownPreferences, context==='work')).map(item => (
                 <div key={item.id} className={`calendar-desk-item ${item.area} ${item.done ? 'done' : ''} ${item.important?'important-item':''}`} style={{...(item.area==='work'?workCalendarStyle(data,item):calendarItemStyle(data,item.area,item.important)),...(item.done&&!(item.area==='work'&&workPaint(data,item))?{backgroundColor:data.settings.appearance.themeId==='night'?'#35383d':'#f0f1f2',color:'#969ba3',borderColor:'#d3d6da',fontWeight:400}:{})}}>
-                  <button type="button" className="calendar-item-title" onClick={event => {event.stopPropagation();if(item.recordId){const record=data.teacherDesk.workRecords?.find(record=>record.id===item.recordId);if(record)setRecordDraft({...record});return}const kind=item.area==='work'?'tasks':'notices';if(data.teacherDesk[kind].some(task=>task.id===item.id)){setTaskDetail({id:item.id,kind});taskDialog.current?.showModal()}else if(context==='work'&&onTaskSelect)onTaskSelect(item.id);else onOpenArea?.(item.area==='homeroom'?'담임':item.area==='club'?'동아리':'업무',item.clubId)}}>{item.deadline&&<span className="calendar-deadline-label">마감일</span>}{!item.deadline&&item.area==='work'&&item.done&&<span className="calendar-completed-label">완료 · </span>}{item.title}{item.deadline&&item.done&&<span className="calendar-completed-label"> · 완료</span>}</button>
+                  <button type="button" className="calendar-item-title" onClick={event => {event.stopPropagation();if(item.recordId){const record=data.teacherDesk.workRecords?.find(record=>record.id===item.recordId);if(record)setRecordDraft({...record});return}const kind=item.area==='work'?'tasks':'notices';if(data.teacherDesk[kind].some(task=>task.id===item.id)){setTaskDetail({id:item.id,kind});taskDialog.current?.showModal()}else if(context==='work'&&onTaskSelect)onTaskSelect(item.id);else onOpenArea?.(item.area==='homeroom'?'담임':item.area==='club'?'동아리':'업무',item.clubId)}}>{item.deadline&&<span className="calendar-deadline-label" style={deadlineLabelStyle(data)}>마감일</span>}{!item.deadline&&item.area==='work'&&item.done&&<span className="calendar-completed-label">완료 · </span>}{item.title}{item.deadline&&item.done&&<span className="calendar-completed-label"> · 완료</span>}</button>
 
                 </div>
               ))}

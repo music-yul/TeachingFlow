@@ -43,3 +43,6 @@ export function schoolEventStyle(data:AppData,event:SchoolEvent):CSSProperties{
  const customText=event.textColor||data.settings.schoolEventTextColors?.[event.type]||data.settings.calendarTextColors?.[area]
  return {...style,color:customText||((event.color||data.settings.schoolEventColors[event.type]||data.settings.calendarColorCustom.includes(area))?style.color:data.settings.appearance.themeId==='night'?'#ffffff':defaultSchoolTextColors[event.type])}
 }
+
+/** 마감일 표시는 업무 분류·완료 상태와 관계없이 별도 색을 사용합니다. */
+export function deadlineLabelStyle(data:AppData):CSSProperties{return {color:data.settings.calendarDeadlineColor||'#b42318',backgroundColor:'transparent'}}

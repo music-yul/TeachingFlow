@@ -474,7 +474,7 @@ try {
  assert.equal((typeRow.match(/type="color"/g)||[]).length,8)
  for(const label of ['휴업','수업 불가','요일 변경','일반 안내'])assert.ok(typeRow.includes(label))
  assert.equal((designHtml.match(/class="calendar-design-row"/g)||[]).length,8)
- assert.ok(designHtml.includes('<thead>'));assert.ok(designHtml.includes('scope="colgroup">글씨'))
+ assert.ok(designHtml.includes('<thead>'));assert.ok(designHtml.includes('고급 설정 · 글씨 스타일·선·테두리'))
  for(const name of Object.values(palette.calendarAreaNames))assert.ok(designHtml.includes(`${name} 글자색`))
  assert.ok(!designHtml.includes('수업 종류 ·'))
  assert.ok(designHtml.includes('업무 외곽 테두리 표시'));assert.ok(designHtml.includes('업무 테두리 자동 색'))
@@ -962,10 +962,10 @@ try {
  const appearance=await server.ssrLoadModule('/src/calendarAppearance.ts');assert.equal(appearance.schoolEventStyle(d,d.events[0]).color,'#ffffff')
  const Detail=(await server.ssrLoadModule('/src/components/CalendarDetailColorSettings.tsx')).default
  const html=renderToStaticMarkup(React.createElement(Detail,{data:d,update:()=>{}}))
- assert.ok(!html.includes('<select'));assert.ok(html.includes('교과수업 세부 색상'));assert.ok(html.includes('업무 세부 색상'));assert.ok(html.includes('MIX_SUBJECT 개별 색 적용'))
+ assert.ok(!html.includes('<select'));assert.ok(html.includes('교과수업 세부 색상'));assert.ok(html.includes('업무 세부 색상'));assert.ok(html.includes('MIX_SUBJECT 글자색'));assert.ok(!html.includes('개별 색 적용'))
  const School=(await server.ssrLoadModule('/src/components/SchoolCalendarColorSettings.tsx')).default
  const school=renderToStaticMarkup(React.createElement(School,{data:d,update:()=>{}}))
- assert.ok(school.includes('항목 · 미리보기'));assert.ok(school.includes('개별 색 적용'));assert.ok(school.includes('COLOR_EVENT'))
+ assert.ok(school.includes('항목 · 미리보기'));assert.ok(school.includes('기본색으로'));assert.ok(school.includes('COLOR_EVENT'))
  }
  {
  const d=storage.emptyData();d.settings.features.work=true
@@ -976,7 +976,7 @@ try {
  assert.equal(due.deadline,true);assert.equal(due.title,'DEADLINE_TITLE');assert.equal(due.category,'CATEGORY_KEEP_FOR_COLOR')
  const normal=workspace.deskCalendarItems(d,'2026-10-20',preference)[0];assert.equal(normal.deadline,false);assert.ok(normal.title.includes('CATEGORY_KEEP_FOR_COLOR'))
  const html=renderToStaticMarkup(React.createElement(Calendar,{context:'work',data:d,sessions:[],month:new Date(2026,9,21),setMonth:()=>{},onSelect:()=>{},update:()=>{}}))
- const deadlineButton=html.match(/<button[^>]*class="calendar-item-title"[^>]*><span class="calendar-deadline-label">마감일<\/span>DEADLINE_TITLE<\/button>/)?.[0]
+ const deadlineButton=html.match(/<button[^>]*class="calendar-item-title"[^>]*><span class="calendar-deadline-label"[^>]*>마감일<\/span>DEADLINE_TITLE<\/button>/)?.[0]
  assert.ok(deadlineButton);assert.ok(!deadlineButton.includes('CATEGORY_KEEP_FOR_COLOR'));assert.equal(d.teacherDesk.tasks[0].done,false)
  }
  {
@@ -1001,6 +1001,39 @@ try {
  const data=storage.emptyData();data.teacherDesk.tasks=[period]
  const imported=await storage.importData({text:async()=>JSON.stringify(data)})
  assert.equal(imported.teacherDesk.tasks[0].excludeWeekends,true);assert.equal(taskDates.taskDeadline(imported.teacherDesk.tasks[0]),'2026-10-26')
+ }
+ {
+ const d=storage.emptyData()
+ const appearance=await server.ssrLoadModule('/src/theme.ts')
+ const palette=await server.ssrLoadModule('/src/calendarAppearance.ts')
+ d.settings.appearance={...d.settings.appearance,background:'#112233',cardBackground:'#aabbcc'}
+ d.settings.calendarDeadlineColor='#cc1122'
+ const restored=await storage.importData({text:async()=>JSON.stringify(d)})
+ assert.equal(restored.settings.appearance.background,'#112233');assert.equal(restored.settings.appearance.cardBackground,'#aabbcc');assert.equal(restored.settings.calendarDeadlineColor,'#cc1122')
+ for(const theme of appearance.themes){const vars=appearance.uiThemeVars(theme,restored.settings.appearance);assert.equal(vars['--bg'],'#112233');assert.equal(vars['--card'],'#aabbcc');assert.equal(vars['--line'],theme.vars['--line'])}
+ assert.equal(appearance.uiThemeVars(appearance.themes[0],{} )['--bg'],appearance.themes[0].vars['--bg'])
+ assert.equal(palette.deadlineLabelStyle(restored).color,'#cc1122')
+ d.settings.calendarDeadlineColor=undefined;assert.equal(palette.deadlineLabelStyle(d).color,'#b42318')
+ d.settings.appearance.background='bad';d.settings.appearance.cardBackground='bad';d.settings.calendarDeadlineColor='bad'
+ const cleaned=await storage.importData({text:async()=>JSON.stringify(d)})
+ assert.equal(cleaned.settings.appearance.background,undefined);assert.equal(cleaned.settings.appearance.cardBackground,undefined);assert.equal(cleaned.settings.calendarDeadlineColor,undefined)
+ // Changing a text color from an inherited row must keep the background shown in its preview.
+ const Detail=(await server.ssrLoadModule('/src/components/CalendarDetailColorSettings.tsx')).default
+ d.subjects=[{id:'inherit-subject',name:'Inherited',color:'#112233',usesProgress:true}]
+ d.settings.calendarColorCustom=['teaching'];d.settings.calendarColors.teaching='#ddeeff'
+ let change
+ const tree=Detail({data:d,section:'teaching',update:value=>{change=value}})
+ const tables=[];function walk(node){if(Array.isArray(node)){node.forEach(walk);return}if(!node||typeof node!=='object')return;if(node.props?.rows)tables.push(node.props.rows);walk(node.props?.children)}walk(tree)
+ const row=tables.flat().find(row=>row.key==='inherit-subject');assert.equal(row.background,'#ddeeff');assert.equal(row.enabled,false)
+ row.onChange({color:'#445566',enabled:true})
+ const result={...d,...change};const styles=await server.ssrLoadModule('/src/calendarDetailColors.ts')
+ assert.equal(styles.teachingCalendarStyle(result,{subjectId:'inherit-subject',classId:''}).backgroundColor,'#ddeeff');assert.equal(styles.teachingCalendarStyle(result,{subjectId:'inherit-subject',classId:''}).color,'#445566')
+ d.teacherDesk.tasks=[{...taskDates.blankTask(),id:'custom-deadline',title:'CUSTOM_DEADLINE',date:'2026-10-23',showDeadline:true,done:true}];d.settings.calendarDeadlineColor='#cc1122'
+ const html=renderToStaticMarkup(React.createElement(Calendar,{context:'work',data:d,sessions:[],month:new Date(2026,9,21),setMonth:()=>{},onSelect:()=>{},update:()=>{}}))
+ assert.ok(html.includes('class="calendar-deadline-label" style="color:#cc1122;background-color:transparent"'))
+ const Appearance=(await server.ssrLoadModule('/src/components/AppearanceView.tsx')).default
+ const settingsHtml=renderToStaticMarkup(React.createElement(Appearance,{data:restored,update:()=>{}}))
+ assert.ok(settingsHtml.includes('aria-label="화면 배경"'));assert.ok(settingsHtml.includes('aria-label="위젯·상자 배경"'));assert.ok(settingsHtml.includes('업무 마감일 글자색'))
  }
  console.log('PASS: legacy migration, storage/backup, privacy, 12 calendar combinations, week/month/year boundaries, leap year, completion filters, widget layout, five main tabs, homeroom attendance, task date ranges, fixed 4-week home calendars and fixed 1/2-week modes, school events in work, 12×12 grid migration/limits, month/week modes, optional teacher/club features, club backups, optional deadlines, attendance reasons/memos, transfers/history, area colors/highlights, club settings/order, today-only summaries, optional four features, timetable widget, homeroom timetable, 1–5 work weeks, school event colors, unified design rows, automatic/custom/hidden borders, activity colors, UI-only themes, daily representative attendance, XLSX roundtrip, seat conditions, groups, all-reason absence totals, editable absence memos, theme palette rotation, weekday calendars, shared quick add, reserved empty seats, constrained balanced groups and backup compatibility')
 } finally { await server.close() }

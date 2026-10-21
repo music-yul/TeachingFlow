@@ -11,6 +11,7 @@ type Props = {
 
 export default function AppearanceView({ data, update }: Props) {
   const current = data.settings.appearance
+  const theme = themes.find(item => item.id === current.themeId) || themes[0]
 
   const edit = (change: Partial<Appearance>) => {
     update({ settings: { ...data.settings, appearance: { ...current, ...change } } })
@@ -27,8 +28,7 @@ export default function AppearanceView({ data, update }: Props) {
       <div className="block">
         <h2>화면 테마</h2>
         <p className="hint">
-          위젯·탭·표의 배경, 구분선과 강조색을 선택한 테마에 맞춥니다. 달력 기본색은 기존 팔레트의 순서를 테마별로 바꿉니다. 직접 지정한 달력색과 시간표 개별색은 유지합니다.
-          바꾼 뒤 아래 <b>시간표 디자인</b>에서 하나씩 다시 고를 수 있습니다.
+          테마를 고른 뒤 화면 배경·상자 배경·강조색을 각각 바꿀 수 있습니다. 직접 지정한 배경색과 달력색은 테마를 바꿔도 유지됩니다.
         </p>
         <div className="theme-with-accent"><div className="theme-row">
           {themes.map(theme => (
@@ -53,11 +53,14 @@ export default function AppearanceView({ data, update }: Props) {
             onChange={event => edit({ accent: event.target.value })}
             style={{ width: '7rem', fontFamily: 'ui-monospace, monospace' }}
           />
-          <button className="ghost-button" onClick={() => pickTheme(current.themeId)}>기본값으로</button>
+          <button className="ghost-button" onClick={() => edit({accent:theme.swatch})}>테마색으로</button>
         </div>
       </div>
 
 </div>
+        <div className="appearance-backgrounds">
+          {([{key:'background',label:'화면 배경',variable:'--bg'},{key:'cardBackground',label:'위젯·상자 배경',variable:'--card'}] as const).map(({key,label,variable})=><div className="appearance-color-control" key={key}><span>{label}</span><input type="color" aria-label={label} value={current[key]||theme.vars[variable]} onChange={e=>edit({[key]:e.target.value})}/><code>{current[key]||theme.vars[variable]}</code><button className="link-button" disabled={!current[key]} onClick={()=>edit({[key]:undefined})}>테마색으로</button></div>)}
+        </div>
       </div>
 
       <div className="block">
@@ -82,6 +85,9 @@ export default function AppearanceView({ data, update }: Props) {
             </button>
           ))}
         </div>
+        <div className="appearance-backgrounds">
+          {([{key:'background',label:'화면 배경',variable:'--bg'},{key:'cardBackground',label:'위젯·상자 배경',variable:'--card'}] as const).map(({key,label,variable})=><div className="appearance-color-control" key={key}><span>{label}</span><input type="color" aria-label={label} value={current[key]||theme.vars[variable]} onChange={e=>edit({[key]:e.target.value})}/><code>{current[key]||theme.vars[variable]}</code><button className="link-button" disabled={!current[key]} onClick={()=>edit({[key]:undefined})}>테마색으로</button></div>)}
+        </div>
       </div>
 
       <div className="block">
@@ -101,7 +107,7 @@ export default function AppearanceView({ data, update }: Props) {
 
       <CalendarDesign data={data} update={update} />
       <div className="block">
-        <h2>시간표 디자인</h2>
+        <details className="feature-details"><summary>시간표 색상 · 과목별</summary>
         <p className="hint">
           시간표 칸의 글자색입니다. <b>자동</b>으로 두면 배경이 밝을 땐 검정, 어두울 땐 흰색이 됩니다.
           직접 정하고 싶을 때만 색을 고르세요.
@@ -142,6 +148,7 @@ export default function AppearanceView({ data, update }: Props) {
             </div>
           ))}
         </div>
+        </details>
       </div>
     </section>
   )
