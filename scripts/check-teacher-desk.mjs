@@ -967,5 +967,17 @@ try {
  const school=renderToStaticMarkup(React.createElement(School,{data:d,update:()=>{}}))
  assert.ok(school.includes('항목 · 미리보기'));assert.ok(school.includes('개별 색 적용'));assert.ok(school.includes('COLOR_EVENT'))
  }
+ {
+ const d=storage.emptyData();d.settings.features.work=true
+ const task={...taskDates.blankTask(),id:'deadline-test',title:'DEADLINE_TITLE',category:'CATEGORY_KEEP_FOR_COLOR',date:'2026-10-20',showDeadline:true,deadlineDate:'2026-10-23',done:false}
+ d.teacherDesk.tasks=[task]
+ const preference={filter:'work',range:'month',showCompleted:true}
+ const due=workspace.deskCalendarItems(d,'2026-10-23',preference)[0]
+ assert.equal(due.deadline,true);assert.equal(due.title,'DEADLINE_TITLE');assert.equal(due.category,'CATEGORY_KEEP_FOR_COLOR')
+ const normal=workspace.deskCalendarItems(d,'2026-10-20',preference)[0];assert.equal(normal.deadline,false);assert.ok(normal.title.includes('CATEGORY_KEEP_FOR_COLOR'))
+ const html=renderToStaticMarkup(React.createElement(Calendar,{context:'work',data:d,sessions:[],month:new Date(2026,9,21),setMonth:()=>{},onSelect:()=>{},update:()=>{}}))
+ const deadlineButton=html.match(/<button[^>]*class="calendar-item-title"[^>]*><span class="calendar-deadline-label">마감일<\/span>DEADLINE_TITLE<\/button>/)?.[0]
+ assert.ok(deadlineButton);assert.ok(!deadlineButton.includes('CATEGORY_KEEP_FOR_COLOR'));assert.equal(d.teacherDesk.tasks[0].done,false)
+ }
  console.log('PASS: legacy migration, storage/backup, privacy, 12 calendar combinations, week/month/year boundaries, leap year, completion filters, widget layout, five main tabs, homeroom attendance, task date ranges, fixed 4-week home calendars and fixed 1/2-week modes, school events in work, 12×12 grid migration/limits, month/week modes, optional teacher/club features, club backups, optional deadlines, attendance reasons/memos, transfers/history, area colors/highlights, club settings/order, today-only summaries, optional four features, timetable widget, homeroom timetable, 1–5 work weeks, school event colors, unified design rows, automatic/custom/hidden borders, activity colors, UI-only themes, daily representative attendance, XLSX roundtrip, seat conditions, groups, all-reason absence totals, editable absence memos, theme palette rotation, weekday calendars, shared quick add, reserved empty seats, constrained balanced groups and backup compatibility')
 } finally { await server.close() }

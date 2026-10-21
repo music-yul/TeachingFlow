@@ -162,7 +162,7 @@ export function shiftCalendar(anchor: Date, range: CalendarRange, step: number, 
   if (range === 'month' && !weeks) return new Date(anchor.getFullYear(), anchor.getMonth() + step, 1)
   const next = new Date(anchor); next.setDate(next.getDate() + step * (weeks ? integer(weeks,1,1,5)*7 : range === 'week' ? 7 : 14)); return next
 }
-export type DeskCalendarItem = { id: string; area: 'homeroom' | 'work' | 'club'; title: string; done: boolean; important?: boolean; clubId?:string; recordId?:string;workKind?:'task'|'record';category?:string }
+export type DeskCalendarItem = { id: string; area: 'homeroom' | 'work' | 'club'; title: string; done: boolean; important?: boolean; clubId?:string; recordId?:string;workKind?:'task'|'record';category?:string;deadline?:boolean }
 /** 개인 상담 본문·학생 이름은 달력에 포함하지 않는다. */
 export function deskCalendarItems(data: AppData, date: string, preferences: CalendarPreferences,includeWorkRecords=false): DeskCalendarItem[] {
   const items: DeskCalendarItem[] = []
@@ -179,7 +179,7 @@ export function deskCalendarItems(data: AppData, date: string, preferences: Cale
   }
   if (data.settings.features.work && (preferences.filter === 'all' || preferences.filter === 'work')) {
     if(includeWorkRecords)(desk.workRecords||[]).filter(record=>record.date===date).forEach(record=>items.push({id:`work-record:${record.id}`,recordId:record.id,workKind:'record',category:(record.category||'').trim(),area:'work',title:`기록 · ${record.title}`,done:false}))
-    desk.tasks.filter(item => taskCoversDate(item, date)).forEach(item => items.push({ id: item.id, area: 'work',workKind:'task',category:(item.category||'').trim(), title: `${item.category ? `${item.category} · ` : ''}${item.title}${taskDeadline(item)===date?' · 마감':''}`, done: item.done, important:item.important }))
+    desk.tasks.filter(item => taskCoversDate(item, date)).forEach(item => {const deadline=taskDeadline(item)===date;items.push({id:item.id,area:'work',workKind:'task',category:(item.category||'').trim(),deadline,title:deadline?item.title:`${item.category?`${item.category} · `:''}${item.title}`,done:item.done,important:item.important})})
   }
   if(data.settings.features.clubs&&(preferences.filter==='all'||preferences.filter==='club'))data.clubs.forEach(club=>{const periods=clubMeetingsOn(data,club,date);if(periods.length)items.push({id:`club-meeting:${club.id}:${date}`,clubId:club.id,area:'club',title:`${club.name} · ${periods.join('·')}교시`,done:false})})
   if(data.settings.features.clubs&&(preferences.filter==='all'||preferences.filter==='club'))data.clubs.forEach(club=>club.activities.filter(activity=>activity.date===date).forEach(activity=>items.push({id:`club:${club.id}:${activity.id}`,clubId:club.id,area:'club',title:`${club.name} · ${activity.title}`,done:false,important:activity.important})))

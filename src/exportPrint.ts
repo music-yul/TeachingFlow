@@ -224,7 +224,7 @@ export function exportVisibleCalendarXlsx(data: AppData, sessions: Session[], da
       sessions.filter(session => session.date === key && !session.cancelled && !session.hidden).sort((a,b) => a.period-b.period).forEach(session => rows.push([key, '교과', session.period, data.classes.find(c => c.id === session.classId)?.name || '', sessionLabel(data, session)]))
       data.personalBlocks.filter(block => block.date === key).sort((a,b) => a.period-b.period).forEach(block => rows.push([key, '교과·대강', block.period, '', block.title]))
     }
-    deskCalendarItems(data, key, preferences).forEach(item => rows.push([key, item.area === 'homeroom' ? '담임' : item.area==='club'?'동아리':'업무', '', '', item.title + (item.done ? ' (완료)' : '')]))
+    deskCalendarItems(data, key, preferences).forEach(item => rows.push([key, item.area === 'homeroom' ? '담임' : item.area==='club'?'동아리':'업무', '', '', (item.deadline?'마감일 · ':'') + item.title + (item.done ? ' (완료)' : '')]))
   })
   const sheet = XLSX.utils.aoa_to_sheet(rows)
   sheet['!cols'] = [{wch:12}, {wch:12}, {wch:6}, {wch:12}, {wch:55}]
