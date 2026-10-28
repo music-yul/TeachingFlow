@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import {DashboardToolbarContext} from './dashboardToolbar'
 import type { AppData, Classroom } from './types'
 import { APP_VERSION, emptyData, importData, makeId, nextSubjectColor, readData, writeData } from './storage'
 import { ensureFontLoaded, fonts, fontSizes, fontSizeOptions, normalizeFontSize, uiThemeVars, themes } from './theme'
@@ -19,6 +20,7 @@ const allTabs = ['오늘', '담임', '교과', '동아리', '업무', '환경설
 type Tab = (typeof allTabs)[number]
 
 export default function App() {
+  const [dashboardToolbar,setDashboardToolbar]=useState<HTMLDivElement|null>(null)
   const [data, setData] = useState<AppData>(readData)
   const [storedTab, setTab] = useState<Tab>('오늘')
   const tabs=allTabs.filter(item=>item!=='담임'||data.settings.features.homeroom).filter(item=>item!=='동아리'||data.settings.features.clubs).filter(item=>item!=='교과'||data.settings.features.teaching).filter(item=>item!=='업무'||data.settings.features.work)
@@ -147,7 +149,7 @@ export default function App() {
   const started = data.subjects.length > 0 || data.classes.length > 0
 
   return (
-    <div className="app-shell">
+    <DashboardToolbarContext.Provider value={dashboardToolbar}><div className="app-shell">
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark" role="img" aria-label="티칭플로">🏫</span>
@@ -173,11 +175,12 @@ export default function App() {
       </header>
 
       <nav className="tabbar">
-        {tabs.map((item, index) => (
+        <div className="tabbar-links">{tabs.map((item, index) => (
           <button className={tab === item ? 'tab-item active' : 'tab-item'} key={item} onClick={() => {if(item==='동아리')setClubJump(null);if(item==='교과')setTeachingTab('진도 관리');setTab(item)}}>
             <span className="tab-index">{String(index + 1).padStart(2, '0')}</span>{item}
           </button>
-        ))}
+        ))}</div>
+        <div className="dashboard-toolbar-slot" ref={setDashboardToolbar} hidden={tab!=='오늘'}/>
       </nav>
 
       {saveError && <p className="banner warn">저장 공간이 가득 찼습니다. 백업을 내보낸 뒤 기록을 정리해 주세요.</p>}
@@ -219,6 +222,6 @@ export default function App() {
           onConfirm={mergeImport}
         />
       )}
-    </div>
+    </div></DashboardToolbarContext.Provider>
   )
 }

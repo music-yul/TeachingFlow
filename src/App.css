@@ -975,3 +975,7 @@ thead th small { display: block; font-weight: 400; }
 }
 .progress-table .cell-top { display:flex; align-items:baseline; flex-wrap:wrap; gap:4px; }
 .progress-table .cell-top .link-button { min-width:0; overflow-wrap:anywhere; }
+
+/* Keep Today actions at the far right of the navigation row. Tabs scroll separately on narrow screens. */
+.tabbar{align-items:center;overflow:visible;gap:.6rem}.tabbar-links{display:flex;gap:.3rem;align-items:center;min-width:0;overflow-x:auto;flex:1 1 auto}.dashboard-toolbar-slot{flex:0 0 auto;margin-left:auto}.dashboard-toolbar-slot[hidden]{display:none}.dashboard-toolbar-slot .fd-toolbar{margin:0}.dashboard-toolbar-slot .fd-actions{flex-wrap:nowrap;gap:.4rem}.dashboard-toolbar-slot button{white-space:nowrap;font-size:14px}.fd-edit-hint{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px}.fd-edit-hint p{margin:0}.fd-edit-hint>button{flex-shrink:0}
+@media(max-width:560px){.tabbar{gap:.25rem;padding:.4rem .5rem}.dashboard-toolbar-slot .fd-actions{gap:.25rem}.dashboard-toolbar-slot button{padding:.35rem .45rem;font-size:12px}}

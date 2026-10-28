@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import {createPortal} from 'react-dom'
+import {DashboardToolbarContext} from '../dashboardToolbar'
+import { useContext, useEffect, useRef, useState } from 'react'
 import type { CSSProperties, PointerEvent, ReactNode } from 'react'
 import type { AppData, HomeWidget } from '../types'
 import { availableHomeWidgets, homeWidgetLabels } from '../workspace'
@@ -27,6 +29,7 @@ export function upgradeDashboardLayouts(state:DashboardState|undefined):Record<s
  return Object.fromEntries(Object.entries(state.layouts).map(([profile,items])=>[profile,items.map(item=>item.kind==='summary'&&item.h<=4?{...item,h:1}:item)]))
 }
 export default function FlexibleDashboard({data,update,render,preview}:{data:AppData;update:(change:Partial<AppData>)=>void;render:(item:DashboardItem,change:(patch:Partial<DashboardItem>)=>void,closeExpanded:()=>void)=>ReactNode;preview:(item:DashboardItem)=>WidgetPreview}){
+ const toolbarTarget=useContext(DashboardToolbarContext)
  const host=useRef<HTMLDivElement>(null)
  const [settingsKey,setSettingsKey]=useState<string|null>(null),[expandedKey,setExpandedKey]=useState<string|null>(null)
  const [width,setWidth]=useState(1000),[editing,setEditing]=useState(false),[picker,setPicker]=useState(false),[dragPreview,setPreview]=useState<DashboardItem[]|null>(null),[message,setMessage]=useState('')
@@ -48,10 +51,11 @@ export default function FlexibleDashboard({data,update,render,preview}:{data:App
  useEffect(()=>{gesture.current=null;setPreview(null);setSettingsKey(null);setExpandedKey(null)},[profile])
  const body=(item:DashboardItem,inExpanded=false)=><div className={`fd-body home-widget home-widget-${item.kind}`} style={{'--widget-rows':item.h/2} as CSSProperties}>{item.kind==='memo'||item.kind==='links'?<textarea aria-label={dashboardLabels[item.kind]} placeholder={item.kind==='memo'?'메모를 입력하세요.':'자료 이름과 https:// 주소를 입력하세요.'} value={item.text||''} onChange={e=>change(item.key,{text:e.target.value})}/>:render(item,patch=>change(item.key,patch),()=>{if(inExpanded)setExpandedKey(null)})}{item.kind==='links'&&(item.text||'').split('\n').map((line,i)=>{const match=line.match(/https?:\/\/[^\s]+/);return match?<a key={i} href={match[0]} target="_blank" rel="noreferrer">{line.replace(match[0],'').trim()||match[0]}</a>:null})}</div>
  const expanded=items.find(item=>item.key===expandedKey)
+ const toolbar=<div className="fd-toolbar"><div className="fd-actions"><button onClick={()=>setPicker(!picker)} aria-expanded={picker}>＋ 위젯 추가</button><button className={editing?'primary-button':''} onClick={()=>setEditing(!editing)}>{editing?'편집 완료':'화면 편집'}</button></div></div>
  return <div ref={host} className="flex-dashboard">
- <div className="fd-toolbar"><div className="fd-actions"><button onClick={()=>setPicker(!picker)} aria-expanded={picker}>＋ 위젯 추가</button><button className={editing?'primary-button':''} onClick={()=>setEditing(!editing)}>{editing?'편집 완료':'화면 편집'}</button>{editing&&<button onClick={()=>{if(window.confirm('현재 화면 크기의 위젯 배치를 기본값으로 되돌릴까요? 메모 위젯의 내용도 제거됩니다.')){commit(initial);setSettingsKey(null)}}}>기본 배치로</button>}</div></div>
+ {toolbarTarget?createPortal(toolbar,toolbarTarget):toolbar}
  {picker&&<div className="fd-picker">{available.map(kind=><button key={kind} onClick={()=>{const key=crypto.randomUUID();const w=kind==='summary'?cols:kind==='calendar'?Math.min(cols,8):Math.min(cols,4);const h=kind==='summary'?1:kind==='calendar'?8:4;let next:DashboardItem={key,kind,x:0,y:0,w,h,options:widgetOptions(data.workspacePreferences)};while(items.some(item=>overlaps(item,next)))next={...next,y:next.y+1};commit([...items,next]);setEditing(true);setMessage(`${dashboardLabels[kind]} 위젯을 추가했습니다.`)}}>＋ {dashboardLabels[kind]}</button>)}</div>}
- {editing&&<p className="hint">제목 왼쪽 손잡이로 이동 · 오른쪽 아래 손잡이로 가로·세로 조절 · 숫자로도 위치와 크기를 바꿀 수 있습니다. 같은 위젯을 여러 개 추가할 수 있습니다.</p>}
+ {editing&&<div className="fd-edit-hint"><p className="hint">제목 왼쪽 손잡이로 이동 · 오른쪽 아래 손잡이로 가로·세로 조절 · 숫자로도 위치와 크기를 바꿀 수 있습니다. 같은 위젯을 여러 개 추가할 수 있습니다.</p><button onClick={()=>{if(window.confirm('현재 화면 크기의 위젯 배치를 기본값으로 되돌릴까요? 메모 위젯의 내용도 제거됩니다.')){commit(initial);setSettingsKey(null)}}}>기본 배치로</button></div>}
  <span role="status" className="fd-status">{message}</span>
  {!visible.length&&<p className="banner">위젯 추가를 눌러 대시보드를 구성하세요.</p>}
  <div className="fd-grid" style={{gridTemplateColumns:`repeat(${cols}, minmax(0,1fr))`,gridTemplateRows:`repeat(${Math.max(1,...visible.map(item=>item.y+item.h))},52px)`}}>
