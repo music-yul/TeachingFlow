@@ -89,7 +89,7 @@ try {
  assert.deepEqual(storage.readData().workspacePreferences,prefs)
  assert.deepEqual((await storage.importData({text:async()=>raw})).workspacePreferences,prefs)
  const homeHtml=renderToStaticMarkup(React.createElement(Today,{...props,data:calendarData}))
- assert.ok(homeHtml.indexOf('오늘의 할 일')<homeHtml.indexOf('calendar-panel'),'home order not applied')
+ assert.ok(homeHtml.indexOf('오늘의 할 일')<homeHtml.indexOf('data-kind="calendar"'),'home order not applied')
  assert.ok(!homeHtml.includes('오늘의 수업'),'hidden widget rendered')
  assert.ok(!homeHtml.includes('desk-stats'),'hidden summary rendered')
  assert.ok(!homeHtml.includes('PRIVATE_SENTINEL'))

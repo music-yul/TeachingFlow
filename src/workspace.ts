@@ -7,7 +7,7 @@ import { dateKey } from './schedule'
 
 export const homeWidgetLabels: Record<HomeWidget, string> = {
   timetable: '시간표', summary: '확인할 일 요약', calendar: '달력', lessons: '오늘의 수업', notices: '담임 안내',
-  collections: '제출 현황', tasks: '오늘의 할 일', followups: '학생 후속 확인',
+  collections: '제출 현황', tasks: '오늘의 할 일', followups: '후속 확인',
 }
 export function defaultWorkspacePreferences(): WorkspacePreferences {
   return {
