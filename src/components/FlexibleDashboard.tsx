@@ -12,7 +12,7 @@ import type {WidgetPreview} from '../widgetPreview'
 import {widgetOptions} from '../widgetPreferences'
 import type {WidgetOptions} from '../widgetPreferences'
 export type WidgetKind = HomeWidget | 'progress' | 'deadlines' | 'memo' | 'links' | 'journal'
-export type DashboardItem = { key:string; kind:WidgetKind; x:number; y:number; w:number; h:number; title?:string; showTitle?:boolean; fontSize?:number; classId?:string; text?:string; options?:Partial<WidgetOptions> }
+export type DashboardItem = { key:string; kind:WidgetKind; x:number; y:number; w:number; h:number; title?:string; showTitle?:boolean; appearance?:'framed'|'title'|'none'; fontSize?:number; journalPeriod?:'all'|'last'|'today'|'yesterday'|'week'|'7days'|'30days'|'custom'; journalDays?:number; journalRecordedOnly?:boolean; classId?:string; text?:string; options?:Partial<WidgetOptions> }
 export type DashboardState = { version?:2; layouts:Record<string,DashboardItem[]> }
 export const dashboardLabels:Record<WidgetKind,string> = {...homeWidgetLabels,followups:'후속 확인',progress:'학급별 진도',deadlines:'다가오는 마감',memo:'빠른 메모',links:'바로가기',journal:'최근 수업 기록'}
 const overlaps=(a:DashboardItem,b:DashboardItem)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y

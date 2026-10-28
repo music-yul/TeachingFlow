@@ -1,3 +1,4 @@
+import {journalEntries} from './journalFilter'
 import type {AppData,Session} from './types'
 import type {DashboardItem} from './components/FlexibleDashboard'
 import {getTodayActions} from './todayActions'
@@ -34,7 +35,7 @@ export function getWidgetPreview(data:AppData,sessions:Session[],item:DashboardI
  case 'followups':return count(actions.followups.length,'후속 확인',actions.followups.length?'오늘 확인할 학생 기록이 있습니다.':'오늘 확인할 기록이 없습니다.')
  case 'deadlines':{const tasks=data.teacherDesk.tasks.filter(t=>!t.done&&taskDeadline(t)).sort((a,b)=>taskDeadline(a).localeCompare(taskDeadline(b)));return count(tasks.length,'마감 업무',tasks.map(t=>`${taskDeadline(t)} ${t.title}`).join(' · ')||'미완료 마감 업무가 없습니다.')}
  case 'progress':{const ids=data.classes.filter(c=>!c.archived&&(!item.classId||c.id===item.classId)).map(c=>c.id);const list=sessions.filter(s=>ids.includes(s.classId)&&!s.cancelled&&!s.hidden),assigned=list.filter(s=>s.lessonIds.length).length;return count(assigned,'수업 배정',`${list.length}시간 중 ${assigned}시간 배정 · ${ids.length}학급`)}
- case 'journal':{const entries=Object.values(data.lessonJournal||{}).filter(e=>!item.classId||e.classId===item.classId).sort((a,b)=>b.date.localeCompare(a.date)||b.period-a.period);return count(entries.length,'수업 기록',entries[0]?`${entries[0].date} ${entries[0].lessonTitle||entries[0].record}`:'저장된 수업 기록이 없습니다.')}
+ case 'journal':{const entries=journalEntries(data,item,today);return count(entries.length,'수업 기록',entries[0]?`${entries[0].date} ${entries[0].lessonTitle||entries[0].record}`:'저장된 수업 기록이 없습니다.')}
  case 'memo':return {value:item.text?.trim().split('\n')[0]||'빈 메모',label:'메모',detail:item.text||'눌러서 메모를 입력하세요.'}
  case 'links':return count((item.text?.match(/https?:\/\/[^\s]+/g)||[]).length,'바로가기',item.text||'눌러서 자료 링크를 입력하세요.')
  }

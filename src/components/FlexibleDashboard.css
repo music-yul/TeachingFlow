@@ -21,3 +21,6 @@
 .fd-body.home-widget{font-size:var(--fd-widget-font-size,.85rem);line-height:1.45}.fd-body :is(.fd-list-row,.desk-summary,.desk-item,.desk-session,.desk-session-first-line,.desk-session-memo,textarea,.hint){font-size:inherit}.fd-body .fd-list-row button{font-size:inherit;white-space:normal;text-align:left}.fd-body .fd-list-row small{font-size:.9em;white-space:pre-wrap;overflow-wrap:anywhere}.fd-body .widget-heading h2,.fd-content-title{font-size:.9rem;font-weight:600;line-height:1.4}.fd-body .widget-heading{margin-bottom:8px}.fd-body>.desk-card{background:transparent;border-radius:0}.fd-body :is(.desk-summary,.desk-session,.fd-list-row){overflow-wrap:anywhere}
 
 .fd-body.home-widget-calendar .calendar-panel[data-home-mode="threeWeeks"]{--fd-calendar-rows:3}
+
+/* Presentation is independently saved for each widget. Functional calendar dates stay visible. */
+.fd-widget.fd-appearance-title,.fd-widget.fd-appearance-none{border-color:transparent;background:transparent}.fd-appearance-none .fd-content-title,.fd-appearance-none .widget-heading h2,.fd-appearance-none>.fd-heading>strong,.fd-appearance-none .fd-compact-preview>span{display:none}.fd-appearance-none .widget-heading:has(.widget-manage-link){justify-content:flex-end}.fd-appearance-none>.fd-heading{background:var(--card)}
