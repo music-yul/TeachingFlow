@@ -10,6 +10,7 @@ export const homeWidgetLabels: Record<HomeWidget, string> = {
 }
 export function defaultWorkspacePreferences(): WorkspacePreferences {
   return {
+    dashboard: undefined,
     todayLessonFields: {period:true,className:true,subject:true,content:true,memo:true},
     timetableShowToday: false,
     homeTimetableMode: 'timetable',
@@ -41,6 +42,7 @@ export function normalizeWorkspacePreferences(saved?: Partial<WorkspacePreferenc
   const layout = Array.isArray(saved?.homeLayout)
     ? normalizeHomeLayout(saved.homeGridSize===12?saved.homeLayout:resizeHomeColumns(saved.homeGridSize===10?saved.homeLayout:saved.homeGridSize===8?saved.homeLayout:migrateHomeLayout(saved.homeLayout),saved.homeGridSize===10?10:8)) : saved ? layoutFromWidgets(widgets) : base.homeLayout
   return {
+    dashboard: saved?.dashboard && typeof saved.dashboard === 'object' && saved.dashboard.layouts ? {layouts:Object.fromEntries(Object.entries(saved.dashboard.layouts).filter(([key,value])=>['phone','laptop','desktop','wide','ultrawide'].includes(key)&&Array.isArray(value)).map(([key,value])=>[key,value.filter(item=>item&&typeof item.key==='string'&&typeof item.kind==='string'&&[item.x,item.y,item.w,item.h].every(Number.isFinite))]))} : undefined,
     todayLessonFields: Object.fromEntries(['period','className','subject','content','memo'].map(key=>[key,saved?.todayLessonFields?.[key as keyof NonNullable<WorkspacePreferences['todayLessonFields']>]!==false])) as NonNullable<WorkspacePreferences['todayLessonFields']>,
     timetableShowToday: saved?.timetableShowToday === true,
     homeTimetableSubject: typeof saved?.homeTimetableSubject==='boolean'?saved.homeTimetableSubject:undefined,

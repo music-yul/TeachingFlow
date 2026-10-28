@@ -418,6 +418,7 @@ export type HomeWidget = 'summary' | 'calendar' | 'lessons' | 'notices' | 'colle
 export type HomeWidgetPlacement = { id: HomeWidget; row: number; column: number; width: number; height: number }
 export type TodayLessonFields = {period:boolean;className:boolean;subject:boolean;content:boolean;memo:boolean}
 export type WorkspacePreferences = {
+  dashboard?: import('./components/FlexibleDashboard').DashboardState
   todayLessonFields?: TodayLessonFields
   homeTimetableSubject?: boolean
   homeTimetableRoom?: boolean

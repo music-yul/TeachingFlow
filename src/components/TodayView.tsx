@@ -3,11 +3,13 @@ import type { SummaryKind } from '../todayActions'
 import { collectionMembers } from '../members'
 import SummaryDialog from './SummaryDialog'
 import { useState } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
+import FlexibleDashboard from './FlexibleDashboard'
+import { taskDeadline } from '../taskDates'
 import type { AppData, HomeWidget, Session } from '../types'
 import TodayLessonsWidget from './TodayLessonsWidget'
 import { todayKey } from '../schedule'
-import { availableHomeWidgets, orderedHomeLayout } from '../workspace'
+import { widgetData, widgetOptions } from '../widgetPreferences'
 import TimetableWidget from './TimetableWidget'
 import CalendarView from './CalendarView'
 import { isTaskOverdue, taskDateLabel } from '../taskDates'
@@ -17,12 +19,8 @@ const taskSort = (a: {date: string}, b: {date: string}) => (a.date || '9999').lo
 const dueText = (date: string, today: string) => !date ? '기한 없음' : date < today ? `${date} · 기한 지남` : date === today ? '오늘' : date
 export default function TodayView({ data, sessions, update, onSelect, onNavigate }: Props) {
   const [summaryOpen,setSummaryOpen]=useState<SummaryKind|null>(null)
-  const [anchor, setAnchor] = useState(() => new Date())
   const desk = data.teacherDesk
   const today = todayKey()
-  const layout = orderedHomeLayout(data.workspacePreferences.homeLayout).filter(item=>availableHomeWidgets(data).includes(item.id))
-  const rowCount = Math.max(0, ...layout.map(item=>item.row+item.height))
-  const rowSizes = `repeat(${rowCount}, ${ (112*10+12*9-12*11)/12 }px)`
   const patch = (change: Partial<typeof desk>) => update({ teacherDesk: { ...desk, ...change } })
   const actions=getTodayActions(data,today)
   const todayNotices=actions.notices.sort(taskSort)
@@ -30,9 +28,9 @@ export default function TodayView({ data, sessions, update, onSelect, onNavigate
   const upcomingCollections=desk.collections.filter(item=>!item.archived)
   const pendingRecords=actions.followups
   const widgetViews: Record<HomeWidget, ReactNode> = {
-    timetable: (<TimetableWidget data={data} sessions={sessions} height={layout.find(item=>item.id==='timetable')?.height}/>),
+    timetable: null,
     summary: (<div className="desk-stats home-wide">{data.settings.features.homeroom&&<><button onClick={()=>setSummaryOpen('notices')}><strong>{todayNotices.length}</strong> 안내할 일</button><button onClick={()=>setSummaryOpen('collections')}><strong>{actions.collections.length}</strong> 취합 확인</button></>}{data.settings.features.work&&<button onClick={()=>setSummaryOpen('tasks')}><strong>{summaryTasks.length}</strong> 업무 확인</button>}{data.settings.features.homeroom&&<button onClick={()=>setSummaryOpen('followups')}><strong>{pendingRecords.length}</strong> 학생 후속 확인</button>}</div>),
-    calendar: (<div className="home-wide"><CalendarView context="home" data={data} sessions={sessions} month={anchor} setMonth={setAnchor} onSelect={onSelect} update={update} onOpenArea={onNavigate} /></div>),
+    calendar: null,
     lessons: (<TodayLessonsWidget data={data} sessions={sessions} update={update} onSelect={onSelect}/>),
     notices: (<section className="desk-card home-info-widget"><div className="desk-heading widget-heading"><h2>담임 안내</h2><button className="link-button widget-manage-link" onClick={()=>onNavigate('담임')}>관리</button></div>{todayNotices.map(item => <label className="desk-summary" key={item.id}><input type="checkbox" checked={item.done} onChange={e => patch({ notices: desk.notices.map(n => n.id === item.id ? { ...n, done: e.target.checked } : n) })} /><span><span className="widget-summary-title">{item.important?'★ ':''}{item.title}</span><small className={isTaskOverdue(item,today,true)?'desk-overdue':''}>{taskDateLabel(item,true)}</small></span></label>)}{!todayNotices.length && <p className="hint">오늘 안내할 내용이 없습니다.</p>}</section>),
     collections: (<section className="desk-card home-info-widget"><div className="desk-heading widget-heading"><h2>제출 현황</h2><button className="link-button widget-manage-link" onClick={()=>onNavigate('담임')}>관리</button></div>{upcomingCollections.map(item => { const targets = collectionMembers(desk,item,today); const missing = targets.filter(s => !item.received.includes(s.id)); return <details key={item.id} className="desk-item"><summary>{item.important?'★ ':''}{item.title} · {targets.length - missing.length}/{targets.length}명 제출 <span className={item.date && item.date < today && missing.length ? 'desk-overdue' : 'hint'}>{dueText(item.date, today)}</span></summary><p>{missing.length ? `미제출: ${missing.map(s => `${s.number} ${s.name}`).join(', ')}` : '모두 제출했습니다.'}</p></details> })}{!upcomingCollections.length && <p className="hint">진행 중인 제출 항목이 없습니다.</p>}</section>),
@@ -41,7 +39,25 @@ export default function TodayView({ data, sessions, update, onSelect, onNavigate
   }
   return <>
     {summaryOpen&&<SummaryDialog data={data} update={update} date={today} kind={summaryOpen} onClose={()=>setSummaryOpen(null)}/>}
-    {!layout.length && <p className="banner">환경 설정 → 메인화면에서 표시할 위젯을 추가하세요.</p>}
-    <div className="home-widget-grid" style={{gridTemplateRows:rowSizes}}>{layout.map(item => <div className={`home-widget home-widget-${item.id}`} key={item.id} style={{ gridColumn: `${item.column+1} / span ${item.width}`, gridRow: `${item.row+1} / span ${item.height}`, '--widget-rows': item.height } as CSSProperties}>{widgetViews[item.id]}</div>)}</div>
+    <FlexibleDashboard data={data} update={update} render={(item,changeItem)=>{
+      const scoped=widgetData(data,item.options)
+      const updateScoped:Props['update']=change=>{
+        if(change.workspacePreferences){changeItem({options:widgetOptions(change.workspacePreferences)});const remaining={...change};delete remaining.workspacePreferences;if(Object.keys(remaining).length)update(remaining)}else update(change)
+      }
+      if(item.kind==='calendar')return <HomeCalendarWidget data={scoped} sessions={sessions} update={updateScoped} onSelect={onSelect} onNavigate={onNavigate}/>
+
+      if(item.kind==='timetable')return <TimetableWidget data={scoped} sessions={sessions} height={Math.max(1,Math.round(item.h/2))}/>
+      if(item.kind==='lessons')return <TodayLessonsWidget data={scoped} sessions={sessions.filter(s=>!item.classId||s.classId===item.classId)} update={updateScoped} onSelect={onSelect}/>
+      if(item.kind==='progress')return <div>{data.classes.filter(c=>!c.archived&&(!item.classId||c.id===item.classId)).map(c=>{const list=sessions.filter(s=>s.classId===c.id&&!s.cancelled&&!s.hidden);const assigned=list.filter(s=>s.lessonIds.length).length;return <div className="fd-list-row" key={c.id}><button className="link-button" onClick={()=>onNavigate('교과')}>{c.name}</button><small>수업 배정 {assigned}/{list.length}시간 · {data.subjects.find(s=>s.id===c.subjectId)?.name}</small></div>})}{!data.classes.some(c=>!c.archived)&&<p className="hint">교과에서 학급을 등록하세요.</p>}</div>
+      if(item.kind==='deadlines'){const tasks=desk.tasks.filter(t=>!t.done&&taskDeadline(t)).sort((a,b)=>taskDeadline(a).localeCompare(taskDeadline(b)));return <div>{tasks.map(t=><label className="desk-summary" key={t.id}><input type="checkbox" checked={t.done} onChange={e=>patch({tasks:desk.tasks.map(old=>old.id===t.id?{...old,done:e.target.checked}:old)})}/><span>{t.title}<small>{taskDeadline(t)}{taskDeadline(t)<today?' · 기한 지남':''}</small></span></label>)}{!tasks.length&&<p className="hint">미완료 마감 업무가 없습니다.</p>}</div>}
+      if(item.kind==='journal'){const entries=Object.values(data.lessonJournal||{}).filter(e=>!item.classId||e.classId===item.classId).sort((a,b)=>b.date.localeCompare(a.date)||b.period-a.period);return <div>{entries.map(e=><div className="fd-list-row" key={e.sessionId}><button className="link-button" onClick={()=>onSelect(e.sessionId)}>{e.date} · {e.period}교시 · {data.classes.find(c=>c.id===e.classId)?.name}</button><div>{e.lessonTitle}</div><small>{e.record}</small></div>)}{!entries.length&&<p className="hint">저장된 수업 기록이 없습니다.</p>}</div>}
+      if(item.kind==='memo'||item.kind==='links')return null
+      return widgetViews[item.kind]
+    }}/>
   </>
+}
+
+function HomeCalendarWidget({data,sessions,update,onSelect,onNavigate}:Props){
+ const [anchor,setAnchor]=useState(()=>new Date())
+ return <div className="home-wide"><CalendarView context="home" data={data} sessions={sessions} month={anchor} setMonth={setAnchor} onSelect={onSelect} update={update} onOpenArea={onNavigate}/></div>
 }

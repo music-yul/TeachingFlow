@@ -4,11 +4,11 @@ import { APP_NAME, APP_TAGLINE, APP_VERSION, exportData } from '../storage'
 import EventsView from './EventsView'
 import HelpView from './HelpView'
 import AppearanceView from './AppearanceView'
-import HomeLayoutSettings from './HomeLayoutSettings'
+import DriveBackupPanel from './DriveBackupPanel'
 import FeatureSettings from './FeatureSettings'
 import type { SetupTarget } from './StartGuide'
 
-const subTabs = ['기능 설정', '학사일정', '메인화면', '디자인', '데이터 관리', '도움말'] as const
+const subTabs = ['기능 설정', '학사일정', '디자인', '데이터 관리', '도움말'] as const
 type SubTab = (typeof subTabs)[number]
 
 type Props = {
@@ -18,7 +18,7 @@ type Props = {
   onFiles: (files: File[]) => void
   onImport: (file: File) => void
   onReset: () => void
-  onSetupNavigate?: (target: '학급 설정' | '동아리' | '업무') => void
+  onSetupNavigate?: (target: '학급 설정' | '동아리' | '업무' | '오늘') => void
 }
 
 const links = [
@@ -31,7 +31,7 @@ export default function SettingsHub({ data, update, onImport, onReset, onSetupNa
   const [sub, setSub] = useState<SubTab>(initialSub)
 
   const openSetup=(target:SetupTarget)=>{
-    if(target==='학급 설정'||target==='동아리'||target==='업무'){onSetupNavigate?.(target);return}
+    if(target==='학급 설정'||target==='동아리'||target==='업무'||target==='오늘'){onSetupNavigate?.(target);return}
     setSub(target)
   }
 
@@ -48,7 +48,6 @@ export default function SettingsHub({ data, update, onImport, onReset, onSetupNa
       {sub === '기능 설정' && <FeatureSettings data={data} update={update} onSetupNavigate={openSetup} />}
       {sub === '학사일정' && <EventsView data={data} update={update} />}
 
-      {sub === '메인화면' && <HomeLayoutSettings data={data} update={update} />}
       {sub === '디자인' && <AppearanceView data={data} update={update} />}
       {sub === '도움말' && <HelpView />}
 
@@ -57,7 +56,7 @@ export default function SettingsHub({ data, update, onImport, onReset, onSetupNa
           <div className="block">
             <h2>백업</h2>
             <p className="hint">
-              모든 기록은 이 브라우저 안에만 저장됩니다. 브라우저 저장소를 지우거나 다른 기기에서 열면 내용이 보이지 않습니다.
+              작업 중인 기록은 이 브라우저에 저장됩니다. Google Drive 백업 또는 JSON 파일로 다른 기기에 옮길 수 있습니다. 브라우저 저장소를 지우거나 다른 기기에서 열면 내용이 보이지 않습니다.
               <b> 학기 중에는 주기적으로 내보내기를 해 두세요.</b> 내보낸 파일에는 담임·동아리 기록도 포함됩니다. 다른 기기에서 복원할 때 사용하세요.
             </p>
             <div className="inline-form">
@@ -77,6 +76,8 @@ export default function SettingsHub({ data, update, onImport, onReset, onSetupNa
               <button className="danger-button" onClick={onReset}>전체 초기화</button>
             </div>
           </div>
+
+          <DriveBackupPanel data={data} onImport={onImport}/>
 
           <div className="block">
             <h2>프로그램 정보</h2>

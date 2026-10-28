@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "check:teacher-desk": "node scripts/check-teacher-desk.mjs"
+    "check:teacher-desk": "node scripts/check-teacher-desk.mjs",
+    "check:dashboard": "node scripts/check-flex-dashboard.mjs && node scripts/check-drive-widgets.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

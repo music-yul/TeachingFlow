@@ -96,7 +96,7 @@ try {
  calendarData.workspacePreferences.homeWidgets=[]
  calendarData.workspacePreferences.homeLayout=[]
  const emptyHome=renderToStaticMarkup(React.createElement(Today,{...props,data:calendarData}))
- assert.ok(emptyHome.includes('환경 설정 → 메인화면'))
+ assert.ok(emptyHome.includes('위젯 추가를 눌러'))
  assert.ok(!emptyHome.includes('calendar-panel'))
  // Saved v4.3 settings migrate to non-overlapping widget coordinates.
  const oldPrefs=workspace.normalizeWorkspacePreferences({homeWidgets:['tasks','calendar','notices'],homeCalendar:{range:'fortnight',filter:'work',showCompleted:true}})
@@ -120,16 +120,13 @@ try {
  calendarData.workspacePreferences.homeLayout=[{id:'tasks',row:2,column:2,width:2,height:3}]
  calendarData.workspacePreferences.homeWidgets=['tasks']
  const positioned=renderToStaticMarkup(React.createElement(Today,{...props,data:calendarData}))
- assert.ok(positioned.includes('grid-column:3 / span 2')); assert.ok(positioned.includes('grid-row:3 / span 3'))
+ assert.ok(positioned.includes('grid-column:2/span 2')); assert.ok(positioned.includes('grid-row:5/span 6'))
  assert.ok(!positioned.includes('메인화면 구성 설정'))
  calendarData.workspacePreferences.scheduleCalendar={range:'week',filter:'work',showCompleted:false}
  const scheduleHtml=renderToStaticMarkup(React.createElement(Calendar,{data:calendarData,sessions:[fakeSession],month:new Date(),setMonth:()=>{},onSelect:()=>{},update:()=>{}}))
  assert.ok(scheduleHtml.includes('TEACHING_NOTE'))
  assert.ok(!scheduleHtml.includes('달력 일정 구분'))
  assert.ok(!scheduleHtml.includes('업무확인'))
- const {default:LayoutSettings}=await server.ssrLoadModule('/src/components/HomeLayoutSettings.tsx')
- const settingsHtml=renderToStaticMarkup(React.createElement(LayoutSettings,{data:calendarData,update:()=>{}}))
- assert.ok(settingsHtml.includes('메인화면 위젯 배치')); assert.ok(settingsHtml.includes('메인화면 12×12 배치판'))
  storage.writeData(calendarData)
  assert.deepEqual(storage.readData().workspacePreferences.homeLayout,calendarData.workspacePreferences.homeLayout)
  const taskDates=await server.ssrLoadModule('/src/taskDates.ts')
@@ -213,13 +210,10 @@ try {
  homeBase.dayNotes[today]=[{id:'secret-note',text:'CALENDAR_MEMO'}]
  const workCalendar=renderToStaticMarkup(React.createElement(Calendar,{context:'work',data:homeBase,sessions:[fakeSession],month:new Date(),setMonth:()=>{},onSelect:()=>{},update:()=>{}}))
  assert.ok(workCalendar.includes('SCHOOL_EVENT_VISIBLE'));assert.ok(workCalendar.includes('CALENDAR_MEMO'))
- const layoutHtml=renderToStaticMarkup(React.createElement(LayoutSettings,{data:homeBase,update:()=>{}}))
- assert.equal((layoutHtml.match(/class="layout-slot"/g)||[]).length,144)
- assert.ok(!layoutHtml.includes('보기 기간'));assert.ok(layoutHtml.includes('12×12'))
  const {default:Settings}=await server.ssrLoadModule('/src/components/SettingsHub.tsx')
  const settingsNav=renderToStaticMarkup(React.createElement(Settings,{data:homeBase,update:()=>{},onFiles:()=>{},onImport:()=>{},onReset:()=>{}}))
  assert.ok(settingsNav.includes('>디자인</button>'));assert.ok(!settingsNav.includes('>화면</button>'))
- assert.ok(!settingsNav.includes('>학급 설정</button>'));assert.ok(settingsNav.includes('>메인화면</button>'))
+ assert.ok(!settingsNav.includes('>학급 설정</button>'));assert.ok(!settingsNav.includes('>메인화면</button>'))
  assert.ok(settingsNav.includes('처음 사용 안내'),'settings opens with optional feature setup guide')
  const {default:HelpGuide}=await server.ssrLoadModule('/src/components/HelpView.tsx')
  const initialHelp=renderToStaticMarkup(React.createElement(HelpGuide))
@@ -712,7 +706,7 @@ try {
  const blockedTime={...strictTime,row:1,column:2};assert.equal(workspace.placeHomeWidget(strictBase,blockedTime,false),strictBase);assert.ok(workspace.homeWidgetPlacementError(strictBase,blockedTime).includes('달력'))
  assert.equal(workspace.placeHomeWidget(strictBase,{...strictTime,row:9,column:9},false),strictBase)
  const hiddenData=storage.emptyData();hiddenData.settings.features.homeroom=false;hiddenData.workspacePreferences.homeLayout=workspace.defaultHomeLayout()
- const hiddenSettings=renderToStaticMarkup(React.createElement(LayoutSettings,{data:hiddenData,update:()=>{}}));assert.ok(hiddenSettings.includes('담임 안내 · 기능 꺼짐'));assert.ok(hiddenSettings.includes('제출 현황 · 기능 꺼짐'))
+ const hiddenHome=renderToStaticMarkup(React.createElement(Today,{...props,data:hiddenData}));assert.ok(!hiddenHome.includes('home-widget-notices'));assert.ok(!hiddenHome.includes('home-widget-collections'))
  for(const mode of ['timetable','both']) {
   const modeData=structuredClone(migrated)
   modeData.workspacePreferences.homeTimetableMode=mode

@@ -62,7 +62,8 @@ export default function App() {
 
   const update = (change: Partial<AppData>) => setData(current => ({ ...current, ...change }))
 
-  const openSetup = (target:'학급 설정'|'동아리'|'업무') => {
+  const openSetup = (target:'학급 설정'|'동아리'|'업무'|'오늘') => {
+    if(target==='오늘'){setTab('오늘');return}
     const enabled=target==='학급 설정'?data.settings.features.teaching:target==='동아리'?data.settings.features.clubs:data.settings.features.work
     if(!enabled){window.alert('기능 설정에서 해당 기능을 먼저 켜 주세요.');return}
     if(target==='학급 설정'){setTeachingTab('학급 설정');setTab('교과')}
