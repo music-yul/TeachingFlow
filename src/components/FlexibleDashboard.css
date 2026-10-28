@@ -24,13 +24,12 @@
 
 /* Presentation is independently saved for each widget. Functional calendar dates stay visible. */
 .fd-widget.fd-appearance-title,.fd-widget.fd-appearance-none{border-color:transparent;background:transparent}.fd-appearance-none .fd-content-title,.fd-appearance-none .widget-heading h2,.fd-appearance-none>.fd-heading>strong,.fd-appearance-none .fd-compact-preview>span{display:none}.fd-appearance-none .widget-heading:has(.widget-manage-link){justify-content:flex-end}.fd-appearance-none>.fd-heading{background:var(--card)}
-/* Keep widget chrome outside every scrollable content viewport. */
-.fd-widget.fd-titleless:not(.fd-summary)>.fd-body.home-widget{margin-right:40px}
-.fd-widget.fd-titleless.fd-editing:not(.fd-summary)>.fd-body.home-widget{margin-right:104px}
+/* Controls occupy a top row; scrolling content keeps the full widget width. */
+.fd-widget.fd-titleless:not(.fd-summary)>.fd-heading{position:relative;inset:auto;transform:none;justify-content:flex-end;flex:0 0 auto;min-height:36px;padding:4px 8px;box-sizing:border-box;background:transparent}
+.fd-widget.fd-titleless:not(.fd-summary)>.fd-body.home-widget,.fd-widget.fd-titleless.fd-editing:not(.fd-summary)>.fd-body.home-widget{margin-right:0;padding-top:0}
 .fd-titleless .widget-heading,.fd-titleless.fd-editing .widget-heading,.fd-titleless .calendar-toolbar,.fd-titleless.fd-editing .calendar-toolbar,.fd-titleless .fd-content-title,.fd-titleless.fd-editing .fd-content-title{padding-right:0}
-.fd-summary>.fd-body.home-widget-summary{margin-right:40px;padding-right:5px}
-.fd-summary.fd-editing>.fd-body.home-widget-summary{margin-right:110px;padding-right:5px}
-@media print{.fd-widget.fd-titleless:not(.fd-summary)>.fd-body.home-widget,.fd-summary>.fd-body.home-widget-summary{margin-right:0}}
+.fd-summary>.fd-heading{position:relative;inset:auto;transform:none;order:2;flex:0 0 auto;align-self:center;padding:0 6px;background:transparent}
+.fd-summary>.fd-body.home-widget-summary,.fd-summary.fd-editing>.fd-body.home-widget-summary{margin-right:0;padding-right:4px;min-width:0;flex:1}
 /* Calendar follows the dashboard cell rather than its legacy intrinsic height. */
 .fd-body.home-widget-calendar{display:flex;flex-direction:column;overflow:hidden}
 .fd-body.home-widget-calendar>.home-wide{display:flex;flex-direction:column;flex:1;min-height:0;height:auto!important}
