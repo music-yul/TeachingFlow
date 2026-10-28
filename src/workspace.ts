@@ -31,7 +31,7 @@ function normalizeCalendar(saved: Partial<CalendarPreferences> | undefined, base
     ...(Array.isArray(saved?.sources)?{sources:[...new Set(saved.sources.filter(source=>allCalendarSources.includes(source)))]}:{}),
     showWeekends: saved?.showWeekends !== false,
     weekCount: Math.max(1,Math.min(5,Math.round(saved?.weekCount || (saved?.range==='fortnight'?2:1)))),
-    homeMode: saved?.homeMode && ['month','week','fortnight','weeks'].includes(saved.homeMode) ? saved.homeMode : base.homeMode || 'weeks',
+    homeMode: saved?.homeMode && ['month','week','fortnight','threeWeeks','weeks'].includes(saved.homeMode) ? saved.homeMode : base.homeMode || 'weeks',
     range: ['month', 'week', 'fortnight'].includes(saved?.range || '') ? saved!.range! : base.range,
     filter: ['all', 'teaching', 'homeroom', 'work', 'club'].includes(saved?.filter || '') ? saved!.filter! : base.filter,
     showCompleted: typeof saved?.showCompleted === 'boolean' ? saved.showCompleted : base.showCompleted,

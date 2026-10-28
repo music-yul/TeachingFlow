@@ -190,11 +190,11 @@ try {
   assert.equal(dates[0].getDay(),0);assert.equal(dates.length,Math.min(5,height)*7)
   assert.equal(dateKey(workspace.shiftCalendar(new Date(2026,11,31),'month',1,height)),dateKey(new Date(2026,11,31+Math.min(5,height)*7)))
  }
- for(const mode of ['week','fortnight','month']) for(const height of [1,4,8]){
+ for(const mode of ['week','fortnight','threeWeeks','month']) for(const height of [1,4,8]){
   homeBase.workspacePreferences.homeCalendar.homeMode=mode
   homeBase.workspacePreferences.homeLayout=[{id:'calendar',row:0,column:0,width:8,height}]
   const fixed=renderToStaticMarkup(React.createElement(Calendar,{context:'home',data:homeBase,sessions:[],month:new Date(2026,9,19),setMonth:()=>{},onSelect:()=>{},update:()=>{}}))
-  assert.equal((fixed.match(/class="calendar-day(?: [^"]*)?"/g)||[]).length,mode==='month'?42:mode==='week'?7:14)
+  assert.equal((fixed.match(/class="calendar-day(?: [^"]*)?"/g)||[]).length,mode==='month'?42:mode==='week'?7:mode==='threeWeeks'?21:14)
   const restored=await storage.importData({text:async()=>JSON.stringify(homeBase)})
   assert.equal(restored.workspacePreferences.homeCalendar.homeMode,mode)
  }

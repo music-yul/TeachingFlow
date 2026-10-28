@@ -47,7 +47,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
   const teaching = context!=='school' && data.settings.features.teaching && sources.some(source=>source==='teaching')
   const showSchool=sources.some(source=>source==='school')
   const showMemo=context!=='school'&&sources.some(source=>source==='memo')
-  const weeks = context==='home' ? homeMode==='month'?undefined:homeMode==='week'?1:homeMode==='fortnight'?2:4 : context==='work'&&range!=='month'?Math.min(5,preferences.weekCount||(range==='fortnight'?2:1)):undefined
+  const weeks = context==='home' ? homeMode==='month'?undefined:homeMode==='week'?1:homeMode==='fortnight'?2:homeMode==='threeWeeks'?3:4 : context==='work'&&range!=='month'?Math.min(5,preferences.weekCount||(range==='fortnight'?2:1)):undefined
   const showWeekends=preferences.showWeekends!==false
   const cells = calendarDates(month, range, weeks).filter(date=>showWeekends||(date.getDay()!==0&&date.getDay()!==6))
   const columns=showWeekends?7:5
@@ -79,7 +79,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
           <option value="month">한 달</option><option value="week">이번 주 · 1주</option><option value="fortnight">이번 주 + 다음 주 · 2주</option>
         </select></label>}
         {context==='work'&&<><label>달력 형태<select aria-label="업무 달력 형태" value={range==='month'?'month':'weeks'} onChange={e=>changePreferences({range:e.target.value==='month'?'month':'week'})}><option value="month">월별 달력</option><option value="weeks">주간 달력 · 이어보기</option></select></label>{range!=='month'&&<label>이어볼 주<select aria-label="업무 달력 주 수" value={weeks} onChange={e=>changePreferences({weekCount:Number(e.target.value)})}>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n}주</option>)}</select></label>}</>}
-        {context === 'home' && <><label>달력 형태<select aria-label="메인화면 달력 형태" value={homeMode} onChange={event=>{changePreferences({homeMode:event.target.value as 'month'|'week'|'fortnight'|'weeks'});setMonth(new Date())}}><option value="month">월별 달력</option><option value="week">주간 달력</option><option value="fortnight">2주 달력</option><option value="weeks">주간 달력(연속)</option></select></label><CalendarSourcePicker data={data} preferences={preferences} onChange={sources=>changePreferences({sources})}/>
+        {context === 'home' && <><label>달력 형태<select aria-label="메인화면 달력 형태" value={homeMode} onChange={event=>{changePreferences({homeMode:event.target.value as 'month'|'week'|'fortnight'|'threeWeeks'|'weeks'});setMonth(new Date())}}><option value="month">월별 달력</option><option value="week">주간 달력</option><option value="fortnight">2주 달력</option><option value="threeWeeks">3주 달력</option><option value="weeks">주간 달력(연속)</option></select></label><CalendarSourcePicker data={data} preferences={preferences} onChange={sources=>changePreferences({sources})}/>
         </>}
         <label>주말<select aria-label="달력 주말 표시" value={showWeekends?'include':'exclude'} onChange={e=>changePreferences({showWeekends:e.target.value==='include'})}><option value="include">주말 포함</option><option value="exclude">주말 제외</option></select></label>
 
