@@ -24,3 +24,20 @@
 
 /* Presentation is independently saved for each widget. Functional calendar dates stay visible. */
 .fd-widget.fd-appearance-title,.fd-widget.fd-appearance-none{border-color:transparent;background:transparent}.fd-appearance-none .fd-content-title,.fd-appearance-none .widget-heading h2,.fd-appearance-none>.fd-heading>strong,.fd-appearance-none .fd-compact-preview>span{display:none}.fd-appearance-none .widget-heading:has(.widget-manage-link){justify-content:flex-end}.fd-appearance-none>.fd-heading{background:var(--card)}
+/* Keep widget chrome outside every scrollable content viewport. */
+.fd-widget.fd-titleless:not(.fd-summary)>.fd-body.home-widget{margin-right:40px}
+.fd-widget.fd-titleless.fd-editing:not(.fd-summary)>.fd-body.home-widget{margin-right:104px}
+.fd-titleless .widget-heading,.fd-titleless.fd-editing .widget-heading,.fd-titleless .calendar-toolbar,.fd-titleless.fd-editing .calendar-toolbar,.fd-titleless .fd-content-title,.fd-titleless.fd-editing .fd-content-title{padding-right:0}
+.fd-summary>.fd-body.home-widget-summary{margin-right:40px;padding-right:5px}
+.fd-summary.fd-editing>.fd-body.home-widget-summary{margin-right:110px;padding-right:5px}
+@media print{.fd-widget.fd-titleless:not(.fd-summary)>.fd-body.home-widget,.fd-summary>.fd-body.home-widget-summary{margin-right:0}}
+/* Calendar follows the dashboard cell rather than its legacy intrinsic height. */
+.fd-body.home-widget-calendar{display:flex;flex-direction:column;overflow:hidden}
+.fd-body.home-widget-calendar>.home-wide{display:flex;flex-direction:column;flex:1;min-height:0;height:auto!important}
+.fd-body.home-widget-calendar .calendar-panel{flex:1;min-height:0;height:auto!important}
+.fd-body.home-widget-calendar .calendar-scroll{flex:1 1 0;min-height:0;height:0;display:flex;overflow:auto}
+.fd-body.home-widget-calendar .calendar-content{flex:1;display:flex;flex-direction:column;height:100%;min-height:100%;transform:none}
+.fd-body.home-widget-calendar .calendar-dates{flex:1 1 0}
+.fd-body.home-widget-calendar .calendar-panel{padding:0;border:0}
+
+.fd-appearance-border .fd-content-title,.fd-appearance-border .widget-heading h2,.fd-appearance-border>.fd-heading>strong,.fd-appearance-border .fd-compact-preview>span{display:none}.fd-appearance-border .widget-heading:has(.widget-manage-link){justify-content:flex-end}
