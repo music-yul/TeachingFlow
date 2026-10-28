@@ -1,3 +1,5 @@
+import {calendarSources} from '../calendarSources'
+import CalendarSourcePicker from './CalendarSourcePicker'
 import {teachingCalendarStyle,workCalendarStyle,teachingPaint,workPaint} from '../calendarDetailColors'
 import { taskDateLabel } from '../taskDates'
 import TaskList from './TaskList'
@@ -6,7 +8,7 @@ import type { WorkRecord } from '../types'
 import CalendarAddDialog from './CalendarAddDialog'
 import { calendarItemStyle, schoolEventStyle, lessonLabelStyle, deadlineLabelStyle } from '../calendarAppearance'
 import { useRef, useState } from 'react'
-import type { AppData, CalendarFilter, CalendarRange, PersonalBlock, Session } from '../types'
+import type { AppData, CalendarRange, PersonalBlock, Session } from '../types'
 import { coversDate, dateKey, effectiveLessonIds, sessionLabel, todayKey } from '../schedule'
 import { linkedEvaluation } from '../evaluation'
 import { holidayName } from '../holidays'
@@ -39,11 +41,12 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
   const preferences = context === 'home' ? data.workspacePreferences.homeCalendar : context === 'work' ? { ...data.workspacePreferences.workCalendar, filter: 'work' as const } : { ...data.workspacePreferences.scheduleCalendar, filter: 'teaching' as const }
   const homeMode=preferences.homeMode||'weeks'
   const range=context==='home'?(homeMode==='month'?'month':'week'):preferences.range
-  const disabledFilter=(preferences.filter==='homeroom'&&!data.settings.features.homeroom)||(preferences.filter==='teaching'&&!data.settings.features.teaching)||(preferences.filter==='work'&&!data.settings.features.work)||(preferences.filter==='club'&&!data.settings.features.clubs)
-  const filter=context==='school'?'teaching':disabledFilter?'all':preferences.filter
+  const sources=context==='home'?calendarSources(preferences):context==='work'?['work','school','memo'] as const:context==='school'?['school'] as const:['teaching','school','memo'] as const
   const showCompleted=context==='work'||preferences.showCompleted
-  const shownPreferences={...preferences,filter,showCompleted}
-  const teaching = context!=='school' && data.settings.features.teaching && (filter === 'all' || filter === 'teaching')
+  const shownPreferences={...preferences,sources:[...sources],showCompleted}
+  const teaching = context!=='school' && data.settings.features.teaching && sources.some(source=>source==='teaching')
+  const showSchool=sources.some(source=>source==='school')
+  const showMemo=context!=='school'&&sources.some(source=>source==='memo')
   const weeks = context==='home' ? homeMode==='month'?undefined:homeMode==='week'?1:homeMode==='fortnight'?2:4 : context==='work'&&range!=='month'?Math.min(5,preferences.weekCount||(range==='fortnight'?2:1)):undefined
   const showWeekends=preferences.showWeekends!==false
   const cells = calendarDates(month, range, weeks).filter(date=>showWeekends||(date.getDay()!==0&&date.getDay()!==6))
@@ -76,9 +79,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
           <option value="month">한 달</option><option value="week">이번 주 · 1주</option><option value="fortnight">이번 주 + 다음 주 · 2주</option>
         </select></label>}
         {context==='work'&&<><label>달력 형태<select aria-label="업무 달력 형태" value={range==='month'?'month':'weeks'} onChange={e=>changePreferences({range:e.target.value==='month'?'month':'week'})}><option value="month">월별 달력</option><option value="weeks">주간 달력 · 이어보기</option></select></label>{range!=='month'&&<label>이어볼 주<select aria-label="업무 달력 주 수" value={weeks} onChange={e=>changePreferences({weekCount:Number(e.target.value)})}>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n}주</option>)}</select></label>}</>}
-        {context === 'home' && <><label>달력 형태<select aria-label="메인화면 달력 형태" value={homeMode} onChange={event=>{changePreferences({homeMode:event.target.value as 'month'|'week'|'fortnight'|'weeks'});setMonth(new Date())}}><option value="month">월별 달력</option><option value="week">주간 달력</option><option value="fortnight">2주 달력</option><option value="weeks">주간 달력(연속)</option></select></label><label>표시할 일정 <select aria-label="달력 일정 구분" value={filter} onChange={event => changePreferences({ filter: event.target.value as CalendarFilter })}>
-          <option value="all">전체</option>{data.settings.features.teaching&&<option value="teaching">교과</option>}{data.settings.features.homeroom&&<option value="homeroom">담임</option>}{data.settings.features.work&&<option value="work">업무</option>}{data.settings.features.clubs&&<option value="club">동아리</option>}
-        </select></label>
+        {context === 'home' && <><label>달력 형태<select aria-label="메인화면 달력 형태" value={homeMode} onChange={event=>{changePreferences({homeMode:event.target.value as 'month'|'week'|'fortnight'|'weeks'});setMonth(new Date())}}><option value="month">월별 달력</option><option value="week">주간 달력</option><option value="fortnight">2주 달력</option><option value="weeks">주간 달력(연속)</option></select></label><CalendarSourcePicker data={data} preferences={preferences} onChange={sources=>changePreferences({sources})}/>
         </>}
         <label>주말<select aria-label="달력 주말 표시" value={showWeekends?'include':'exclude'} onChange={e=>changePreferences({showWeekends:e.target.value==='include'})}><option value="include">주말 포함</option><option value="exclude">주말 제외</option></select></label>
 
@@ -107,11 +108,11 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
           if (key === today) classNames.push('today')
           if (holiday || weekday === 0) classNames.push('holiday')
           if (weekday === 6) classNames.push('saturday')
-          const dayEvents = filter==='all' || teaching || context === 'work' || context === 'school' ? data.events.filter(event => coversDate(event, key)) : []
+          const dayEvents = showSchool ? data.events.filter(event => coversDate(event, key)) : []
           const daySessions = sessions
             .filter(item => teaching && item.date === key && !item.cancelled && !item.hidden)
             .sort((left, right) => left.period - right.period)
-          const notes = context==='school'?[]:data.dayNotes[key] || []
+          const notes = showMemo?(data.dayNotes[key] || []):[]
           const blocks = data.personalBlocks.filter(item => teaching && item.date === key).sort((left, right) => left.period - right.period)
 
           return (
@@ -129,7 +130,7 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
                 </span>
                 <button className="day-note-add no-print" title="이 날짜에 일정 추가" aria-label={`${key} 일정 추가`} onClick={()=>context==='school'?onDateSelect?.(key):setAdd({date:key,mode:context==='work'?'work':'menu'})}>+</button>
               </div>
-              {holiday && <div className="calendar-event holiday-tag" style={calendarItemStyle(data,'holiday')}>{holiday}</div>}
+              {holiday && showSchool && <div className="calendar-event holiday-tag" style={calendarItemStyle(data,'holiday')}>{holiday}</div>}
               {dayEvents.map(event => (
                 <div className={`calendar-event ${event.type}`} key={event.id} style={schoolEventStyle(data,event)}>
                   {event.type === 'swap' && event.sourceDay ? `${event.sourceDay}요일 시간표` : event.title}

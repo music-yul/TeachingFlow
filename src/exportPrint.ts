@@ -1,3 +1,4 @@
+import {calendarSources} from './calendarSources'
 import { deskCalendarItems } from './workspace'
 import { holidayName } from './holidays'
 import * as XLSX from 'xlsx'
@@ -213,13 +214,15 @@ export function printCurrentView() {
 /** 현재 표시한 기간·구분만 내보낸다. 개인 상담 본문은 포함하지 않는다. */
 export function exportVisibleCalendarXlsx(data: AppData, sessions: Session[], dates: Date[], preferences: CalendarPreferences, includeSchoolEvents = false) {
   const rows: (string | number)[][] = [['날짜', '구분', '교시', '학급', '내용']]
-  const teaching = data.settings.features.teaching && (preferences.filter === 'all' || preferences.filter === 'teaching')
+  const sources=calendarSources(preferences)
+  const teaching = data.settings.features.teaching && sources.includes('teaching')
+  const showSchool=sources.includes('school')||(!Array.isArray(preferences.sources)&&includeSchoolEvents)
   dates.forEach(date => {
     const key = dateKey(date)
     const holiday = data.settings.useHolidays !== false ? holidayName(key) : undefined
-    if (holiday) rows.push([key, '공휴일', '', '', holiday])
-    if (preferences.filter === 'all' || teaching || includeSchoolEvents) data.events.filter(event=>coversDate(event,key)).forEach(event=>rows.push([key,'학사일정','','',event.type==='swap'&&event.sourceDay?`${event.sourceDay}요일 시간표`:event.title]))
-    ;(data.dayNotes[key] || []).forEach(note => rows.push([key, '메모', '', '', note.text]))
+    if (holiday&&showSchool) rows.push([key, '공휴일', '', '', holiday])
+    if (showSchool) data.events.filter(event=>coversDate(event,key)).forEach(event=>rows.push([key,'학사일정','','',event.type==='swap'&&event.sourceDay?`${event.sourceDay}요일 시간표`:event.title]))
+    ;(sources.includes('memo')?(data.dayNotes[key] || []):[]).forEach(note => rows.push([key, '메모', '', '', note.text]))
     if (teaching) {
       sessions.filter(session => session.date === key && !session.cancelled && !session.hidden).sort((a,b) => a.period-b.period).forEach(session => rows.push([key, '교과', session.period, data.classes.find(c => c.id === session.classId)?.name || '', sessionLabel(data, session)]))
       data.personalBlocks.filter(block => block.date === key).sort((a,b) => a.period-b.period).forEach(block => rows.push([key, '교과·대강', block.period, '', block.title]))
@@ -230,5 +233,5 @@ export function exportVisibleCalendarXlsx(data: AppData, sessions: Session[], da
   sheet['!cols'] = [{wch:12}, {wch:12}, {wch:6}, {wch:12}, {wch:55}]
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, sheet, '선택한 달력')
-  XLSX.writeFile(workbook, `달력_${dateKey(dates[0])}_${dateKey(dates.at(-1)!)}_${preferences.filter}.xlsx`)
+  XLSX.writeFile(workbook, `달력_${dateKey(dates[0])}_${dateKey(dates.at(-1)!)}_${Array.isArray(preferences.sources)?sources.join('-')||'none':preferences.filter}.xlsx`)
 }

@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "check:teacher-desk": "node scripts/check-teacher-desk.mjs",
-    "check:dashboard": "node scripts/check-flex-dashboard.mjs && node scripts/check-drive-widgets.mjs"
+    "check:dashboard": "node scripts/check-flex-dashboard.mjs && node scripts/check-drive-widgets.mjs && node scripts/check-calendar-sources.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

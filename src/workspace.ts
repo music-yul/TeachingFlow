@@ -1,3 +1,4 @@
+import {calendarSources,allCalendarSources} from './calendarSources'
 import { clubMeetingsOn } from './clubSchedule'
 import type { AppData, CalendarPreferences, CalendarRange, HomeWidget, HomeWidgetPlacement, WorkspacePreferences } from './types'
 import { taskCoversDate, taskDeadline } from './taskDates'
@@ -27,6 +28,7 @@ export function defaultWorkspacePreferences(): WorkspacePreferences {
 }
 function normalizeCalendar(saved: Partial<CalendarPreferences> | undefined, base: CalendarPreferences): CalendarPreferences {
   return {
+    ...(Array.isArray(saved?.sources)?{sources:[...new Set(saved.sources.filter(source=>allCalendarSources.includes(source)))]}:{}),
     showWeekends: saved?.showWeekends !== false,
     weekCount: Math.max(1,Math.min(5,Math.round(saved?.weekCount || (saved?.range==='fortnight'?2:1)))),
     homeMode: saved?.homeMode && ['month','week','fortnight','weeks'].includes(saved.homeMode) ? saved.homeMode : base.homeMode || 'weeks',
@@ -42,7 +44,7 @@ export function normalizeWorkspacePreferences(saved?: Partial<WorkspacePreferenc
   const layout = Array.isArray(saved?.homeLayout)
     ? normalizeHomeLayout(saved.homeGridSize===12?saved.homeLayout:resizeHomeColumns(saved.homeGridSize===10?saved.homeLayout:saved.homeGridSize===8?saved.homeLayout:migrateHomeLayout(saved.homeLayout),saved.homeGridSize===10?10:8)) : saved ? layoutFromWidgets(widgets) : base.homeLayout
   return {
-    dashboard: saved?.dashboard && typeof saved.dashboard === 'object' && saved.dashboard.layouts ? {layouts:Object.fromEntries(Object.entries(saved.dashboard.layouts).filter(([key,value])=>['phone','laptop','desktop','wide','ultrawide'].includes(key)&&Array.isArray(value)).map(([key,value])=>[key,value.filter(item=>item&&typeof item.key==='string'&&typeof item.kind==='string'&&[item.x,item.y,item.w,item.h].every(Number.isFinite))]))} : undefined,
+    dashboard: saved?.dashboard && typeof saved.dashboard === 'object' && saved.dashboard.layouts ? {...(saved.dashboard.version===2?{version:2 as const}:{}),layouts:Object.fromEntries(Object.entries(saved.dashboard.layouts).filter(([key,value])=>['phone','laptop','desktop','wide','ultrawide'].includes(key)&&Array.isArray(value)).map(([key,value])=>[key,value.filter(item=>item&&typeof item.key==='string'&&typeof item.kind==='string'&&[item.x,item.y,item.w,item.h].every(Number.isFinite))]))} : undefined,
     todayLessonFields: Object.fromEntries(['period','className','subject','content','memo'].map(key=>[key,saved?.todayLessonFields?.[key as keyof NonNullable<WorkspacePreferences['todayLessonFields']>]!==false])) as NonNullable<WorkspacePreferences['todayLessonFields']>,
     timetableShowToday: saved?.timetableShowToday === true,
     homeTimetableSubject: typeof saved?.homeTimetableSubject==='boolean'?saved.homeTimetableSubject:undefined,
@@ -169,7 +171,8 @@ export type DeskCalendarItem = { id: string; area: 'homeroom' | 'work' | 'club';
 export function deskCalendarItems(data: AppData, date: string, preferences: CalendarPreferences,includeWorkRecords=false): DeskCalendarItem[] {
   const items: DeskCalendarItem[] = []
   const desk = data.teacherDesk
-  if (data.settings.features.homeroom && (preferences.filter === 'all' || preferences.filter === 'homeroom')) {
+  const sources=calendarSources(preferences)
+  if (data.settings.features.homeroom && sources.includes('homeroom')) {
     desk.notices.filter(item => taskCoversDate(item, date, true)).forEach(item => items.push({ id: item.id, area: 'homeroom', title: `${item.endDate === date ? '마감' : item.date === date ? '안내' : '진행'} · ${item.title}`, done: item.done, important:item.important }))
     desk.collections.filter(item => !item.archived && item.date === date).forEach(item => {
       const targets = collectionMembers(desk,item,date)
@@ -179,12 +182,12 @@ export function deskCalendarItems(data: AppData, date: string, preferences: Cale
     const followups = desk.records.filter(item => item.followDate === date && (preferences.showCompleted || !item.followed))
     if (followups.length) items.push({ id: `followups-${date}`, area: 'homeroom', title: `학생 후속 확인 ${followups.length}건`, done: followups.every(item => item.followed) })
   }
-  if (data.settings.features.work && (preferences.filter === 'all' || preferences.filter === 'work')) {
+  if (data.settings.features.work && sources.includes('work')) {
     if(includeWorkRecords)(desk.workRecords||[]).filter(record=>record.date===date).forEach(record=>items.push({id:`work-record:${record.id}`,recordId:record.id,workKind:'record',category:(record.category||'').trim(),area:'work',title:`기록 · ${record.title}`,done:false}))
     desk.tasks.filter(item => taskCoversDate(item, date)).forEach(item => {const deadline=taskDeadline(item)===date;items.push({id:item.id,area:'work',workKind:'task',category:(item.category||'').trim(),deadline,title:deadline?item.title:`${item.category?`${item.category} · `:''}${item.title}`,done:item.done,important:item.important})})
   }
-  if(data.settings.features.clubs&&(preferences.filter==='all'||preferences.filter==='club'))data.clubs.forEach(club=>{const periods=clubMeetingsOn(data,club,date);if(periods.length)items.push({id:`club-meeting:${club.id}:${date}`,clubId:club.id,area:'club',title:`${club.name} · ${periods.join('·')}교시`,done:false})})
-  if(data.settings.features.clubs&&(preferences.filter==='all'||preferences.filter==='club'))data.clubs.forEach(club=>club.activities.filter(activity=>activity.date===date).forEach(activity=>items.push({id:`club:${club.id}:${activity.id}`,clubId:club.id,area:'club',title:`${club.name} · ${activity.title}`,done:false,important:activity.important})))
+  if(data.settings.features.clubs&&sources.includes('club'))data.clubs.forEach(club=>{const periods=clubMeetingsOn(data,club,date);if(periods.length)items.push({id:`club-meeting:${club.id}:${date}`,clubId:club.id,area:'club',title:`${club.name} · ${periods.join('·')}교시`,done:false})})
+  if(data.settings.features.clubs&&sources.includes('club'))data.clubs.forEach(club=>club.activities.filter(activity=>activity.date===date).forEach(activity=>items.push({id:`club:${club.id}:${activity.id}`,clubId:club.id,area:'club',title:`${club.name} · ${activity.title}`,done:false,important:activity.important})))
   return items.filter(item => preferences.showCompleted || !item.done)
 }
 export function calendarPeriodLabel(anchor: Date, range: CalendarRange, weeks?: number) {

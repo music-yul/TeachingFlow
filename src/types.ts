@@ -413,7 +413,8 @@ export type TeacherDesk = {
 
 export type CalendarRange = 'month' | 'week' | 'fortnight'
 export type CalendarFilter = 'all' | 'teaching' | 'homeroom' | 'work' | 'club'
-export type CalendarPreferences = { showWeekends?:boolean; weekCount?: number; homeMode?: 'month' | 'week' | 'fortnight' | 'weeks'; range: CalendarRange; filter: CalendarFilter; showCompleted: boolean }
+export type CalendarSource = 'teaching' | 'homeroom' | 'work' | 'club' | 'school' | 'memo'
+export type CalendarPreferences = { sources?:CalendarSource[]; showWeekends?:boolean; weekCount?: number; homeMode?: 'month' | 'week' | 'fortnight' | 'weeks'; range: CalendarRange; filter: CalendarFilter; showCompleted: boolean }
 export type HomeWidget = 'summary' | 'calendar' | 'lessons' | 'notices' | 'collections' | 'tasks' | 'followups' | 'timetable'
 export type HomeWidgetPlacement = { id: HomeWidget; row: number; column: number; width: number; height: number }
 export type TodayLessonFields = {period:boolean;className:boolean;subject:boolean;content:boolean;memo:boolean}
