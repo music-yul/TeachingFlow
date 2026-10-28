@@ -10,6 +10,12 @@ export function incomingLessonMemos(data:AppData,session:Session,sessions:Sessio
 }
 export function saveLessonJournal(data:AppData,session:Session,change:Partial<Pick<LessonJournalEntry,'record'|'nextMemo'>>):Partial<AppData>{
  const previous=data.lessonJournal?.[session.id]
- const entry:LessonJournalEntry={sessionId:session.id,date:session.date,period:session.period,classId:session.classId,subjectId:session.subjectId,lessonTitle:sessionLabel(data,session),record:'',nextMemo:'',...previous,...change}
+ const entry:LessonJournalEntry={sessionId:session.id,date:session.date,period:session.period,classId:session.classId,subjectId:session.subjectId,record:'',nextMemo:'',...previous,...change,lessonTitle:sessionLabel(data,session)}
  return {lessonJournal:{...data.lessonJournal,[session.id]:entry}}
+}
+
+/** Resolve the current plan title; retain the snapshot if its session was removed. */
+export function journalLessonTitle(data:AppData,entry:LessonJournalEntry,sessions:Session[]){
+ const session=sessions.find(s=>s.id===entry.sessionId)
+ return session?sessionLabel(data,session):entry.lessonTitle
 }

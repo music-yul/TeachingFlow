@@ -1,9 +1,12 @@
 import { APP_VERSION } from './storage'
-export const releaseNoticeKey=`teachingflow-release-seen:${APP_VERSION}`
+export const releaseNoticeKey=`teachingflow-release-seen:${APP_VERSION}:widgets-2026-10`
 export const releaseHighlights=[
- '담임·동아리·업무 기능이 추가되었습니다. 환경설정에서 필요한 기능을 켜서 사용할 수 있습니다. 할 일과 업무 기록을 구분하고 연결할 수 있으며, 지난 기록과 완료 업무도 모아볼 수 있습니다.',
- '첫 화면에 위젯 기능이 추가되었습니다. 원하는 위젯을 선택하고 위치·크기·표시 정보를 조절할 수 있습니다.',
- '수업 기록과 다음 수업 메모 기능이 추가되었습니다. 캘린더나 오늘의 수업에서 수업을 눌러 기록을 남길 수 있습니다. 다음 수업 메모는 같은 학급·과목의 다음 수업일에 오늘의 수업 위젯에 표시됩니다.',
+ '내 화면에 맞게 자유롭게: 위젯을 추가하고 위치와 크기를 조절하세요. 큰 모니터에서는 더 많은 위젯을 배치할 수 있습니다.',
+ '오늘 화면에서 바로 편집: 상단의 위젯 추가·화면 편집 버튼을 이용하세요. 작은 위젯은 요약으로 보고 눌러서 펼칠 수 있습니다.',
+ '위젯마다 다르게: 이름과 글자 크기를 바꾸고, 제목+테두리·제목만·테두리만·둘 다 없음 중에서 선택할 수 있습니다.',
+ '달력도 내 방식으로: 1·2·3·4주 또는 월간으로 보고, 표시할 자료를 체크해 모아보세요. 이름을 달리한 달력을 여러 개 놓을 수도 있습니다.',
+ '필요한 수업 기록만: 지난 수업·어제·이번 주·최근 며칠 등 조회 기간을 선택하고, 기록이 있는 수업만 모아볼 수 있습니다.',
+ '각 위젯의 ⚙ 버튼에서 설정하세요. 기존 기록과 메모는 그대로 유지됩니다.',
 ]
 
 export function shouldShowRelease(storage:Pick<Storage,'getItem'>){try{return storage.getItem(releaseNoticeKey)!=='1'}catch{return true}}

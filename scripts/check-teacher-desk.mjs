@@ -827,6 +827,13 @@ try {
  const later={...target,id:'later',date:'2027-01-01'}
  Object.assign(d,journal.saveLessonJournal(d,source,{record:'HISTORICAL_INCIDENT_ONLY',nextMemo:'PREPARE_NEXT_CLASS'}))
  const all=[source,cancelled,hidden,none,other,wrongSubject,target,later]
+ d.lessons[0].title='BANDLAB_UPDATED'
+ assert.equal(journal.journalLessonTitle(d,d.lessonJournal[source.id],all),'BANDLAB_UPDATED')
+ assert.equal(d.lessonJournal[source.id].lessonTitle,'JOURNAL_LESSON')
+ assert.equal(journal.journalLessonTitle(d,d.lessonJournal[source.id],[]),'JOURNAL_LESSON')
+ assert.equal(journal.journalLessonTitle(d,d.lessonJournal[source.id],[{...source,mode:'extend',continuedFrom:'jl'}]),'BANDLAB_UPDATED (이어서)')
+ assert.equal(d.lessonJournal[source.id].record,'HISTORICAL_INCIDENT_ONLY')
+
  assert.equal(journal.nextLessonFor(d.lessonJournal[source.id],all).id,target.id)
  assert.equal(journal.incomingLessonMemos(d,source,all).length,0)
  assert.equal(journal.incomingLessonMemos(d,target,all)[0].nextMemo,'PREPARE_NEXT_CLASS')
@@ -835,6 +842,7 @@ try {
  assert.equal(journal.nextLessonFor(d.lessonJournal[source.id],[source]),undefined)
  assert.equal(journal.nextLessonFor(d.lessonJournal[source.id],[source,{...target,hidden:true},later]).id,later.id)
  Object.assign(d,journal.saveLessonJournal(d,source,{record:'UPDATED_INCIDENT_ONLY'}))
+ assert.equal(d.lessonJournal[source.id].lessonTitle,'BANDLAB_UPDATED')
  assert.equal(d.lessonJournal[source.id].nextMemo,'PREPARE_NEXT_CLASS')
  assert.equal(d.lessonJournal[source.id].date,source.date)
  const restored=await storage.importData({text:async()=>JSON.stringify(d)})
@@ -859,11 +867,11 @@ try {
  }
  {
  const notes=await server.ssrLoadModule('/src/releaseNotes.ts')
- assert.equal(storage.APP_VERSION,'v4.5');assert.equal(notes.releaseHighlights.length,3)
- assert.ok(notes.releaseHighlights[0].includes('할 일과 업무 기록'))
- assert.ok(notes.releaseHighlights[1].includes('표시 정보'))
- assert.ok(notes.releaseHighlights[2].includes('같은 학급·과목의 다음 수업일'))
- assert.equal(notes.releaseNoticeKey,'teachingflow-release-seen:v4.5')
+ assert.equal(storage.APP_VERSION,'v4.5');assert.equal(notes.releaseHighlights.length,6)
+ assert.ok(notes.releaseHighlights[0].includes('큰 모니터'))
+ assert.ok(notes.releaseHighlights[1].includes('화면 편집'))
+ assert.ok(notes.releaseHighlights[2].includes('테두리만'))
+ assert.equal(notes.releaseNoticeKey,'teachingflow-release-seen:v4.5:widgets-2026-10')
  }
  {
  const d=storage.emptyData();d.settings.features.work=true

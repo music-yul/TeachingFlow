@@ -1,3 +1,4 @@
+import {journalLessonTitle} from '../lessonJournal'
 import {journalEntries} from '../journalFilter'
 import { getTodayActions } from '../todayActions'
 import type { SummaryKind } from '../todayActions'
@@ -55,7 +56,7 @@ export default function TodayView({ data, sessions, update, onSelect, onNavigate
       if(item.kind==='lessons')return <TodayLessonsWidget title={item.title} data={scoped} sessions={sessions.filter(s=>!item.classId||s.classId===item.classId)} update={updateScoped} onSelect={select}/>
       if(item.kind==='progress')return <div>{data.classes.filter(c=>!c.archived&&(!item.classId||c.id===item.classId)).map(c=>{const list=sessions.filter(s=>s.classId===c.id&&!s.cancelled&&!s.hidden);const assigned=list.filter(s=>s.lessonIds.length).length;return <div className="fd-list-row" key={c.id}><button className="link-button" onClick={()=>onNavigate('교과')}>{c.name}</button><small>수업 배정 {assigned}/{list.length}시간 · {data.subjects.find(s=>s.id===c.subjectId)?.name}</small></div>})}{!data.classes.some(c=>!c.archived)&&<p className="hint">교과에서 학급을 등록하세요.</p>}</div>
       if(item.kind==='deadlines'){const tasks=desk.tasks.filter(t=>!t.done&&taskDeadline(t)).sort((a,b)=>taskDeadline(a).localeCompare(taskDeadline(b)));return <div>{tasks.map(t=><label className="desk-summary" key={t.id}><input type="checkbox" checked={t.done} onChange={e=>patch({tasks:desk.tasks.map(old=>old.id===t.id?{...old,done:e.target.checked}:old)})}/><span>{t.title}<small>{taskDeadline(t)}{taskDeadline(t)<today?' · 기한 지남':''}</small></span></label>)}{!tasks.length&&<p className="hint">미완료 마감 업무가 없습니다.</p>}</div>}
-      if(item.kind==='journal'){const entries=journalEntries(data,item,today);return <div>{entries.map(e=><div className="fd-list-row" key={e.sessionId}><button className="link-button" onClick={()=>select(e.sessionId)}>{e.date} · {e.period}교시 · {data.classes.find(c=>c.id===e.classId)?.name}</button><div>{e.lessonTitle}</div><small>{e.record}</small></div>)}{!entries.length&&<p className="hint">저장된 수업 기록이 없습니다.</p>}</div>}
+      if(item.kind==='journal'){const entries=journalEntries(data,item,today);return <div>{entries.map(e=><div className="fd-list-row" key={e.sessionId}><button className="link-button" onClick={()=>select(e.sessionId)}>{e.date} · {e.period}교시 · {data.classes.find(c=>c.id===e.classId)?.name}</button><div>{journalLessonTitle(data,e,sessions)}</div><small>{e.record}</small></div>)}{!entries.length&&<p className="hint">저장된 수업 기록이 없습니다.</p>}</div>}
       if(item.kind==='memo'||item.kind==='links')return null
       return widgetViews(item)[item.kind]
     }}/>
