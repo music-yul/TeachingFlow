@@ -1,3 +1,4 @@
+import WidgetManageButton from './WidgetManageButton'
 import { useEffect,useRef,useState } from 'react'
 import type {AppData,Session,TodayLessonFields} from '../types'
 import {incomingLessonMemos} from '../lessonJournal'
@@ -18,7 +19,7 @@ export default function TodayLessonsWidget({data,sessions,update,onSelect,title}
  const fields={...defaults,...data.workspacePreferences.todayLessonFields}
  const today=sessions.filter(item=>item.date===todayKey()&&!item.cancelled&&!item.hidden).sort((a,b)=>a.period-b.period)
  const anyField=Object.values(fields).some(Boolean)
- return <section className="desk-card home-info-widget"><div className="desk-heading widget-heading"><h2>{title||'오늘의 수업'}</h2><button className="link-button widget-manage-link" onClick={()=>setSettingsOpen(true)}>관리</button></div>
+ return <section className="desk-card home-info-widget"><div className="desk-heading widget-heading"><h2>{title||'오늘의 수업'}</h2><WidgetManageButton dashboardHidden className="link-button widget-manage-link" onClick={()=>setSettingsOpen(true)}>관리</WidgetManageButton></div>
  {settingsOpen&&<DisplaySettings data={data} update={update} onClose={()=>setSettingsOpen(false)}/>}
  {!anyField?<p className="hint">관리에서 표시할 항목을 선택하세요.</p>:today.map(item=>{
  const className=data.classes.find(c=>c.id===item.classId)?.name||''

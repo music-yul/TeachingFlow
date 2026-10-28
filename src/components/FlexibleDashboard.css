@@ -40,3 +40,8 @@
 .fd-body.home-widget-calendar .calendar-panel{padding:0;border:0}
 
 .fd-appearance-border .fd-content-title,.fd-appearance-border .widget-heading h2,.fd-appearance-border>.fd-heading>strong,.fd-appearance-border .fd-compact-preview>span{display:none}.fd-appearance-border .widget-heading:has(.widget-manage-link){justify-content:flex-end}
+
+/* One shared header: title and management controls sit beside settings. */
+.fd-widget:not(.fd-compact)>.fd-heading{gap:6px;min-height:36px}.fd-widget:not(.fd-compact)>.fd-heading>strong{flex:1;min-width:0;font-size:.9rem;font-weight:600;line-height:1.4;text-align:left}.fd-header-actions{display:flex;align-items:center;margin-left:auto;gap:6px}.fd-header-actions:empty{display:none}.fd-widget:not(.fd-compact)>.fd-body .widget-heading{display:none}.fd-widget:not(.fd-compact)>.fd-body .fd-content-title{display:none}.fd-widget:not(.fd-compact)>.fd-heading .widget-manage-link{width:auto;height:auto;padding:0 2px;font-size:.75rem}.fd-widget.fd-titleless:not(.fd-summary)>.fd-body.home-widget{padding-top:2px}
+
+.fd-option-panel:not([hidden]){display:flex;flex-direction:column;gap:14px}.fd-option-panel[hidden]{display:none}.fd-option-tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);padding-bottom:8px}.fd-option-tabs [aria-selected="true"]{background:var(--accent);color:#fff}.fd-content-actions{display:flex;flex-direction:column;gap:8px}.fd-content-actions:empty{display:none}

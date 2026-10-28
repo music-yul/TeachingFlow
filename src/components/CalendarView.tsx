@@ -1,3 +1,4 @@
+import {WidgetHeaderTarget,WidgetContentActions} from './WidgetManageButton'
 import {calendarSources} from '../calendarSources'
 import CalendarSourcePicker from './CalendarSourcePicker'
 import {teachingCalendarStyle,workCalendarStyle,teachingPaint,workPaint} from '../calendarDetailColors'
@@ -7,7 +8,7 @@ import WorkRecordDialog from './WorkRecordDialog'
 import type { WorkRecord } from '../types'
 import CalendarAddDialog from './CalendarAddDialog'
 import { calendarItemStyle, schoolEventStyle, lessonLabelStyle, deadlineLabelStyle } from '../calendarAppearance'
-import { useRef, useState } from 'react'
+import { useRef, useState, useContext } from 'react'
 import type { AppData, CalendarRange, PersonalBlock, Session } from '../types'
 import { coversDate, dateKey, effectiveLessonIds, sessionLabel, todayKey } from '../schedule'
 import { linkedEvaluation } from '../evaluation'
@@ -39,7 +40,8 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
 
   const preferenceKey = context === 'home' ? 'homeCalendar' : context === 'work' ? 'workCalendar' : 'scheduleCalendar'
   const preferences = context === 'home' ? data.workspacePreferences.homeCalendar : context === 'work' ? { ...data.workspacePreferences.workCalendar, filter: 'work' as const } : { ...data.workspacePreferences.scheduleCalendar, filter: 'teaching' as const }
-  const homeMode=preferences.homeMode||'weeks'
+  const widgetContentTarget=useContext(WidgetHeaderTarget)
+ const homeMode=preferences.homeMode||'weeks'
   const range=context==='home'?(homeMode==='month'?'month':'week'):preferences.range
   const sources=context==='home'?calendarSources(preferences):context==='work'?['work','school','memo'] as const:context==='school'?['school'] as const:['teaching','school','memo'] as const
   const showCompleted=context==='work'||preferences.showCompleted
@@ -70,8 +72,8 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
         <h2>{!showWeekends&&range!=='month'?`${dateKey(cells[0])} ~ ${dateKey(cells.at(-1)!)}`:calendarPeriodLabel(month, range, weeks)}</h2>
         <button className="ghost-button" onClick={() => shift(1)}>다음 {rangeUnit} ›</button>
         <button className="ghost-button" onClick={() => setMonth(new Date())}>오늘</button>
-        {context==='home'&&<label className="calendar-completed-toggle no-print"><input type="checkbox" checked={showCompleted} onChange={e=>changePreferences({showCompleted:e.target.checked})}/> 완료 포함</label>}
-        <button className="ghost-button no-print" onClick={()=>settingsDialog.current?.showModal()}>설정</button>
+        {context==='home'&&widgetContentTarget===undefined&&<label className="calendar-completed-toggle no-print"><input type="checkbox" checked={showCompleted} onChange={e=>changePreferences({showCompleted:e.target.checked})}/> 완료 포함</label>}
+        {widgetContentTarget===undefined&&<button className="ghost-button no-print" onClick={()=>settingsDialog.current?.showModal()}>설정</button>}
       </div>
       <dialog className="calendar-options-dialog no-print" ref={settingsDialog}><div className="desk-heading"><h2>달력 설정</h2><button className="ghost-button" onClick={()=>settingsDialog.current?.close()}>닫기</button></div>
       <div className="calendar-controls no-print">
@@ -84,10 +86,10 @@ export default function CalendarView({ data, sessions, month, setMonth, onSelect
         <label>주말<select aria-label="달력 주말 표시" value={showWeekends?'include':'exclude'} onChange={e=>changePreferences({showWeekends:e.target.value==='include'})}><option value="include">주말 포함</option><option value="exclude">주말 제외</option></select></label>
 
       </div>
-        <div className="toolbar-actions no-print">
+        <WidgetContentActions><div className="toolbar-actions no-print">
           <button className="ghost-button" onClick={() => exportVisibleCalendarXlsx(context==='school'?{...data,dayNotes:{},personalBlocks:[]}:data, sessions, cells, shownPreferences, context === 'work')}>엑셀로 내보내기</button>
           <button className="ghost-button" onClick={()=>{settingsDialog.current?.close();printCurrentView()}}>인쇄</button>
-        </div>
+        </div></WidgetContentActions>
       </dialog>
 
       {recordDraft&&<WorkRecordDialog key={recordDraft.id||'new-record'} data={data} initial={recordDraft} update={update} onClose={()=>setRecordDraft(null)}/>}
