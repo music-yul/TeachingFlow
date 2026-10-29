@@ -46,7 +46,7 @@
 
 .fd-option-panel:not([hidden]){display:flex;flex-direction:column;gap:14px}.fd-option-panel[hidden]{display:none}.fd-option-tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);padding-bottom:8px}.fd-option-tabs [aria-selected="true"]{background:var(--accent);color:#fff}.fd-content-actions{display:flex;flex-direction:column;gap:8px}.fd-content-actions:empty{display:none}
 /* Without a title there is no header row; reveal controls on interaction. */
-.fd-widget.fd-titleless:is(.fd-appearance-border,.fd-appearance-none):not(.fd-compact):not(.fd-summary):not(.fd-editing)>.fd-heading{position:absolute;top:5px;right:20px;left:auto;bottom:auto;min-height:0;padding:0;border:0;z-index:4;opacity:0;pointer-events:none;background:var(--card);border-radius:8px}
+.fd-widget.fd-titleless:is(.fd-appearance-border,.fd-appearance-none):not(.fd-compact):not(.fd-summary):not(.fd-editing)>.fd-heading{position:absolute;top:4px;right:8px;left:auto;bottom:auto;min-height:0;padding:0;border:0;z-index:4;opacity:0;pointer-events:none;background:var(--card);border-radius:8px}
 .fd-widget.fd-titleless:is(.fd-appearance-border,.fd-appearance-none):not(.fd-compact):not(.fd-summary):not(.fd-editing):is(:hover,:focus-within)>.fd-heading{opacity:1;pointer-events:auto}
 .fd-widget.fd-titleless:is(.fd-appearance-border,.fd-appearance-none):not(.fd-compact):not(.fd-summary):not(.fd-editing)>.fd-body.home-widget{padding-top:8px}
 @media(hover:none){.fd-widget.fd-titleless:is(.fd-appearance-border,.fd-appearance-none):not(.fd-compact):not(.fd-summary):not(.fd-editing)>.fd-heading{opacity:1;pointer-events:auto}}
