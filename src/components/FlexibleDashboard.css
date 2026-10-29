@@ -52,3 +52,7 @@
 @media(hover:none){.fd-widget.fd-titleless:is(.fd-appearance-border,.fd-appearance-none):not(.fd-compact):not(.fd-summary):not(.fd-editing)>.fd-heading{opacity:1;pointer-events:auto}}
 @media print{.fd-widget>.fd-heading{display:none!important}}
 .school-quick-form label:not(.inline-check){display:flex;flex-direction:column;gap:5px}.school-quick-form input:not([type=checkbox]):not([type=color]),.school-quick-form select{width:100%;min-width:0}.school-quick-form fieldset{border:1px solid var(--line);border-radius:8px;padding:10px}.school-quick-form fieldset label{margin:5px 0}
+/* Settings controls share the same reveal behavior across every widget. */
+.fd-widget:not(.fd-editing)>.fd-heading>button{opacity:0;pointer-events:none}
+.fd-widget:not(.fd-editing):is(:hover,:focus-within)>.fd-heading>button{opacity:1;pointer-events:auto}
+@media(hover:none){.fd-widget:not(.fd-editing)>.fd-heading>button{opacity:1;pointer-events:auto}}
