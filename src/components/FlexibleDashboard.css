@@ -56,3 +56,6 @@
 .fd-widget:not(.fd-editing)>.fd-heading>button{opacity:0;pointer-events:none}
 .fd-widget:not(.fd-editing):is(:hover,:focus-within)>.fd-heading>button{opacity:1;pointer-events:auto}
 @media(hover:none){.fd-widget:not(.fd-editing)>.fd-heading>button{opacity:1;pointer-events:auto}}
+
+/* Today's tasks prioritize readable content over repeated date metadata. */
+.fd-body.home-widget-tasks .desk-summary{align-items:flex-start}.fd-body.home-widget-tasks .desk-summary>span{display:block;flex:1;min-width:0;width:auto}.fd-body.home-widget-tasks .widget-summary-title{display:block;white-space:pre-wrap;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.45}.fd-body.home-widget-tasks .desk-summary small{margin-left:0;white-space:normal;overflow-wrap:anywhere}.fd-body.home-widget-tasks .desk-summary>input{flex-shrink:0}
