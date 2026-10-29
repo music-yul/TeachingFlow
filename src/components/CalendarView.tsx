@@ -33,7 +33,7 @@ type Props = {
 
 export default function CalendarView({ data, sessions, month, setMonth, onSelect, update, context = 'schedule', onOpenArea, onDateSelect, onTaskSelect }: Props) {
   const [recordDraft,setRecordDraft]=useState<WorkRecord|null>(null)
-  const [add,setAdd]=useState<{date:string;mode:'menu'|'work'|'homeroom'}|null>(null)
+  const [add,setAdd]=useState<{date:string;mode:'menu'|'work'|'homeroom'|'school'}|null>(null)
   const [noteDate, setNoteDate] = useState<string | null>(null)
   const [extraDate, setExtraDate] = useState<string | null>(null)
   const [editBlock, setEditBlock] = useState<PersonalBlock | null>(null)
