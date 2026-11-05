@@ -137,6 +137,15 @@ try {
  assert.equal(taskDates.taskCoversDate(baseTask,'2026-10-21'),false)
  assert.equal(taskDates.isTaskOverdue(baseTask,'2026-10-15'),false)
  assert.equal(taskDates.isTaskOverdue(baseTask,'2026-10-21'),true)
+const checkedDay=taskDates.toggleTaskOn(baseTask,'2026-10-12',true)
+assert.equal(checkedDay.done,false,'기간 업무 일일 체크는 전체 완료가 아니다')
+assert.equal(taskDates.taskDoneOn(checkedDay,'2026-10-12'),true)
+assert.equal(taskDates.taskDoneOn(checkedDay,'2026-10-13'),false)
+assert.deepEqual(taskDates.taskDailyProgress(checkedDay),{checked:1,total:11})
+assert.equal(taskDates.taskDailyProgress({...checkedDay,excludeWeekends:true}).total,7)
+assert.equal(taskDates.taskDoneOn(taskDates.toggleTaskOn(checkedDay,'2026-10-12',false),'2026-10-12'),false)
+const singleDay={...baseTask,endDate:'',scheduleType:'dated'}
+assert.equal(taskDates.toggleTaskOn(singleDay,'2026-10-10',true).done,true,'하루 업무는 기존처럼 전체 완료')
  assert.equal(taskDates.taskCoversDate({...baseTask,scheduleType:'deadline'},'2026-10-11'),false)
  assert.equal(taskDates.taskCoversDate({...baseTask,scheduleType:'todo'},'2026-10-10'),false)
  const notice={...baseTask,id:'notice',title:'기간 안내',scheduleType:undefined}

@@ -20,6 +20,30 @@ export function taskDateLabel(task: TeacherTask, notice = false) {
   const deadline=taskDeadline(task)
   return dates+(taskKind(task)==='period'&&task.excludeWeekends?' · 주말 제외':'')+(deadline?deadline===(taskKind(task)==='period'?task.endDate||task.date:task.date)?' · 마감':` · 마감 ${deadline}`:'')
 }
+/** 기간 업무는 날마다 따로 체크한다. 하루짜리·날짜 미정 업무는 기존처럼 전체 완료 하나만 쓴다. */
+export function isDailyCheckTask(task: TeacherTask) { return taskKind(task)==='period' }
+/** 그 날짜 기준으로 완료인지. 기간 업무는 전체 완료이거나 그날 체크했으면 완료. */
+export function taskDoneOn(task: TeacherTask, date: string) { return task.done || (isDailyCheckTask(task) && (task.doneDates||[]).includes(date)) }
+/** 날짜 기준 체크. 기간 업무는 그날만 체크하고, 나머지는 전체 완료를 바꾼다. */
+export function toggleTaskOn(task: TeacherTask, date: string, checked: boolean): TeacherTask {
+  if(!isDailyCheckTask(task)) return {...task,done:checked}
+  const rest=(task.doneDates||[]).filter(value=>value!==date)
+  return {...task,doneDates:checked?[...rest,date].sort():rest}
+}
+/** 기간 업무의 일일 체크 현황(주말 제외 설정 반영). */
+export function taskDailyProgress(task: TeacherTask) {
+  if(!isDailyCheckTask(task)||!task.date) return null
+  const end=task.endDate||task.date
+  let total=0
+  for(const cursor=new Date(task.date+'T12:00:00');;cursor.setDate(cursor.getDate()+1)){
+    const key=`${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`
+    if(key>end||total>1000) break
+    const day=cursor.getDay()
+    if(!(task.excludeWeekends&&(day===0||day===6))) total++
+  }
+  const checked=(task.doneDates||[]).filter(date=>date>=task.date&&date<=end).length
+  return {checked,total}
+}
 export function isTaskOverdue(task: TeacherTask, today: string, notice = false) {const date=taskDeadline(task,notice);return !task.done&&Boolean(date&&date<today)}
 export const blankTask = (notice = false): TeacherTask => ({id:'',title:'',date:todayKey(),endDate:'',scheduleType:notice?undefined:'dated',showDeadline:false,deadlineDate:'',done:false,category:'',note:'',link:''})
 /** Older separate deadlines remain readable; editing maps them onto the date/range. */

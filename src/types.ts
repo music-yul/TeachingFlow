@@ -367,7 +367,10 @@ export type TeacherTask = {
   id: string
   title: string
   date: string
+  /** 업무 전체 완료. 기간 업무에서는 '모든 기간이 끝났음'을 뜻한다. */
   done: boolean
+  /** 기간 업무에서 날짜별로 '오늘 할 일'을 체크한 날(YYYY-MM-DD). */
+  doneDates?: string[]
   category: string
   note: string
   link: string

@@ -1,7 +1,7 @@
 import {calendarSources,allCalendarSources} from './calendarSources'
 import { clubMeetingsOn } from './clubSchedule'
 import type { AppData, CalendarPreferences, CalendarRange, HomeWidget, HomeWidgetPlacement, WorkspacePreferences } from './types'
-import { taskCoversDate, taskDeadline } from './taskDates'
+import { taskCoversDate, taskDeadline, taskDoneOn } from './taskDates'
 import { collectionMembers } from './members'
 import { dateKey } from './schedule'
 
@@ -184,7 +184,7 @@ export function deskCalendarItems(data: AppData, date: string, preferences: Cale
   }
   if (data.settings.features.work && sources.includes('work')) {
     if(includeWorkRecords)(desk.workRecords||[]).filter(record=>record.date===date).forEach(record=>items.push({id:`work-record:${record.id}`,recordId:record.id,workKind:'record',category:(record.category||'').trim(),area:'work',title:`기록 · ${record.title}`,done:false}))
-    desk.tasks.filter(item => taskCoversDate(item, date)).forEach(item => {const deadline=taskDeadline(item)===date;items.push({id:item.id,area:'work',workKind:'task',category:(item.category||'').trim(),deadline,title:deadline?item.title:`${item.category?`${item.category} · `:''}${item.title}`,done:item.done,important:item.important})})
+    desk.tasks.filter(item => taskCoversDate(item, date)).forEach(item => {const deadline=taskDeadline(item)===date;items.push({id:item.id,area:'work',workKind:'task',category:(item.category||'').trim(),deadline,title:deadline?item.title:`${item.category?`${item.category} · `:''}${item.title}`,done:taskDoneOn(item,date),important:item.important})})
   }
   if(data.settings.features.clubs&&sources.includes('club'))data.clubs.forEach(club=>{const periods=clubMeetingsOn(data,club,date);if(periods.length)items.push({id:`club-meeting:${club.id}:${date}`,clubId:club.id,area:'club',title:`${club.name} · ${periods.join('·')}교시`,done:false})})
   if(data.settings.features.clubs&&sources.includes('club'))data.clubs.forEach(club=>club.activities.filter(activity=>activity.date===date).forEach(activity=>items.push({id:`club:${club.id}:${activity.id}`,clubId:club.id,area:'club',title:`${club.name} · ${activity.title}`,done:false,important:activity.important})))
