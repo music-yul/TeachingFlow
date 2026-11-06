@@ -97,6 +97,7 @@ export default function SettingsHub({ data, update, onImport, onReset, onSetupNa
               {APP_NAME} {APP_VERSION}<br />
               {APP_TAGLINE}<br />
               © 2026 율쌤 ｜ 무단 배포 및 수정 금지<br />
+              <a href="./privacy.html" target="_blank" rel="noreferrer">개인정보처리방침</a><br />
               처음 설정은 <b>기능 설정</b>의 시작 안내에서, 자세한 사용법은 <b>도움말</b>에서 확인하세요.
             </p>
             <div className="sns-links">
