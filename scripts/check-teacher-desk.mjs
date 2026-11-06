@@ -876,11 +876,13 @@ assert.equal(taskDates.toggleTaskOn(singleDay,'2026-10-10',true).done,true,'하�
  }
  {
  const notes=await server.ssrLoadModule('/src/releaseNotes.ts')
- assert.equal(storage.APP_VERSION,'v4.5');assert.equal(notes.releaseHighlights.length,6)
- assert.ok(notes.releaseHighlights[0].includes('큰 모니터'))
- assert.ok(notes.releaseHighlights[1].includes('화면 편집'))
- assert.ok(notes.releaseHighlights[2].includes('테두리만'))
- assert.equal(notes.releaseNoticeKey,'teachingflow-release-seen:v4.5:widgets-2026-10')
+ assert.equal(storage.APP_VERSION,'v5.0')
+ assert.equal(notes.releaseNoticeKey,'teachingflow-release-seen:v5.0:2026-11')
+ assert.equal(notes.releaseHighlightsFor(false).length,5);assert.equal(notes.releaseHighlightsFor(true).length,6)
+ assert.ok(notes.releaseHighlightsFor(false)[0].includes('그날만 완료'))
+ assert.ok(notes.releaseHighlightsFor(false).every(text=>!text.includes('Google Drive')))
+ assert.ok(notes.releaseHighlightsFor(true).some(text=>text.includes('개인 Gmail')))
+ assert.ok(notes.releaseHighlightsFor(true).every(text=>!text.includes('로고')&&!text.includes('아이콘을 바꿨')))
  }
  {
  const d=storage.emptyData();d.settings.features.work=true

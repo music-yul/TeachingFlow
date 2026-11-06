@@ -6,7 +6,7 @@ import { defaultWorkspacePreferences, normalizeWorkspacePreferences } from './wo
 import type { AppData, Evaluation, EvaluationItem, EvaluationTask, LessonType, EvaluationType, Subject, TaskStatus } from './types'
 import { subjectColorsForTheme } from './theme'
 
-export const APP_VERSION = 'v4.5'
+export const APP_VERSION = 'v5.0'
 export const APP_NAME = '티칭플로'
 export const APP_TAGLINE = 'TEACHING FLOW ― 수업의 흐름을 한눈에'
 const STORAGE_KEY = 'class-schedule-planner-data'
