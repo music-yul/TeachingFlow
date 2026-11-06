@@ -2,7 +2,7 @@ import {calendarSources} from './calendarSources'
 import { deskCalendarItems } from './workspace'
 import { holidayName } from './holidays'
 import * as XLSX from 'xlsx'
-import type { AppData, CalendarPreferences, EvalColumn, Evaluation, Session } from './types'
+import type { AppData, CalendarPreferences, Classroom, EvalColumn, Evaluation, Session } from './types'
 import { coverage, coversDate, dateKey, sessionLabel } from './schedule'
 import {
   columnKey,
@@ -138,11 +138,8 @@ export function exportStudentDigestXlsx(data: AppData, sessions: Session[], clas
   XLSX.writeFile(workbook, `누가기록_${classroom.name}_${student.name}_${stamp}.xlsx`)
 }
 
-/** 평가 점수를 학급별 시트로 내려받는다. 학교 평가표와 비슷한 형태(학번·성명·요소별 점수·합계·비고). */
-export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
-  const classes = evaluationClasses(data, evaluation)
-  if (!classes.length) return
-
+/** 한 학급의 평가 채점표 행(제목·두 줄 머리글·학생 행)과 열 너비. 개별 평가 내보내기와 전체 엑셀 내보내기가 함께 쓴다. */
+export function evaluationSheetRows(data: AppData, evaluation: Evaluation, classroom: Classroom) {
   const tasks = evaluationTasks(evaluation)
   const columns = evaluationColumns(evaluation)
   const frontColumns = columns.filter(column => column.position === 'front')
@@ -150,55 +147,65 @@ export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
   const middleColumns = columns.filter(column => column.position !== 'front' && column.position !== 'end')
   const isGroupActivity = !!evaluation.groupActivity
   const columnValue = (column: EvalColumn, studentId: string) => data.columnValues[columnKey(evaluation.id, column.id, studentId)] || ''
+  // 과제 행 → 요소 행 순서로 두 줄짜리 머리글을 만든다(학교 채점표와 같은 모양).
+  const taskRow: (string | number)[] = ['', '', ...(isGroupActivity ? [''] : []), ...frontColumns.map(() => '')]
+  const itemRow: (string | number)[] = ['학번', '성명', ...(isGroupActivity ? ['모둠'] : []), ...frontColumns.map(column => column.label || '(이름 없음)')]
+  tasks.forEach(task => {
+    taskRow.push(task.name, ...task.items.map(() => ''))
+    itemRow.push('미응시', ...task.items.map(item => `${item.name}(${item.maxScore})`))
+  })
+  taskRow.push('', '', ...middleColumns.map(() => ''), '', ...endColumns.map(() => ''))
+  itemRow.push('원점수', '반영점수', ...middleColumns.map(column => column.label || '(이름 없음)'), '비고', ...endColumns.map(column => column.label || '(이름 없음)'))
+
+  const rows: (string | number)[][] = [
+    [`${evaluation.name} (${evaluation.weight}% 반영)`],
+    taskRow,
+    itemRow,
+  ]
+  classroom.students.forEach(student => {
+    const row: (string | number)[] = [
+      student.number,
+      student.name,
+      ...(isGroupActivity ? [studentGroup(data, evaluation, student)] : []),
+      ...frontColumns.map(column => columnValue(column, student.id)),
+    ]
+    tasks.forEach(task => {
+      const absent = isAbsent(data, evaluation.id, task.id, student.id)
+      row.push(absent ? '미응시' : '')
+      if (absent) {
+        // 미응시면 요소별 칸은 비우고 과제 점수만 첫 칸에 적는다.
+        task.items.forEach((_, index) => row.push(index === 0 ? taskScore(data, evaluation, task, student.id) : ''))
+      } else {
+        task.items.forEach(item => row.push(data.scores[scoreKey(evaluation.id, item.id, student.id)] ?? ''))
+      }
+    })
+    row.push(
+      rawTotal(data, evaluation, student.id),
+      Math.round(weightedScore(data, evaluation, student.id) * 10) / 10,
+      ...middleColumns.map(column => columnValue(column, student.id)),
+      data.evaluationNotes[noteKey(evaluation.id, student.id)] || '',
+      ...endColumns.map(column => columnValue(column, student.id)),
+    )
+    rows.push(row)
+  })
+  const cols = [
+    { wch: 8 }, { wch: 9 }, ...(isGroupActivity ? [{ wch: 8 }] : []), ...frontColumns.map(() => ({ wch: 16 })),
+    ...tasks.flatMap(task => [{ wch: 7 }, ...task.items.map(() => ({ wch: 11 }))]),
+    { wch: 8 }, { wch: 9 }, ...middleColumns.map(() => ({ wch: 16 })), { wch: 24 }, ...endColumns.map(() => ({ wch: 16 })),
+  ]
+  return { rows, cols }
+}
+
+/** 평가 점수를 학급별 시트로 내려받는다. 학교 평가표와 비슷한 형태(학번·성명·요소별 점수·합계·비고). */
+export function exportEvaluationXlsx(data: AppData, evaluation: Evaluation) {
+  const classes = evaluationClasses(data, evaluation)
+  if (!classes.length) return
+
   const workbook = XLSX.utils.book_new()
   classes.forEach(classroom => {
-    // 과제 행 → 요소 행 순서로 두 줄짜리 머리글을 만든다(학교 채점표와 같은 모양).
-    const taskRow: (string | number)[] = ['', '', ...(isGroupActivity ? [''] : []), ...frontColumns.map(() => '')]
-    const itemRow: (string | number)[] = ['학번', '성명', ...(isGroupActivity ? ['모둠'] : []), ...frontColumns.map(column => column.label || '(이름 없음)')]
-    tasks.forEach(task => {
-      taskRow.push(task.name, ...task.items.map(() => ''))
-      itemRow.push('미응시', ...task.items.map(item => `${item.name}(${item.maxScore})`))
-    })
-    taskRow.push('', '', ...middleColumns.map(() => ''), '', ...endColumns.map(() => ''))
-    itemRow.push('원점수', '반영점수', ...middleColumns.map(column => column.label || '(이름 없음)'), '비고', ...endColumns.map(column => column.label || '(이름 없음)'))
-
-    const rows: (string | number)[][] = [
-      [`${evaluation.name} (${evaluation.weight}% 반영)`],
-      taskRow,
-      itemRow,
-    ]
-    classroom.students.forEach(student => {
-      const row: (string | number)[] = [
-        student.number,
-        student.name,
-        ...(isGroupActivity ? [studentGroup(data, evaluation, student)] : []),
-        ...frontColumns.map(column => columnValue(column, student.id)),
-      ]
-      tasks.forEach(task => {
-        const absent = isAbsent(data, evaluation.id, task.id, student.id)
-        row.push(absent ? '미응시' : '')
-        if (absent) {
-          // 미응시면 요소별 칸은 비우고 과제 점수만 첫 칸에 적는다.
-          task.items.forEach((_, index) => row.push(index === 0 ? taskScore(data, evaluation, task, student.id) : ''))
-        } else {
-          task.items.forEach(item => row.push(data.scores[scoreKey(evaluation.id, item.id, student.id)] ?? ''))
-        }
-      })
-      row.push(
-        rawTotal(data, evaluation, student.id),
-        Math.round(weightedScore(data, evaluation, student.id) * 10) / 10,
-        ...middleColumns.map(column => columnValue(column, student.id)),
-        data.evaluationNotes[noteKey(evaluation.id, student.id)] || '',
-        ...endColumns.map(column => columnValue(column, student.id)),
-      )
-      rows.push(row)
-    })
+    const { rows, cols } = evaluationSheetRows(data, evaluation, classroom)
     const sheet = XLSX.utils.aoa_to_sheet(rows)
-    sheet['!cols'] = [
-      { wch: 8 }, { wch: 9 }, ...(isGroupActivity ? [{ wch: 8 }] : []), ...frontColumns.map(() => ({ wch: 16 })),
-      ...tasks.flatMap(task => [{ wch: 7 }, ...task.items.map(() => ({ wch: 11 }))]),
-      { wch: 8 }, { wch: 9 }, ...middleColumns.map(() => ({ wch: 16 })), { wch: 24 }, ...endColumns.map(() => ({ wch: 16 })),
-    ]
+    sheet['!cols'] = cols
     XLSX.utils.book_append_sheet(workbook, sheet, classroom.name.slice(0, 31))
   })
 

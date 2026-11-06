@@ -24,7 +24,7 @@ try{
  assert.ok(!settings.includes('>메인화면</button>'))
  const {default:Panel}=await server.ssrLoadModule('/src/components/DriveBackupPanel.tsx')
  const panel=renderToStaticMarkup(React.createElement(Panel,{data,onImport:()=>{}}))
- assert.ok(panel.includes('Google Drive 백업'));assert.ok(panel.includes('disabled=""'));assert.ok(panel.includes('자동 동기화하지 않습니다'))
+ if(api.GOOGLE_CLIENT_ID){assert.ok(panel.includes('Google Drive 백업'));assert.ok(panel.includes('자동 동기화하지 않습니다'));assert.ok(panel.includes('처음 사용하시나요?'))}else{assert.equal(panel,'','연결 설정이 없는 배포본은 Drive 패널을 숨긴다');assert.ok(!settings.includes('Google Drive 백업 또는'))}
  const originalFetch=globalThis.fetch;let requests=[]
  globalThis.fetch=async(url,init={})=>{requests.push({url:String(url),init});return new Response(JSON.stringify({id:'created',name:api.DRIVE_BACKUP_NAME,version:'1'}),{status:200,headers:{'Content-Type':'application/json'}})}
  await api.saveDriveBackup('token-only-in-memory',data)

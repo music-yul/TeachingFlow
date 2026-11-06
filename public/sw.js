@@ -3,7 +3,7 @@
 // - 글꼴: 한 번 받은 글꼴 파일을 저장해 두고 오프라인에서도 같은 글꼴로 보이게 한다.
 // - 기록 데이터는 서비스 워커와 무관하게 브라우저 저장소(localStorage)에 그대로 있다.
 // - Google 로그인·Drive 요청은 건드리지 않는다(인터넷이 있어야 동작).
-const APP_CACHE = 'teachingflow-app-v1'
+const APP_CACHE = 'teachingflow-app-v2'
 const FONT_CACHE = 'teachingflow-fonts-v1'
 const APP_FILES = ['./', './index.html', './manifest.webmanifest', './favicon.svg', './icon-192.png', './icon-512.png']
 const FONT_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com']

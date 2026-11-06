@@ -403,6 +403,11 @@ thead th small { display: block; font-weight: 400; }
 
 .progress-table { table-layout: fixed; }
 
+.drive-guide { margin:.4rem 0 .6rem; font-size:.88rem; }
+.drive-guide summary { cursor:pointer; font-weight:600; }
+.drive-guide ul { margin:.4rem 0 0; padding-left:1.2rem; line-height:1.6; }
+.drive-guide code { font-size:.85em; }
+
 @media (min-width: 561px) {
   .progress-table .sticky-col { width: 10.5rem; }
   .progress-table thead th:not(.sticky-col) { width: 9.5rem; }

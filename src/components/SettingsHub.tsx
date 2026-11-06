@@ -5,6 +5,8 @@ import EventsView from './EventsView'
 import HelpView from './HelpView'
 import AppearanceView from './AppearanceView'
 import DriveBackupPanel from './DriveBackupPanel'
+import { exportFullXlsx } from '../fullExport'
+import { GOOGLE_CLIENT_ID } from '../googleDrive'
 import FeatureSettings from './FeatureSettings'
 import type { SetupTarget } from './StartGuide'
 
@@ -56,7 +58,7 @@ export default function SettingsHub({ data, update, onImport, onReset, onSetupNa
           <div className="block">
             <h2>백업</h2>
             <p className="hint">
-              작업 중인 기록은 이 브라우저에 저장됩니다. Google Drive 백업 또는 JSON 파일로 다른 기기에 옮길 수 있습니다. 브라우저 저장소를 지우거나 다른 기기에서 열면 내용이 보이지 않습니다.
+              작업 중인 기록은 이 브라우저에 저장됩니다. {GOOGLE_CLIENT_ID ? 'Google Drive 백업 또는 ' : ''}JSON 파일로 다른 기기에 옮길 수 있습니다. 브라우저 저장소를 지우거나 다른 기기에서 열면 내용이 보이지 않습니다.
               <b> 학기 중에는 주기적으로 내보내기를 해 두세요.</b> 내보낸 파일에는 담임·동아리 기록도 포함됩니다. 다른 기기에서 복원할 때 사용하세요.
             </p>
             <div className="inline-form">
@@ -74,6 +76,16 @@ export default function SettingsHub({ data, update, onImport, onReset, onSetupNa
                 />
               </label>
               <button className="danger-button" onClick={onReset}>전체 초기화</button>
+            </div>
+          </div>
+          <div className="block">
+            <h2>전체 기록 엑셀로 받기</h2>
+            <p className="hint">
+              학급 명단·진도표·수업 기록·교과 출결과 특기사항·평가 기준과 점수·학사일정·업무·담임·동아리 기록을 <b>기능별 시트로 나눈 엑셀 파일 하나</b>로 내려받습니다.
+              보기·보관·제출용이며 티칭플로에 다시 불러올 수는 없습니다. 복원용으로는 위의 JSON 내보내기를 함께 해 두세요.
+            </p>
+            <div className="inline-form">
+              <button className="primary-button" onClick={() => exportFullXlsx(data)}>전체 기록 엑셀로 받기 (.xlsx)</button>
             </div>
           </div>
 
