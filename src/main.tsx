@@ -36,3 +36,7 @@ async function startApp() {
  }
 }
 void startApp()
+// 오프라인 사용: 배포된 웹사이트(https)에서만 서비스 워커를 등록한다. file:// 이나 개발 서버에서는 건너뛴다.
+if('serviceWorker' in navigator&&location.protocol==='https:'&&!import.meta.env.DEV){
+ window.addEventListener('load',()=>{void navigator.serviceWorker.register('./sw.js').catch(()=>undefined)})
+}
