@@ -1,8 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState, type CSSProperties } from 'react'
 import AppLogo from './components/AppLogo'
 import {DashboardToolbarContext} from './dashboardToolbar'
 import type { AppData, Classroom } from './types'
-import { APP_VERSION, emptyData, importData, makeId, nextSubjectColor, readData, writeData } from './storage'
+import { APP_VERSION, emptyData, exportData, importData, makeId, nextSubjectColor, readData, writeData } from './storage'
 import { ensureFontLoaded, fonts, fontSizes, fontSizeOptions, normalizeFontSize, uiThemeVars, themes } from './theme'
 import { displayFontStack } from './fontLoading'
 import { buildSessions } from './schedule'
@@ -20,7 +20,152 @@ import './App.css'
 const allTabs = ['오늘', '담임', '교과', '동아리', '업무', '환경설정'] as const
 type Tab = (typeof allTabs)[number]
 
+const isLegacyTeachingFlowUrl = typeof window !== 'undefined'
+  && window.location.hostname === 'music-yul.github.io'
+  && window.location.pathname.startsWith('/TeachingFlow')
+
 export default function App() {
+  return isLegacyTeachingFlowUrl ? <MigrationNotice /> : <TeachingFlowApp />
+}
+
+function MigrationNotice() {
+  const storageKey = 'class-schedule-planner-data'
+  const [hasData] = useState(() => {
+    try {
+      const raw = localStorage.getItem(storageKey)
+      if (!raw) return false
+      const saved = JSON.parse(raw)
+      return Boolean(saved && typeof saved === 'object' && ('settings' in saved || 'classes' in saved))
+    } catch {
+      return false
+    }
+  })
+  const [status, setStatus] = useState(
+    hasData
+      ? '이 브라우저에서 기존 티칭플로 자료를 찾았습니다. 먼저 백업 파일을 내려받아 주세요.'
+      : '이 브라우저에서 저장된 자료를 찾지 못했습니다. 자료를 사용하던 브라우저와 기기에서 다시 접속해 주세요.',
+  )
+
+  useEffect(() => {
+    const removeOldOfflineCopy = async () => {
+      try {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations()
+          await Promise.all(registrations.map(registration => registration.unregister()))
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys()
+          await Promise.all(keys
+            .filter(key => key.startsWith('teachingflow-'))
+            .map(key => caches.delete(key)))
+        }
+      } catch {
+        // Keep the migration screen available even if browser cleanup is unavailable.
+      }
+    }
+    void removeOldOfflineCopy()
+  }, [])
+
+  const handleBackup = () => {
+    try {
+      const raw = localStorage.getItem(storageKey)
+      if (!raw) {
+        setStatus('백업할 자료가 없습니다. 자료를 사용하던 브라우저와 기기에서 접속해 주세요.')
+        return
+      }
+      // Use the same export format as the app's Settings > Data Management backup.
+      exportData(readData())
+      setStatus('백업 파일을 다운로드했습니다. 새 주소에서 불러와 주세요.')
+    } catch {
+      setStatus('백업에 실패했습니다. 브라우저 저장공간을 확인한 뒤 다시 시도해 주세요.')
+    }
+  }
+
+  const page: CSSProperties = {
+    minHeight: '100vh',
+    display: 'grid',
+    placeItems: 'center',
+    padding: '28px 16px',
+    boxSizing: 'border-box',
+    background: '#f3f6fa',
+    color: '#263346',
+    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  }
+  const card: CSSProperties = {
+    width: 'min(100%, 620px)',
+    padding: 'clamp(24px, 6vw, 42px)',
+    boxSizing: 'border-box',
+    background: '#fff',
+    border: '1px solid #dbe2ea',
+    borderRadius: 20,
+    boxShadow: '0 12px 36px rgba(24,39,60,.08)',
+  }
+  const button: CSSProperties = {
+    display: 'inline-flex',
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '12px 16px',
+    border: 0,
+    borderRadius: 10,
+    font: 'inherit',
+    fontWeight: 700,
+    textDecoration: 'none',
+    cursor: 'pointer',
+  }
+
+  return (
+    <div style={page}>
+      <main style={card}>
+        <p style={{ margin: '0 0 10px', color: '#354d70', fontSize: 13, fontWeight: 700, letterSpacing: '.04em' }}>
+          TEACHING FLOW
+        </p>
+        <h1 style={{ margin: 0, fontSize: 'clamp(23px, 5vw, 30px)', lineHeight: 1.35 }}>
+          티칭플로 주소가 변경되었습니다
+        </h1>
+        <p style={{ margin: '14px 0 22px', color: '#64748b', lineHeight: 1.7 }}>
+          기존 주소에서는 티칭플로를 더 이상 사용할 수 없습니다. 새 주소에서 계속 이용해 주세요.
+        </p>
+        <section style={{ padding: '16px 18px', borderRadius: 12, background: '#f0f4f9', lineHeight: 1.65 }}>
+          <strong style={{ display: 'block', marginBottom: 5 }}>기존 자료를 옮겨서 계속 사용할 수 있어요.</strong>
+          자료는 이 브라우저에 저장되어 있습니다. 먼저 백업 파일을 내려받고, 새 주소에서 불러와 주세요.
+        </section>
+        <ol style={{ margin: '22px 0', paddingLeft: 22, lineHeight: 1.8 }}>
+          <li><b>기존 자료 백업하기</b>를 눌러 JSON 파일을 저장합니다.</li>
+          <li><b>새 티칭플로 열기</b>를 누릅니다.</li>
+          <li>새 주소의 <b>환경설정 → 데이터 관리 → 불러오기</b>에서 저장한 파일을 선택합니다.</li>
+          <li>자료가 잘 들어왔는지 확인할 때까지 백업 파일을 보관해 주세요.</li>
+        </ol>
+        <p role="status" aria-live="polite" style={{ margin: '18px 0 0', padding: '12px 14px', borderRadius: 10, background: '#f8fafc', color: '#64748b', fontSize: 14, lineHeight: 1.6 }}>
+          {status}
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 24 }}>
+          <button
+            type="button"
+            disabled={!hasData}
+            onClick={handleBackup}
+            style={{ ...button, flex: '1 1 220px', background: '#e9eef5', color: '#263346', opacity: hasData ? 1 : .5 }}
+          >
+            기존 자료 백업하기 (.json)
+          </button>
+          <a
+            href="https://teaching-flow-gamma.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ ...button, flex: '1 1 220px', background: '#354d70', color: '#fff' }}
+          >
+            새 티칭플로 열기
+          </a>
+        </div>
+        <p style={{ margin: '18px 0 0', color: '#64748b', fontSize: 12, lineHeight: 1.6 }}>
+          자료가 저장된 브라우저와 기기에서 이 페이지를 열어야 백업할 수 있습니다. 새 주소에서 가져오기를 확인하기 전에는 브라우저 저장 자료를 삭제하지 마세요.
+        </p>
+      </main>
+    </div>
+  )
+}
+
+function TeachingFlowApp() {
   const [dashboardToolbar,setDashboardToolbar]=useState<HTMLDivElement|null>(null)
   const [data, setData] = useState<AppData>(readData)
   const [storedTab, setTab] = useState<Tab>('오늘')

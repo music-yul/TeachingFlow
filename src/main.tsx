@@ -36,7 +36,21 @@ async function startApp() {
  }
 }
 void startApp()
-// 오프라인 사용: 배포된 웹사이트(https)에서만 서비스 워커를 등록한다. file:// 이나 개발 서버에서는 건너뛴다.
+// 기존 GitHub Pages 주소에서는 이전 안내 화면만 표시하므로, 오프라인 앱 캐시를 해제한다.
+// Vercel 등 다른 주소에서는 기존 서비스 워커 동작을 유지한다.
+const isLegacyTeachingFlowUrl = location.hostname === 'music-yul.github.io'
+  && location.pathname.startsWith('/TeachingFlow')
+
 if('serviceWorker' in navigator&&location.protocol==='https:'&&!import.meta.env.DEV){
- window.addEventListener('load',()=>{void navigator.serviceWorker.register('./sw.js').catch(()=>undefined)})
+ window.addEventListener('load',()=>{
+  if(isLegacyTeachingFlowUrl){
+   void navigator.serviceWorker.getRegistrations()
+    .then(registrations=>Promise.all(registrations.map(registration=>registration.unregister())))
+   if('caches' in window){
+    void caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('teachingflow-')).map(key=>caches.delete(key))))
+   }
+   return
+  }
+  void navigator.serviceWorker.register('./sw.js').catch(()=>undefined)
+ })
 }
