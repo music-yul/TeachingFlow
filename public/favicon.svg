@@ -1,12 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#3d4a5c"/>
-  <path d="M32 10v8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
-  <path d="M32 10h8l-2 3 2 3h-8z" fill="#f2b84b"/>
-  <path d="M14 30 32 18l18 12z" fill="#fff"/>
-  <rect x="17" y="30" width="30" height="20" fill="#fff"/>
-  <rect x="11" y="48" width="42" height="5" rx="1.5" fill="#fff"/>
-  <circle cx="32" cy="27" r="3" fill="#3d4a5c"/>
-  <rect x="28.5" y="38" width="7" height="12" rx="1" fill="#3d4a5c"/>
-  <rect x="20.5" y="34" width="5" height="5" rx="1" fill="#3d4a5c"/>
-  <rect x="38.5" y="34" width="5" height="5" rx="1" fill="#3d4a5c"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#f6f3ea"/><g transform="translate(-9.099 -6.495) scale(0.06550)"><rect x="608" y="258" width="38" height="190" rx="19" fill="#899d72"/>
+<path d="M640 283C690 262 728 290 768 304C790 311 805 308 815 306V380C800 389 772 392 742 380C705 364 672 362 640 376Z" fill="#899d72"/>
+<path d="M230 655H465V915H230Z" fill="#c9ceb4"/>
+<path d="M790 655H1025V915H790Z" fill="#c9ceb4"/>
+<path d="M216 642 262 590Q271 579 285 579H470V658H226Q205 658 216 642Z" fill="#7c9067"/>
+<path d="M1039 642 993 590Q984 579 970 579H785V658H1029Q1050 658 1039 642Z" fill="#7c9067"/>
+<path d="M463 572 627 448 790 572V915H463Z" fill="#fbf4ea"/>
+<path d="M432 555 627 427 822 555" fill="none" stroke="#869a6f" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="627" cy="618" r="72" fill="#788d62"/>
+<path d="M627 584V624H652" fill="none" stroke="#fbf4ea" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M552 915V812A75 75 0 0 1 702 812V915Z" fill="#7a8e66"/>
+<g fill="#fefdf7"><rect x="280" y="703" width="53" height="61" rx="9"/><rect x="367" y="703" width="53" height="61" rx="9"/><rect x="280" y="803" width="53" height="61" rx="9"/><rect x="367" y="803" width="53" height="61" rx="9"/><rect x="835" y="703" width="53" height="61" rx="9"/><rect x="922" y="703" width="53" height="61" rx="9"/><rect x="835" y="803" width="53" height="61" rx="9"/><rect x="922" y="803" width="53" height="61" rx="9"/></g>
+<rect x="200" y="912" width="855" height="36" rx="18" fill="#74895f"/>
+</g></svg>

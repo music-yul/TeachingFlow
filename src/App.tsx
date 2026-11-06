@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import AppLogo from './components/AppLogo'
 import {DashboardToolbarContext} from './dashboardToolbar'
 import type { AppData, Classroom } from './types'
 import { APP_VERSION, emptyData, importData, makeId, nextSubjectColor, readData, writeData } from './storage'
@@ -152,7 +153,7 @@ export default function App() {
     <DashboardToolbarContext.Provider value={dashboardToolbar}><div className="app-shell">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark" role="img" aria-label="티칭플로">🏫</span>
+          <span className="brand-mark" role="img" aria-label="티칭플로"><AppLogo /></span>
           <div className="brand-text">
             <span className="brand-title">
               <strong>티칭플로</strong>
